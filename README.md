@@ -51,7 +51,7 @@ The Chapter 16 capstone integrates the accepted chapter checkpoints and runs a 1
 | 13 | Defend against indirect prompt injection | [PRD](docs/implementation-plans/chapters/ch13-prompt-injection-defense/prd.md) · [Architecture](docs/implementation-plans/chapters/ch13-prompt-injection-defense/architecture.md) |
 | 14 | Deploy and recover the PolicyOps service | [PRD](docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/prd.md) · [Architecture](docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/architecture.md) |
 | 15 | Conduct a governance release review | [PRD](docs/implementation-plans/chapters/ch15-governance-release-review/prd.md) · [Architecture](docs/implementation-plans/chapters/ch15-governance-release-review/architecture.md) |
-| 16 | Integrate and release the PolicyOps agent | [Capstone PRD](docs/implementation-plans/capstone/prd.md) · [Capstone architecture](docs/implementation-plans/capstone/architecture.md) |
+| 16 | Integrate and release the PolicyOps agent | [PRD](docs/implementation-plans/chapters/ch16-policyops-capstone/prd.md) · [Architecture](docs/implementation-plans/chapters/ch16-policyops-capstone/architecture.md) |
 
 The [implementation-plan index](docs/implementation-plans/README.md) explains shared contracts, chapter ownership, cumulative handoffs, and the definition of done.
 
@@ -95,9 +95,8 @@ docs/
       ...
       ch15-.../prd.md
       ch15-.../architecture.md
-    capstone/
-      prd.md
-      architecture.md
+      ch16-policyops-capstone/prd.md
+      ch16-policyops-capstone/architecture.md
 ```
 
 Source code, fixtures, deployment manifests, tests, CI workflows, and executable evidence will be added only after the book proposal and implementation scope are approved.

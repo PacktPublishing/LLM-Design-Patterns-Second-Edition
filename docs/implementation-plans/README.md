@@ -2,7 +2,7 @@
 
 This package turns the approved book outline into build-ready specifications for the cumulative **PolicyOps** knowledge-and-action agent. It is intentionally separate from the publisher-facing outline. The files define what a future implementation must deliver, how its components fit together, and how each chapter proves its result.
 
-The sequence is cumulative. Chapters 1-15 add or validate one bounded capability. Chapter 16 is represented once, in [`capstone/`](./capstone/), and integrates the accepted checkpoints. It does not introduce a new pattern.
+The sequence is cumulative. Chapters 1-15 add or validate one bounded capability. Chapter 16 is represented once, in [`chapters/ch16-policyops-capstone/`](./chapters/ch16-policyops-capstone/), and integrates the accepted checkpoints. It does not introduce a new pattern.
 
 ## How to use this package
 
@@ -32,7 +32,7 @@ For each project, read the PRD first and then its architecture document:
 | 13 | Defend against indirect prompt injection | [PRD](./chapters/ch13-prompt-injection-defense/prd.md) | [Architecture](./chapters/ch13-prompt-injection-defense/architecture.md) | Containment, policy, and attack evidence |
 | 14 | Deploy and recover the PolicyOps service | [PRD](./chapters/ch14-policyops-deployment-recovery/prd.md) | [Architecture](./chapters/ch14-policyops-deployment-recovery/architecture.md) | Load, failure, rollback, and restore evidence |
 | 15 | Conduct a governance release review | [PRD](./chapters/ch15-governance-release-review/prd.md) | [Architecture](./chapters/ch15-governance-release-review/architecture.md) | Machine-readable control-to-evidence decision |
-| 16 | Integrate and release the PolicyOps agent | [Capstone PRD](./capstone/prd.md) | [Capstone architecture](./capstone/architecture.md) | Signed release or no-go evidence bundle |
+| 16 | Integrate and release the PolicyOps agent | [PRD](./chapters/ch16-policyops-capstone/prd.md) | [Architecture](./chapters/ch16-policyops-capstone/architecture.md) | Signed release or no-go evidence bundle |
 
 ## Shared implementation contract
 

@@ -135,7 +135,7 @@ Pull requests run `verify-ch15` and all earlier regression gates. The extension 
 
 ## Dependencies and handoff
 
-The project consumes accepted Chapter 14 image, migration, load, chaos, restore, and runbook evidence plus artifacts from Chapters 1-13. It produces the inventory, risk and autonomy records, ownership and approval matrix, control-to-evidence graph, transparency notice, correction/export/deletion evidence, signed decision record, and governance CI result. Register them in `capstone/traceability.yaml`, compare with `ed2-v1.0-ch15-solution`, and tag `ch15-complete`. [Chapter 16](../../capstone/prd.md) begins from this accepted cumulative checkpoint and must close all 15 traceability rows.
+The project consumes accepted Chapter 14 image, migration, load, chaos, restore, and runbook evidence plus artifacts from Chapters 1-13. It produces the inventory, risk and autonomy records, ownership and approval matrix, control-to-evidence graph, transparency notice, correction/export/deletion evidence, signed decision record, and governance CI result. Register them in `capstone/traceability.yaml`, compare with `ed2-v1.0-ch15-solution`, and tag `ch15-complete`. [Chapter 16](../ch16-policyops-capstone/prd.md) begins from this accepted cumulative checkpoint and must close all 15 traceability rows.
 
 ## Risks and mitigations
 
