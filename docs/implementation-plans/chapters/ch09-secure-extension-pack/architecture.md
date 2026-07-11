@@ -110,7 +110,7 @@ sequenceDiagram
     M->>P: execute request
     P->>A: extension status + exact approval
     alt denied, stale, mismatch, timeout
-        A-->>H: typed denial; no repository call
+        A-->>H: typed denial, no repository call
     else authorized
         A->>T: create once
         T-->>P: ticket result

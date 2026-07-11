@@ -108,7 +108,7 @@ sequenceDiagram
     H-->>A: Bound approval
     A->>P: Re-evaluate current identity, preview, revocation
     P-->>B: Allow with narrow obligations
-    B->>S: Ephemeral grant, mounts, limits; no host secrets
+    B->>S: Ephemeral grant, mounts, limits, no host secrets
     S->>E: Outbound request + action-bound egress grant
     E->>E: Resolve, validate, inspect metadata, enforce byte budget
     E-->>S: Allow only declared destination

@@ -127,7 +127,7 @@ sequenceDiagram
         M->>E: awaiting_review with reasons
     else valid merged result
         M->>E: findings_ready event
-        E->>T: preview; approved create only
+        E->>T: preview, approved create only
         T-->>E: typed effect result
     end
     E-->>C: terminal or interrupt state + trace

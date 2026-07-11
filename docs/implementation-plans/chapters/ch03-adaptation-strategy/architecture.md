@@ -125,7 +125,7 @@ sequenceDiagram
     D->>C: Training + protected references
     C-->>D: Overlap report
     alt prohibited overlap
-        D-->>E: Stop; invalid experiment
+        D-->>E: Stop, invalid experiment
     else clean splits
         E->>A: Admit supplied adapter
         A-->>E: Verified candidate metadata

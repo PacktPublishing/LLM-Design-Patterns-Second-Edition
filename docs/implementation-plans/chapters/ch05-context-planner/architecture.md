@@ -23,9 +23,9 @@ flowchart LR
     Answer["PolicyOps answer service"] --> Planner["Context planner"]
     Policy["Versioned context policy"] --> Planner
     Tokenizer["Tokenizer port / frozen fixture"] --> Planner
-    Evidence["EvidenceSource fixtures; Ch6/7 later"] --> Planner
-    Memory["MemorySource fixture; Ch8 later"] --> Planner
-    Capability["CapabilitySource fixture; Ch9 later"] --> Planner
+    Evidence["EvidenceSource fixtures, Ch6/7 later"] --> Planner
+    Memory["MemorySource fixture, Ch8 later"] --> Planner
+    Capability["CapabilitySource fixture, Ch9 later"] --> Planner
     State["Current conversation and observations"] --> Planner
     Planner --> Rendered["Rendered model request"]
     Planner --> Manifest["Redacted context manifest"]
@@ -110,10 +110,10 @@ sequenceDiagram
     participant R as Renderer
     participant G as Inference gateway
     A->>P: ContextRequest + RunContext
-    P->>P: Validate policy; reserve output/headroom
+    P->>P: Validate policy and reserve output/headroom
     P->>S: Request bounded summaries
     S-->>P: SourceSummary list
-    P->>B: Validate labels; select and allocate
+    P->>B: Validate labels, select, and allocate
     B-->>P: ContextPlan or typed plan failure
     alt impossible/missing/unsafe plan
         P-->>A: Abstain/fail with redacted manifest

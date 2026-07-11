@@ -104,7 +104,7 @@ sequenceDiagram
     participant M as Model profiles
     participant V as Verifier
     A->>G: generate(request, context)
-    G->>G: Validate policy; create shared ledger/deadline
+    G->>G: Validate policy and create shared ledger/deadline
     G->>C: get(complete cache key)
     alt valid current hit
         C-->>G: Validated answer

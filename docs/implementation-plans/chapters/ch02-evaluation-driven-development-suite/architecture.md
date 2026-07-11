@@ -111,7 +111,7 @@ sequenceDiagram
     R->>V: Validate references and graders
     alt invalid task or grader
         V-->>R: Invalid evaluation
-        R-->>U: Non-zero; candidate not judged
+        R-->>U: Non-zero, candidate not judged
     else valid evaluation
         loop Each case and required trial
             R->>C: Execute controlled task

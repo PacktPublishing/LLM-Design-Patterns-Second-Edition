@@ -113,7 +113,7 @@ sequenceDiagram
     C->>A: POST /v1/answer + authenticated context
     A->>A: Validate schema, actor, tenant, configuration
     alt identity or tenant conflict
-        A-->>C: Typed 401/403; no adapter call
+        A-->>C: Typed 401/403, no adapter call
     else valid request
         A->>T: Start redacted request span
         A->>S: ModelRequest + RunContext
