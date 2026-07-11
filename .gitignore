@@ -1,0 +1,62 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+.secrets/
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Build, runtime, and evidence outputs
+build/
+dist/
+site/
+tmp/
+temp/
+logs/
+*.log
+evidence/
+artifacts/generated/
+
+# Local databases, queues, and caches
+*.db
+*.sqlite
+*.sqlite3
+*.rdb
+
+# Model and dataset artifacts
+models/
+checkpoints/
+*.gguf
+*.safetensors
+*.onnx
+data/private/
+data/raw/
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+.codegraph/
+
+# Local test and coverage state
+.tox/
+.nox/
+.hypothesis/
+junit.xml
