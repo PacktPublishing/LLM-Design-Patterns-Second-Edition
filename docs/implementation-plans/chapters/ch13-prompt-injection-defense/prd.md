@@ -4,7 +4,7 @@ This project implements the hands-on work for Chapter 13, **Security and Guardra
 
 ## Product proposal
 
-Use a malicious policy document that attempts unauthorized ticket creation and private-data exfiltration through an allowed communication capability. Add instruction-data separation, capability scoping, exact-preview approval, egress restrictions, secret filtering, sandbox containment, signed extension checks, and revocation, then run the supplied attack harness.
+Use a malicious policy document and a malicious web/tool observation that attempt unauthorized ticket creation and private-data exfiltration through an allowed communication capability. Add instruction-data separation, capability scoping, exact-preview approval, egress restrictions, browser/profile isolation, secret filtering, sandbox containment, signed extension checks, and revocation, then run the supplied attack harness.
 
 ## Problem
 
@@ -57,7 +57,7 @@ A model cannot reliably distinguish trusted instructions from hostile text by wo
 - **CH13-FR-007:** Outbound requests shall traverse an egress policy point that validates scheme, host, port, resolved address, method, data class, tenant, and action grant and blocks redirects or DNS changes that escape policy.
 - **CH13-FR-008:** A secret broker shall issue only short-lived, capability-scoped fixture credentials directly to the authorized runtime and shall prevent secrets from entering prompts, tool results, logs, or telemetry.
 - **CH13-FR-009:** Tools, MCP servers, Agent Skills, plugins, hooks, models, and dependencies shall be checked against an allowlist and integrity metadata; revoked or mismatched artifacts shall fail closed.
-- **CH13-FR-010:** The attack harness shall run supplied injection, retrieval and memory poisoning, privilege escalation, exfiltration, extension tampering, duplicate-effect, resource exhaustion, prohibited-content, and benign near-neighbor cases.
+- **CH13-FR-010:** The attack harness shall run supplied injection, malicious web/tool observation, retrieval and memory poisoning, privilege escalation, exfiltration, extension tampering, duplicate-effect, resource exhaustion, prohibited-content, and benign near-neighbor cases.
 - **CH13-FR-011:** Security events shall record redacted evidence for identity, authorization, approval, sandbox, egress, integrity, revocation, and postcondition decisions using Chapter 12's semantic fields.
 - **CH13-FR-012:** The incident workflow shall support containment, capability revocation, session quarantine, evidence preservation, recovery, and promotion of confirmed failures into regression cases.
 
@@ -81,7 +81,7 @@ A model cannot reliably distinguish trusted instructions from hostile text by wo
 
 ## Starter, fixtures, and data
 
-Start from `ed2-v1.0-ch13-start`. The starter supplies an attack corpus, malicious policy documents, poisoned memory and trace fixtures, malicious MCP and Agent Skill packages, a sandbox profile, policy engine, internal network, egress proxy, non-root image, test identities, ephemeral fixture secrets, and pinned SBOM tooling. It uses the Chapter 9 capability boundary, Chapter 11 durable action protocol, and Chapter 12 semantic evidence.
+Start from `ed2-v1.0-ch13-start`. The starter supplies an attack corpus, malicious policy documents, malicious web/tool observation fixtures, poisoned memory and trace fixtures, malicious MCP and Agent Skill packages, a sandbox profile, policy engine, internal network, egress proxy, browser/profile fixture, non-root image, test identities, ephemeral fixture secrets, and pinned SBOM tooling. It uses the Chapter 9 capability boundary, Chapter 11 durable action protocol, and Chapter 12 semantic evidence.
 
 Primary paths are `src/policyops/security`, `policies`, `tests/security`, `docs/threat-models`, and `build/ch13`. `labs/ch13/manifest.toml` declares hashes, services, network, test credentials, commands, cleanup, gates, and fault scenarios.
 
@@ -91,7 +91,7 @@ The policy service accepts an `AuthorizationQuery` and returns `allow`, `deny`, 
 
 ## Required drill
 
-Use a malicious document to request private data exfiltration through an otherwise allowed communication tool. Attempt forged identity, cross-tenant retrieval, stale approval, preview substitution, malicious extension installation, secret access, redirect or DNS-based egress escape, duplicate effect, and resource exhaustion. Include one prohibited-content or regulated-advice case and one benign near-neighbor. The evidence must show which leg of the lethal trifecta was made structurally unavailable.
+Use a malicious document and malicious web/tool observation to request private data exfiltration through an otherwise allowed communication tool. Attempt forged identity, cross-tenant retrieval, stale approval, preview substitution, malicious extension installation, browser/profile confusion, secret access, redirect or DNS-based egress escape, duplicate effect, and resource exhaustion. Include one prohibited-content or regulated-advice case and one benign near-neighbor. The evidence must show which leg of the lethal trifecta was made structurally unavailable.
 
 ## Required artifacts
 
@@ -99,7 +99,7 @@ Deliver the threat model, frozen attack corpus, authorization and egress policy 
 
 ## Acceptance criteria and traceability
 
-- **AC-01 (CH13-FR-002, CH13-FR-003, CH13-FR-004, CH13-SEC-001, CH13-SEC-002):** Given the poisoned document, when PolicyOps processes it, then its text cannot grant authority, private cross-tenant data remains unavailable, and undeclared exfiltration is denied.
+- **AC-01 (CH13-FR-002, CH13-FR-003, CH13-FR-004, CH13-SEC-001, CH13-SEC-002):** Given the poisoned document or malicious web/tool observation, when PolicyOps processes it, then its text cannot grant authority, private cross-tenant data remains unavailable, and undeclared exfiltration is denied.
 - **AC-02 (CH13-FR-005, CH13-SEC-004):** Given forged, stale, replayed, changed, or wrong-tenant approval, when execution is attempted, then the action fails before an effect.
 - **AC-03 (CH13-FR-006, CH13-FR-007, CH13-FR-008, CH13-SEC-003, CH13-SEC-004, CH13-SEC-005):** Given sandbox escape, filesystem, network, and secret probes, when the attack harness runs, then undeclared access fails and supplied secrets are absent from outputs and telemetry.
 - **AC-04 (CH13-FR-009):** Given a tampered or revoked extension, when discovery or invocation occurs, then integrity or revocation policy blocks it, including in an already-open session.

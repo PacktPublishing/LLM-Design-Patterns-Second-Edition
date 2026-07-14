@@ -4,7 +4,7 @@ This project implements the hands-on work for Chapter 9, **Capability Extension 
 
 ## Problem
 
-Teams often package every new behavior as an “agent,” blurring the difference between an atomic operation, interoperable protocol, reusable workflow guidance, distributable bundle, and deterministic lifecycle control. That ambiguity creates excessive authority, invisible execution, brittle activation, supply-chain exposure, stale approvals, and revocation gaps. PolicyOps needs a small extension pack that demonstrates when to use a typed tool, MCP server, Agent Skill, plugin, or hook—and secures their composition from install through emergency disablement.
+Teams often package every new behavior as an “agent,” blurring the difference between an atomic operation, interoperable protocol, reusable workflow guidance, distributable bundle, deterministic lifecycle control, and computer-use adapter. That ambiguity creates excessive authority, invisible execution, brittle activation, supply-chain exposure, stale approvals, and revocation gaps. PolicyOps needs a small extension pack that demonstrates when to use a typed tool, MCP server, Agent Skill, plugin, hook, or computer-use adapter boundary—and secures their composition from install through emergency disablement.
 
 ## Goals
 
@@ -24,6 +24,7 @@ Teams often package every new behavior as an “agent,” blurring the differenc
 | Agent Skill | Repeatable workflow knowledge, examples, scripts, and references should load progressively | Teach when and how to draft, preview, approve, and create a ticket | Deterministic enforcement or a privileged mutation is required |
 | Plugin | A versioned bundle of related skill, MCP config, hooks, agents, and assets must be installed/distributed together | Distribute the PolicyOps ticket extension to one reference host | A personal/project-local experiment needs only standalone files |
 | Lifecycle hook | A bounded deterministic check or side effect must run at a named event | Block stale approval before action; write redacted evidence after action | Open-ended judgment, hidden agent loops, or long-running orchestration is needed |
+| Computer-use adapter | A host exposes screen, DOM, or browser observations as a capability surface | Provide a fixture adapter that lets Chapter 10 fill a mock approval form under policy | A stable API or typed tool is available, or the adapter would bypass approval and audit controls |
 
 ## Non-goals
 
@@ -31,6 +32,7 @@ Teams often package every new behavior as an “agent,” blurring the differenc
 - Autonomous ticket prioritization, Chapter 10 multi-agent orchestration, or Chapter 11 crash-safe workflow execution.
 - Using hooks for model judgment, retries without limits, or alternate hidden action paths.
 - Giving a skill, plugin manifest, MCP metadata, or tool result implicit trust.
+- Letting a computer-use adapter bypass the typed tool, approval, sandbox, egress, or audit boundary.
 - Supporting more than one reference host in the required implementation.
 
 ## Users
@@ -140,7 +142,7 @@ Map the same skill and hook intent to a second compatible host and document conc
 - **Artifact:** typed contracts, local MCP server, Agent Skill, one-host plugin, pre-action policy hook, post-action audit hook, compatibility notes, threat model, and tests.
 - **Acceptance:** correct activation, denied unapproved writes, one ticket per approved idempotency key, no secret leakage, no tampered/revoked load, and fail-closed hook behavior.
 - **Verify:** `uv run policyops verify ch09 --profile fixture --junit build/ch09/junit.xml --evidence build/ch09`.
-- **Handoff:** register typed contracts, MCP/skill/plugin packages, hooks, registry/revocation/approval bindings, compatibility notes, threat model, contract tests, rollback, and revocation evidence in `capstone/traceability.yaml`; Chapter 10 then uses the secured extension surfaces while comparing deterministic, single-agent, and multi-agent topologies.
+- **Handoff:** register typed contracts, MCP/skill/plugin packages, hooks, computer-use adapter boundary, registry/revocation/approval bindings, compatibility notes, threat model, contract tests, rollback, and revocation evidence in `capstone/traceability.yaml`; Chapter 10 then uses the secured extension surfaces while comparing deterministic, single-agent, browser/computer-use, and multi-agent topologies.
 - **Execution:** 4–6 hours with pinned MCP fixtures, ticket stub, test CA, ephemeral keys, local HTTPS, and development issuer; no paid credential.
 - **Repository/CI:** `labs/ch09/manifest.toml`, base tag `ed2-v1.0-ch09-start`, and `services/mcp_server`, `services/test_issuer`, `src/policyops/tools`, `tests/mcp`, `tests/contract`; `verify-ch09` runs all prior gates.
 - **Run/cleanup:** `uv sync --frozen`; `uv run policyops env up --lab ch09 --profile fixture`; `uv run policyops verify ch09 --profile fixture --junit build/ch09/junit.xml --evidence build/ch09`; `uv run policyops fault ch09 --scenario all`; `uv run policyops env down --lab ch09` (which must remove ephemeral keys and tokens).

@@ -24,7 +24,7 @@ The capstone must demonstrate that the complete PolicyOps system preserves its i
 3. Create a support ticket only after an exact preview is bound to current approval, authorization, and an idempotency key.
 4. Resume interrupted work without repeating an externally visible effect.
 5. Preserve consent, provenance, correction, expiry, export, and deletion across primary and derived memory stores.
-6. Produce correlated, redacted telemetry and convert adjudicated failures into controlled evaluation changes.
+6. Produce correlated, redacted telemetry, track cost per successful outcome, and convert adjudicated failures into controlled evaluation changes.
 7. Survive the declared dependency failures, load profile, bad release, rollback, backup, and restore scenarios.
 8. Close all chapter-to-capstone traceability rows and produce a signed release or no-go evidence bundle.
 9. Run the mandatory fixture profile from a clean checkout without paid credentials.
@@ -90,15 +90,16 @@ The capstone must demonstrate that the complete PolicyOps system preserves its i
 
 - **CAP-FR-009 - Governed memory:** Working, episodic, semantic, and procedural views shall derive from a provenance-preserving ledger. Writes require policy and consent where applicable. Recall shall honor tenant scope, purpose, TTL, quarantine, correction, and deletion, and shall never grant tool authority.
 - **CAP-FR-010 - Capability surfaces:** The mandatory fixture shall expose the ticket capability through one typed local tool and one local MCP server, include a focused Agent Skill that teaches the safe workflow, package it as a plugin for one reference host, and run a fail-closed pre-action hook plus a bounded post-action evidence hook. All surfaces shall share one canonical contract and policy decision.
+- **CAP-FR-010A - Browser/computer-use path:** The mandatory fixture shall include the Chapter 10 mock approval-form path through a secured computer-use adapter, with DOM/screen observations treated as untrusted data and final mutation still routed through the Chapter 9 approval-bound `ToolPort`.
 - **CAP-FR-011 - Approval-bound mutation:** Before ticket creation, the system shall produce the canonical Chapter 9 `EffectPreview` whose `effect_hash` is bound to actor, tenant, capability, arguments, policy/configuration versions, expiry, and idempotency key. Changed, stale, missing, revoked, or out-of-scope approval shall fail closed.
 - **CAP-FR-012 - Bounded control flow:** The accepted Chapter 10 topology shall run over its canonical state graph behind the Chapter 11 durable harness. Known rules shall execute deterministically. Model decisions shall be bounded by declared state, tools, steps, time, tokens, and spend. Delegation shall carry signed identity and scope; independent A2A execution is optional and requires an approved ADR.
 - **CAP-FR-013 - Durable execution:** Sessions shall use append-only events, checkpoints, leases with fencing, a transactional outbox, idempotency records, and reconciliation so all declared crash windows resume without duplicate business effects.
 
 ### Evidence, security, and operations
 
-- **CAP-FR-014 - Evaluation and improvement:** The system shall run component, trajectory, outcome, adversarial, consistency, and calibrated rubric evaluations. One adjudicated trace shall become a versioned case; a bounded candidate shall be compared with the baseline and immutable holdout, then canaried or reverted.
+- **CAP-FR-014 - Evaluation and improvement:** The system shall run component, trajectory, outcome, adversarial, consistency, outcome-cost, and calibrated rubric evaluations. One adjudicated trace shall become a versioned case; a bounded candidate shall be compared with the baseline and immutable holdout, then canaried or reverted.
 - **CAP-FR-015 - Correlated observability:** The Chapter 1 trace ID shall join all major spans and evidence, with request and run IDs for local lookup. Telemetry shall include artifact and configuration versions, authorization and approval decisions, budgets, outcomes, and error classes while applying redaction, sampling, and cardinality policy.
-- **CAP-FR-016 - Security verification:** The test harness shall exercise prompt injection, poisoned retrieval/graph/memory, extension tampering, privilege escalation, confused-deputy paths, secret extraction, unauthorized egress/filesystem access, replay, duplicate effects, and resource exhaustion.
+- **CAP-FR-016 - Security verification:** The test harness shall exercise prompt injection, malicious web/tool observations, poisoned retrieval/graph/memory, extension tampering, privilege escalation, confused-deputy paths, secret extraction, unauthorized egress/filesystem access, replay, duplicate effects, and resource exhaustion.
 - **CAP-FR-017 - Deployment and recovery:** The core Docker Compose profile shall deploy API, worker, database, model gateway, telemetry, ticket stub, and fault proxy with health checks, bounded queues, retry classification, circuit breaking, backpressure, digest-pinned images, migrations, rollback, backup, and restore.
 - **CAP-FR-018 - User rights and governance:** The system shall execute correction, export, and deletion across primary and derived stores; maintain inventory, risks, autonomy, ownership, approval, retention, and evidence records; and preserve an accountable human release decision.
 - **CAP-FR-019 - Ordered game day:** One automation entry point shall run the numbered production game day defined below in order and retain scenario-level prerequisites, inputs, expected and actual results, traces, artifacts, operator identity, mandatory-gate decision, and cleanup status.
@@ -128,7 +129,7 @@ The capstone must demonstrate that the complete PolicyOps system preserves its i
 
 ## Fixtures and evidence inputs
 
-The mandatory profile uses two isolated tenants, three roles, current and superseded policy versions, a scanned-page/table fixture with coordinates, contradictory temporal claims, an inaccessible record, deleted content, a consented memory history, a poisoned memory candidate, a mock ticket service, deterministic model/retrieval/reranker replays, test signing keys, a development-only token issuer, attack cases, a fake clock, fault proxy profiles, a hashed holdout, and a corrupt backup fixture.
+The mandatory profile uses two isolated tenants, three roles, current and superseded policy versions, a scanned-page/table fixture with coordinates, contradictory temporal claims, an inaccessible record, deleted content, a consented memory history, a poisoned memory candidate, a mock ticket service, a mock approval-form browser fixture, deterministic model/retrieval/reranker replays, test signing keys, a development-only token issuer, malicious document and web/tool attack cases, a fake clock, fault proxy profiles, a hashed holdout, and a corrupt backup fixture.
 
 The implementation must not depend on live external data. Every fixture has a manifest entry containing origin, rights, checksum, schema version, expected tenant/purpose scope, and deletion behavior. Evidence outputs include JSON summaries, JUnit, traces, metrics snapshots, test reports, decisions, receipts, hashes, and operator-approved release records.
 
@@ -152,10 +153,10 @@ The CLI provides environment lifecycle, verification, fault injection, replay, e
 | Clean-room reproducibility | CAP-FR-001-003, CAP-NFR-005 | A fresh checkout and `.github/workflows/capstone-game-day.yml` run the same commands without external credentials; all 15 traceability rows close; a seeded mandatory failure makes CI and release fail |
 | Grounded answers | CAP-FR-004-008 | Authorized current claims have exact citations; poisoned, deleted, stale, conflicting, inaccessible, and insufficient cases abstain |
 | Memory lifecycle | CAP-FR-009, CAP-FR-018, CAP-SEC-006 | Consent, TTL, conflict, quarantine, correction, export, deletion, and cross-tenant cases pass with complete receipts |
-| Controlled action | CAP-FR-010-013, CAP-SEC-001-005, CAP-SEC-007 | Approved exact preview creates one ticket; stale, changed, forged, revoked, duplicated, or alternate-path attempts create none |
+| Controlled action | CAP-FR-010-013, CAP-SEC-001-005, CAP-SEC-007 | Approved exact preview creates one ticket; stale, changed, forged, revoked, duplicated, browser/computer-use bypass, or alternate-path attempts create none |
 | Crash recovery | CAP-FR-013, CAP-NFR-004 | Every supplied crash window resumes to the expected state with one or zero intended business effects and no ambiguous record |
-| Evaluation and telemetry | CAP-FR-014-015 | One trace ID joins spans; PII/cardinality tests pass; overfit candidate fails holdout; bad canary reverts |
-| Security | CAP-FR-016, CAP-SEC-001-009 | No supplied high-impact attack creates unauthorized effect; secrets do not appear; undeclared egress/filesystem access fails |
+| Evaluation and telemetry | CAP-FR-014-015 | One trace ID joins spans; PII/cardinality tests pass; cost per successful outcome is reported; overfit candidate fails holdout; bad canary reverts |
+| Security | CAP-FR-016, CAP-SEC-001-009 | No supplied high-impact attack creates unauthorized effect; secrets do not appear; malicious web/tool observations cannot grant authority; undeclared egress/filesystem access fails |
 | Reliability and recovery | CAP-FR-017, CAP-NFR-003-004, CAP-NFR-008 | Load/SLO evidence records declared results; outage, bad image, rollback, corrupt backup rejection, and valid restore pass |
 | Governance and rights | CAP-FR-018, CAP-NFR-007 | Each high risk maps to current owner/control/test/evidence; rights workflows complete; invalid evidence blocks release |
 | Final game day | CAP-FR-019 | All ordered scenarios record expected/actual outcomes and cleanup; decision engine emits GO only if every mandatory gate passes |
@@ -171,7 +172,7 @@ The runner executes these scenarios in sequence against a freshly deployed, lock
 | 3 | User has consented memory plus a poisoned candidate | Recall both records during a follow-up question | Consented memory improves context; poison is quarantined/ignored; memory grants no authority | Record memory decision and version |
 | 4 | Ticket proposal can be previewed | Approve the exact preview and execute it | One ticket is created with matching effect, approval, and idempotency evidence | Retain ticket reference for recovery |
 | 5 | Ticket effect committed but acknowledgement withheld | Crash the worker after external effect and before acknowledgement, then resume | Reconciliation finds the existing ticket; no duplicate is created | Restore worker and close run |
-| 6 | Second tenant and malicious policy evidence loaded | Attempt cross-tenant retrieval, injected tool use, secret access, and unauthorized egress | No protected data or effect escapes; policy, sandbox, and egress denials are traced | Revoke attack credentials and clear sandbox |
+| 6 | Second tenant plus malicious policy and web/tool observations loaded | Attempt cross-tenant retrieval, injected tool use, browser/profile confusion, secret access, and unauthorized egress | No protected data or effect escapes; policy, sandbox, browser/profile, and egress denials are traced | Revoke attack credentials and clear sandbox |
 | 7 | A policy correction and user deletion request are pending | Correct source/memory data and delete the subject across primary/derived stores | Retrieval/graph/memory/caches update; signed receipt enumerates every store; deleted data is not recalled | Re-index affected fixtures and retain minimized receipt |
 | 8 | Normal model path active | Fail the selected model/provider adapter | Quality-preserving fallback runs only if configured; otherwise typed failure/abstention occurs within budget | Restore provider and verify readiness |
 | 9 | Retrieval path active | Fail lexical/vector retrieval and graph dependency | No unsupported answer is produced; valid scoped cache may serve only if freshness and authorization match | Restore stores and verify index versions |
@@ -191,7 +192,7 @@ The runner executes these scenarios in sequence against a freshly deployed, lock
 - Zero cross-tenant result, cache, graph, memory, telemetry, approval, or effect leakage in the supplied tests.
 - 100% of answer citations resolve to the expected version and span/coordinate; all designated unanswerable cases abstain.
 - 100% of primary and declared derived stores appear in the deletion receipt within the configured test window.
-- The declared latency, error, budget, queue, RTO, and RPO thresholds pass on the recorded hardware profile.
+- The declared latency, error, budget, cost-per-successful-outcome, queue, RTO, and RPO thresholds pass on the recorded hardware profile.
 - All release evidence verifies by hash and signature; a seeded stale or tampered item forces NO-GO.
 
 ## Dependencies and prerequisites

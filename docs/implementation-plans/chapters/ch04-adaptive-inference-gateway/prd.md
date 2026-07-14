@@ -13,7 +13,7 @@ The lab owns quality-driven compute allocation and model-server optimization. It
 
 ## Problem statement
 
-Using the largest model and maximum reasoning effort for every request wastes latency and cost, while using a cheap single pass for every request may violate quality and safety expectations. Unscoped caches can leak tenant data or return stale answers, and unbounded candidate generation can exhaust budgets. PolicyOps needs a deterministic gateway policy that allocates more inference only when task and verification signals justify it, records its decision, and safely terminates under faults.
+Using the largest model and maximum reasoning effort for every request wastes latency and cost, while using a cheap single pass for every request may violate quality and safety expectations. Unscoped caches can leak tenant data or return stale answers, and unbounded candidate generation can exhaust budgets. PolicyOps needs a deterministic gateway policy that allocates more inference only when task and verification signals justify it, records its decision, compares cost per successful outcome, and safely terminates under faults.
 
 ## Goals
 
@@ -23,7 +23,7 @@ Using the largest model and maximum reasoning effort for every request wastes la
 - Enforce input/output token, wall-clock, candidate, reserved future tool-call, and spend budgets.
 - Implement an in-memory response cache with complete tenant, authorization, model, prompt, configuration, and freshness keys.
 - Benchmark cold and warm paths against Chapter 2 quality gates.
-- Produce a Pareto comparison and select a serving profile that improves at least one objective without crossing the quality floor.
+- Produce a Pareto comparison and select a serving profile that improves at least one objective, including cost per successful outcome where applicable, without crossing the quality floor.
 - Fail or fall back predictably on stale cache, verifier failure, timeout, and budget exhaustion.
 
 ## Non-goals
@@ -37,7 +37,7 @@ Using the largest model and maximum reasoning effort for every request wastes la
 ## Users
 
 - **AI application engineer:** defines task classes, verification rules, and escalation policy.
-- **Performance engineer:** runs workload benchmarks and compares quality, latency, and cost.
+- **Performance engineer:** runs workload benchmarks and compares quality, latency, total cost, and cost per successful outcome.
 - **Platform operator:** inspects route decisions, budget outcomes, and cache behavior.
 - **Release reviewer:** verifies that an optimized profile retains Chapter 2 gates.
 
@@ -60,7 +60,7 @@ Using the largest model and maximum reasoning effort for every request wastes la
 - **CH04-FR-008:** Reject expired, stale, authorization-mismatched, corrupted, or schema-incompatible cache entries; validate cached answers before return.
 - **CH04-FR-009:** Record route, candidate count, verification result, budget consumption, cache outcome, latency, and safe fallback reason in correlated evidence.
 - **CH04-FR-010:** Run deterministic workload benchmarks for direct, enhanced, routed, cold-cache, and warm-cache profiles using the Chapter 2 suite.
-- **CH04-FR-011:** Produce raw benchmark data, quality-latency-cost comparison, Pareto plot, routing policy, and serving ADR.
+- **CH04-FR-011:** Produce raw benchmark data, quality-latency-cost and cost-per-successful-outcome comparison, Pareto plot, routing policy, and serving ADR.
 - **CH04-FR-012:** Support optional declared-hardware experiments for shared/prefix/KV cache, quantization, batching, or speculative decoding without changing fixture-profile gates.
 
 ## Non-functional requirements
@@ -153,7 +153,7 @@ The lab consumes Chapter 2 gates and the Chapter 3 selected profile. It uses rep
 2. Implement direct path and deterministic verifier.
 3. Add bounded candidates, early exit, and quality-driven escalation.
 4. Add complete cache keys, validation, expiry, and cancellation safety.
-5. Build workload runner and raw quality-latency-cost reports.
+5. Build workload runner and raw quality-latency-cost plus outcome-cost reports.
 6. Run all fault drills, choose a profile by predeclared floor, and register gateway, policy, benchmark, cache, and ADR evidence in `capstone/traceability.yaml`.
 
 ## Outline implementation contract
@@ -168,7 +168,7 @@ The lab consumes Chapter 2 gates and the Chapter 3 selected profile. It uses rep
 - **Run and cleanup:** `uv sync --frozen`; `uv run policyops env up --lab ch04 --profile fixture`; run the verification command; `uv run policyops fault ch04 --scenario all`; `uv run policyops env down --lab ch04`.
 - **Repository and CI:** Use `labs/ch04/manifest.toml`; primary paths are `src/policyops/model_gateway`, `config/routing.yaml`, `tests/inference`, `tests/load`, and `build/ch04`. Pull requests run `verify-ch04` plus all earlier regression gates and retain JSON, JUnit, trace, dependency, fixture, configuration, and hardware evidence.
 - **Handoff:** Compare `work/ch04` with `ed2-v1.0-ch04-solution` and register gateway, routing, cache, budget, benchmark, serving ADR, test command, and rollback evidence in `capstone/traceability.yaml`; Chapter 5 consumes the selected profile and Chapter 14 operates it under fleet failure.
-- **Proposal:** Add direct and enhanced-reasoning paths, deterministic verification, model routing, token and time budgets, and safe response caching; compare quality, latency, and cost.
+- **Proposal:** Add direct and enhanced-reasoning paths, deterministic verification, model routing, token and time budgets, and safe response caching; compare quality, latency, spend, and cost per successful outcome.
 
 ## Future extensions
 

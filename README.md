@@ -6,7 +6,7 @@ Private engineering workspace for the hands-on projects accompanying the propose
 
 ## About the book
 
-The second edition updates the design-pattern approach of the first edition for production LLM and agentic AI systems. It retains the practical foundation of the original book while substantially revising and expanding the material for modern model integration, evaluation, retrieval, agents, capability protocols, durable execution, operations, security, and governance.
+The second edition updates the design-pattern approach of the first edition for production LLM and agentic AI systems. It retains the practical foundation of the original book while substantially revising and expanding the material for modern model integration, evaluation, multimodal retrieval, browser/computer-use agents, capability protocols, durable execution, operations, security, and governance. Current protocols and frameworks are treated as examples of durable architecture patterns rather than as the book's main dependency.
 
 The planned book has 16 chapters and 480 instructional pages, with approximately 55% new or substantially revised content. Every chapter includes one executable hands-on project. The projects build a single cumulative application rather than a collection of disconnected demos.
 
@@ -19,14 +19,14 @@ The intended audience includes AI engineers, application engineers, platform eng
 The application grows chapter by chapter:
 
 - provider-neutral model and request contracts;
-- evaluation-driven development and release gates;
+- evaluation-driven development, release gates, and cost per successful outcome;
 - evidence-based adaptation and inference decisions;
 - authority-ranked context planning;
-- hybrid RAG, Graph RAG, and governed memory;
+- hybrid RAG with scanned/OCR-aware fixtures, Graph RAG, and governed memory;
 - typed tools, MCP, Agent Skills, plugins, and lifecycle hooks;
-- bounded orchestration and durable agent execution;
+- bounded orchestration, browser/computer-use fixtures, and durable agent execution;
 - observability, trace-to-evaluation improvement, and behavior canaries;
-- prompt-injection defenses, capability controls, and containment;
+- prompt-injection defenses for documents and web/tool observations, capability controls, and containment;
 - deployment, load management, fault recovery, and rollback;
 - governance, human oversight, user rights, and release evidence.
 
@@ -64,7 +64,7 @@ The future implementation is designed around these constraints:
 3. **Models propose; deterministic code controls.** Identity, authorization, policy, budgets, joins, approval, idempotency, effects, and release decisions remain outside model authority.
 4. **Evidence before release.** Every requirement maps to an architecture component and a testable acceptance criterion. Chapter artifacts feed a machine-readable capstone traceability manifest.
 5. **Failure is part of the lab.** Each project includes adversarial or degraded scenarios, verification commands, cleanup, and rollback or recovery evidence.
-6. **Security and privacy are system properties.** Tenant isolation, instruction/data separation, exact-effect approval, revocation, sandboxing, egress control, provenance, correction, export, and deletion cross component boundaries.
+6. **Security and privacy are system properties.** Tenant isolation, instruction/data separation, exact-effect approval, revocation, sandboxing, browser/profile isolation, egress control, provenance, correction, export, and deletion cross component boundaries.
 
 ## Planned implementation profile
 

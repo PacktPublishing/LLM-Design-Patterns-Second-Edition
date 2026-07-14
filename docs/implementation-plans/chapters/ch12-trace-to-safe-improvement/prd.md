@@ -4,7 +4,7 @@ This project implements the hands-on work for Chapter 12, **LLMOps, Observabilit
 
 ## Product proposal
 
-Instrument the main model, retrieval, memory, agent, approval, and tool operations; diagnose one failed trace; convert the adjudicated failure into an evaluation case; and test one prompt or routing improvement through a simulated behavior canary that automatically rolls back on regression.
+Instrument the main model, retrieval, memory, agent, browser/computer-use, approval, and tool operations; diagnose one failed trace; convert the adjudicated failure into an evaluation case; track cost per successful outcome; and test one prompt or routing improvement through a simulated behavior canary that automatically rolls back on regression.
 
 ## Problem
 
@@ -18,6 +18,7 @@ Raw traces do not create safe improvement. They may contain private data, mislea
 - Turn one expert-adjudicated production failure into a versioned evaluation case.
 - Run a bounded keep-or-revert experiment over one writable prompt or routing surface.
 - Compare candidates against a read-only hashed holdout and predeclared quality, safety, latency, and cost gates.
+- Track cost per successful outcome so a cheaper but lower-quality candidate and a more expensive but more reliable candidate can be compared honestly.
 - Behavior-canary the winning candidate and automatically revert a seeded bad release.
 
 ## Non-goals
@@ -48,10 +49,10 @@ Raw traces do not create safe improvement. They may contain private data, mislea
 ## Functional requirements
 
 - **CH12-FR-001:** A versioned artifact registry shall identify data, prompts, context policies, model adapters, indexes, memory policies, tools, skills, protocols, graders, security policies, and deployment profiles used by each run.
-- **CH12-FR-002:** One correlation ID shall link request, model, retrieval, reranking, memory, agent, handoff, approval, tool, sandbox, external-effect, and outcome spans where present.
+- **CH12-FR-002:** One correlation ID shall link request, model, retrieval, reranking, memory, agent, handoff, browser/computer-use observation/action, approval, tool, sandbox, external-effect, and outcome spans where present.
 - **CH12-FR-003:** A semantic adapter shall map provider- or framework-specific events to a stable internal schema and an OpenTelemetry-style export schema.
 - **CH12-FR-004:** Collection policy shall apply field allowlists, redaction or hashing, tenant isolation, head or tail sampling rules, and attribute-cardinality limits before export.
-- **CH12-FR-005:** SLO definitions shall cover outcome quality, p95 latency, error rate, cost budget, recovery, and high-impact action success with explicit windows and owners.
+- **CH12-FR-005:** SLO definitions shall cover outcome quality, p95 latency, error rate, cost budget, cost per successful outcome, recovery, and high-impact action success with explicit windows and owners.
 - **CH12-FR-006:** A trace-adjudication record shall classify the failure, name the expert role, capture evidence, and state whether it may graduate into an evaluation.
 - **CH12-FR-007:** Trace reconstruction shall be non-executing and shall reject any attempt to call a model, tool, sandbox, or external effect.
 - **CH12-FR-008:** The graduation pipeline shall create a versioned evaluation case linked to the redacted trace, expected outcome, adjudication, provenance, and protected split.
@@ -105,7 +106,7 @@ Deliver the semantic-field adapter, Collector configuration, artifact registry, 
 - **AC-05 (CH12-FR-011):** Given the seeded regression, when the simulated behavior canary crosses its stop condition, then accepted configuration automatically returns to the baseline.
 - **AC-06 (CH12-FR-007, CH12-SEC-006):** Given a trace that originally created a ticket, when reconstructed, then no model, tool, or effect adapter is called.
 - **AC-07 (CH12-NFR-001, CH12-NFR-002, CH12-NFR-003, CH12-NFR-004, CH12-NFR-005):** Given a clean checkout, when `verify-ch12` runs, then the deterministic profile passes without paid credentials and emits the declared evidence.
-- **AC-08 (CH12-FR-005, CH12-FR-012):** Given the accepted artifact profile, then each quality, latency, error, cost, recovery, and high-impact-action SLO has a window and owner, and the scaffold-retirement ADR records measured benefit or removes the scaffold with a rollback path.
+- **AC-08 (CH12-FR-005, CH12-FR-012):** Given the accepted artifact profile, then each quality, latency, error, cost, cost-per-successful-outcome, recovery, and high-impact-action SLO has a window and owner, and the scaffold-retirement ADR records measured benefit or removes the scaffold with a rollback path.
 
 ## Success metrics
 
@@ -114,6 +115,7 @@ Deliver the semantic-field adapter, Collector configuration, artifact registry, 
 - Cardinality limits hold for every untrusted attribute in the drill.
 - 100% of graduated cases have expert adjudication, provenance, expected behavior, and split assignment.
 - The overfit candidate and bad canary are rejected automatically.
+- Cost per successful outcome is reported for baseline and candidate runs where outcome and cost fixtures exist.
 - Telemetry-backend loss adds no request failure in the supplied outage test.
 - Non-executing reconstruction produces zero external calls.
 

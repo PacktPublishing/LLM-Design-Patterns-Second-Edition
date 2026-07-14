@@ -4,6 +4,8 @@ This package turns the approved book outline into build-ready specifications for
 
 The sequence is cumulative. Chapters 1-15 add or validate one bounded capability. Chapter 16 is represented once, in [`chapters/ch16-policyops-capstone/`](./chapters/ch16-policyops-capstone/), and integrates the accepted checkpoints. It does not introduce a new pattern.
 
+The implementation plans mirror the publisher-facing outline after the second review pass. Cost per successful outcome is introduced in Chapter 2, refined in Chapter 4, observed in Chapter 12, and integrated in the Chapter 16 capstone. Multimodal and scanned/OCR-aware retrieval appear in Chapter 6 and the capstone. Chapter 9 owns capability surfaces, including computer-use adapters; Chapter 10 owns browser/computer-use agent behavior through a fixture-based mock approval flow; Chapter 13 validates malicious document and web/tool observations.
+
 ## How to use this package
 
 For each project, read the PRD first and then its architecture document:
@@ -25,8 +27,8 @@ For each project, read the PRD first and then its architecture document:
 | 6 | Build a citation-first hybrid RAG service | [PRD](./chapters/ch06-citation-first-hybrid-rag/prd.md) | [Architecture](./chapters/ch06-citation-first-hybrid-rag/architecture.md) | Versioned retrieval, exact citations, and abstention |
 | 7 | Add graph retrieval for multi-hop questions | [PRD](./chapters/ch07-graph-retrieval/prd.md) | [Architecture](./chapters/ch07-graph-retrieval/architecture.md) | Measured graph route or documented no-use decision |
 | 8 | Add governed long-term memory | [PRD](./chapters/ch08-governed-long-term-memory/prd.md) | [Architecture](./chapters/ch08-governed-long-term-memory/architecture.md) | Consented, correctable, deletable memory lifecycle |
-| 9 | Build a secure PolicyOps extension pack | [PRD](./chapters/ch09-secure-extension-pack/prd.md) | [Architecture](./chapters/ch09-secure-extension-pack/architecture.md) | Typed tool, MCP, Agent Skill, plugin, and hooks |
-| 10 | Build a bounded orchestrator-worker flow | [PRD](./chapters/ch10-bounded-orchestrator-worker/prd.md) | [Architecture](./chapters/ch10-bounded-orchestrator-worker/architecture.md) | Topology comparison and scoped delegation |
+| 9 | Build a secure PolicyOps extension pack | [PRD](./chapters/ch09-secure-extension-pack/prd.md) | [Architecture](./chapters/ch09-secure-extension-pack/architecture.md) | Typed tool, MCP, Agent Skill, plugin, hooks, and computer-use adapter boundary |
+| 10 | Build a bounded orchestrator-worker flow | [PRD](./chapters/ch10-bounded-orchestrator-worker/prd.md) | [Architecture](./chapters/ch10-bounded-orchestrator-worker/architecture.md) | Topology comparison, scoped delegation, and fixture browser/computer-use behavior |
 | 11 | Make the agent loop resumable | [PRD](./chapters/ch11-resumable-agent-loop/prd.md) | [Architecture](./chapters/ch11-resumable-agent-loop/architecture.md) | Durable effects, replay, checkpoints, and delivery harness |
 | 12 | Turn a production trace into a safe improvement | [PRD](./chapters/ch12-trace-to-safe-improvement/prd.md) | [Architecture](./chapters/ch12-trace-to-safe-improvement/architecture.md) | Trace-to-eval learning with holdout and rollback |
 | 13 | Defend against indirect prompt injection | [PRD](./chapters/ch13-prompt-injection-defense/prd.md) | [Architecture](./chapters/ch13-prompt-injection-defense/architecture.md) | Containment, policy, and attack evidence |
@@ -54,12 +56,12 @@ Every project follows the same repository contract:
 
 The project advances by composing owned boundaries instead of reimplementing the same concern in multiple chapters:
 
-- Chapter 2 owns evaluation schemas and release thresholds; later chapters add cases to that suite.
+- Chapter 2 owns evaluation schemas, release thresholds, and cost-per-successful-outcome measurement; later chapters add cases to that suite.
 - Chapter 4 owns model routing and inference budgets; Chapter 14 operates that gateway under fleet failure.
 - Chapter 5 owns context authority and budgeting; retrieval, memory, and capabilities supply typed inputs.
 - Chapters 6 and 7 own knowledge retrieval; Chapter 8 owns user/task memory and never grants authority.
-- Chapter 9 owns capability packaging and lifecycle controls; Chapter 10 owns control topology; Chapter 11 owns durable execution.
-- Chapter 12 owns telemetry, trace-to-eval change, and behavior canaries; Chapter 13 validates security controls; Chapter 14 owns deployment and recovery; Chapter 15 owns accountable release evidence.
+- Chapter 9 owns capability packaging, lifecycle controls, and computer-use adapter boundaries; Chapter 10 owns control topology and browser/computer-use agent behavior; Chapter 11 owns durable execution.
+- Chapter 12 owns telemetry, trace-to-eval change, behavior canaries, and production outcome-cost signals; Chapter 13 validates security controls against documents, extensions, and web/tool observations; Chapter 14 owns deployment and recovery; Chapter 15 owns accountable release evidence.
 - The capstone wires those outputs together and may omit an optional pattern only through a measured, evidence-linked architecture decision.
 
 ## Definition of done

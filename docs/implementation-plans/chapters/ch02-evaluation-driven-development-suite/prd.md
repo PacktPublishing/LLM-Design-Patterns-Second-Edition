@@ -20,6 +20,7 @@ LLM teams frequently change prompts, models, data, or infrastructure before defi
 - Establish versioned task, trial, trace, grader, outcome, and failure-taxonomy schemas.
 - Maintain distinct capability, regression, adversarial, and protected-holdout collections.
 - Add cases for answer structure, citations, authorization, tool arguments, abstention, and adversarial behavior.
+- Track cost per successful outcome as a first-class comparison measure for later adaptation, inference, orchestration, and production-improvement chapters.
 - Lead with deterministic graders and calibrate one rubric grader against expert labels.
 - Run three trials for designated stochastic cases and report both first-try and repeated consistency metrics.
 - Detect grader gaming and noisy-environment failures before judging a model candidate.
@@ -56,7 +57,7 @@ LLM teams frequently change prompts, models, data, or infrastructure before defi
 - **CH02-FR-005:** Support a rubric grader adapter with a frozen replay profile for mandatory runs and an optional hosted or local profile for calibration experiments.
 - **CH02-FR-006:** Verify reference solutions and grader assertions before a case can become release-blocking.
 - **CH02-FR-007:** Run a configurable number of independent trials; require three trials for cases marked stochastic and preserve seed, fixture, configuration, and environment identifiers.
-- **CH02-FR-008:** Report pass rate, first-try pass, pass@k, pass^k, score distributions, uncertainty interval, latency, token usage, and cost where meaningful; label unavailable measures explicitly.
+- **CH02-FR-008:** Report pass rate, first-try pass, pass@k, pass^k, score distributions, uncertainty interval, latency, token usage, cost, and cost per successful outcome where meaningful; label unavailable measures explicitly.
 - **CH02-FR-009:** Diagnose each failure as candidate, task ambiguity, grader defect, fixture/infrastructure noise, or unresolved; only candidate failures count against a release after adjudication rules are applied.
 - **CH02-FR-010:** Detect grader gaming through a supplied candidate that satisfies superficial wording while violating deterministic state or citation checks.
 - **CH02-FR-011:** Enforce CI thresholds and mandatory zero-tolerance gates while keeping nondeterministic grading outside required pull-request checks.
@@ -96,7 +97,7 @@ uv run policyops eval compare --baseline ch01 --candidate work/ch02
 uv run policyops verify ch02 --profile fixture --junit build/ch02/junit.xml --evidence build/ch02
 ```
 
-Human reports show suite-level gates first, then distributions and adjudicated failure categories. Machine output carries schema version, manifest hashes, environment fingerprint, total runtime, and grader costs.
+Human reports show suite-level gates first, then distributions, adjudicated failure categories, and outcome-cost summaries. Machine output carries schema version, manifest hashes, environment fingerprint, total runtime, grader costs, and cost-per-successful-outcome inputs when available.
 
 ## Acceptance criteria and traceability
 
@@ -112,7 +113,7 @@ Human reports show suite-level gates first, then distributions and adjudicated f
 | The gaming candidate fails deterministic outcome checks. | Adversarial grader test | CH02-FR-010 |
 | A noisy trial is classified and repaired or quarantined before model judgment. | Adjudication workflow test | CH02-FR-009 |
 | Rubric calibration records agreement, variance, latency, and cost. | Frozen replay required; live adapter optional | CH02-FR-005, CH02-FR-012 |
-| Evaluation cost and runtime appear in evidence. | Report contract test | CH02-FR-008, CH02-NFR-006 |
+| Evaluation cost, runtime, and cost-per-successful-outcome inputs appear in evidence. | Report contract test | CH02-FR-008, CH02-NFR-006 |
 
 ## Success metrics
 
@@ -153,7 +154,7 @@ Primary paths are `evals/cases`, `evals/graders`, `evals/holdouts`, `tests/evals
 
 - **Starter:** `ed2-v1.0-ch02-start` with a supplied 20-case seed suite, replay fixtures, expert labels, and deliberately broken graders.
 - **Task/drill:** add at least 10 answer, citation, authorization, tool-argument, abstention, and adversarial cases; run three trials where stochastic; calibrate one rubric grader; then detect one grader-gaming candidate and one noisy-environment trial.
-- **Artifacts/acceptance:** versioned JSONL suite, deterministic and rubric graders, expert-label set, trial report, failure taxonomy, and CI gate; deterministic graders repeat exactly, risk regressions block, distributions replace single stochastic scores, and runtime/cost are recorded.
+- **Artifacts/acceptance:** versioned JSONL suite, deterministic and rubric graders, expert-label set, trial report, failure taxonomy, outcome-cost summary, and CI gate; deterministic graders repeat exactly, risk regressions block, distributions replace single stochastic scores, and runtime/cost are recorded.
 - **Environment/repository:** Python 3.12+, `uv`, optional containers, no paid credential; `labs/ch02/manifest.toml`, `evals/cases`, `evals/graders`, `evals/holdouts`, `tests/evals`, and `.github/workflows/chapter-verify.yml`.
 - **Lifecycle:** `uv sync --frozen`; `uv run policyops env up --lab ch02 --profile fixture`; `uv run policyops verify ch02 --profile fixture --junit build/ch02/junit.xml --evidence build/ch02`; `uv run policyops fault ch02 --scenario all`; `uv run policyops env down --lab ch02`.
 - **Handoff:** compare `work/ch02` with `ed2-v1.0-ch02-solution` and register task/trial/grader schemas, trace/outcome records, holdout hash, calibration, test command, CI evidence, and rollback in `capstone/traceability.yaml`.

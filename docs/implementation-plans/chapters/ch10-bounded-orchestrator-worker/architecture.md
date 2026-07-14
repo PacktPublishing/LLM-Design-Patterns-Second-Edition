@@ -4,7 +4,7 @@ This architecture implements the [Chapter 10 PRD](./prd.md). The canonical state
 
 ## Architecture goals and invariants
 
-One domain graph and set of ports support three topology adapters. Known rules run deterministically. All model and worker behavior is bounded. Delegation can narrow but never expand principal authority. Worker output is data until validated. Fan-in is deterministic. Final side effects remain behind Chapter 9 approval. Chapter 10 stores only a transient run snapshot; crash consistency and delivery mechanics are explicitly deferred.
+One domain graph and set of ports support deterministic, single-agent, browser/computer-use, and orchestrator-worker adapters. Known rules run deterministically. All model, browser, and worker behavior is bounded. Delegation can narrow but never expand principal authority. Worker output, DOM/screen observations, and browser action results are data until validated. Fan-in is deterministic. Final side effects remain behind Chapter 9 approval. Chapter 10 stores only a transient run snapshot; crash consistency and delivery mechanics are explicitly deferred.
 
 ```mermaid
 flowchart LR
@@ -13,8 +13,11 @@ flowchart LR
     Engine --> Select{Topology adapter}
     Select --> Flow[Deterministic workflow]
     Select --> Single[Single-agent adapter]
+    Select --> Browser[Browser/computer-use adapter]
     Select --> Orch[Orchestrator adapter]
     Single --> Model[Replay ModelClient]
+    Browser --> UI[Mock approval form fixture]
+    Browser --> Validate
     Orch --> Delegate[Delegation issuer]
     Delegate --> W1[Retrieval worker]
     Delegate --> W2[Validation worker]
@@ -37,6 +40,7 @@ flowchart LR
 | Budget ledger | Enforce model, token, tool, worker, concurrency, time, and retry limits monotonically. |
 | Deterministic adapter | Execute the graph using explicit rules and fixed steps only. |
 | Single-agent adapter | Request bounded decisions from `ModelClient` and translate them into validated graph events. |
+| Browser/computer-use adapter | Read fixture DOM/screen observations, perform bounded mock-form actions, and emit action traces without bypassing the secured ToolPort. |
 | Orchestrator adapter | Create independent tasks, schedule concurrency, cancel work, and feed validated results to fan-in. |
 | Delegation issuer/verifier | Canonicalize and sign tasks; verify identity, ancestry, authority, expiry, nonce, and result binding. |
 | Workers | Perform narrow retrieval or validation against scoped evidence and tool ports. |
@@ -153,9 +157,9 @@ Workers receive only scoped evidence references and allowlisted read tools. They
 
 ## Observability and evaluation
 
-OpenTelemetry spans cover state transition, guard, model decision, tool call, delegation issue/verify, worker execution, result validation, merge, human control, and optional A2A transport. Common attributes include run/variant/state IDs, task/worker IDs, budget deltas, route/decision codes, and effect/evidence hashes. Metrics include success, calls, tokens, workers, concurrency, timeouts, conflicts, merge collisions, invalid delegations, interrupts, latency, and estimated cost.
+OpenTelemetry spans cover state transition, guard, model decision, browser observation/action, tool call, delegation issue/verify, worker execution, result validation, merge, human control, and optional A2A transport. Common attributes include run/variant/state IDs, task/worker/browser IDs, budget deltas, route/decision codes, and effect/evidence hashes. Metrics include success, calls, tokens, browser actions, workers, concurrency, timeouts, conflicts, merge collisions, invalid delegations, interrupts, latency, estimated cost, and cost per successful outcome.
 
-The evaluator resets the synthetic environment and runs identical case IDs through all variants. It compares expected environment state, domain outcome, trace completeness, task success, latency, cost, and risk events. A report generator supplies evidence to a human-authored topology ADR; it does not automatically prefer multi-agent design.
+The evaluator resets the synthetic environment and runs identical case IDs through all variants. It compares expected environment state, domain outcome, trace completeness, task success, latency, cost, cost per successful outcome, supervision burden, and risk events. A report generator supplies evidence to a human-authored topology ADR; it does not automatically prefer browser/computer-use or multi-agent design.
 
 ## Deployment and local development
 
@@ -167,8 +171,9 @@ Docker Compose runs the FastAPI service, Chapter 9 ticket stub, and verifier. In
 - Model contract tests feed valid/invalid replay outputs through the single-agent adapter.
 - Property tests permute worker completion order and assert identical merged state and finite termination.
 - Integration tests run all variants against shared tools/evidence and compare environment state and telemetry schema.
-- Security tests try scope widening, forged/expired/replayed delegation, unauthorized tools, evidence substitution, and approval bypass.
-- Fault tests inject worker timeout, conflicting findings, invalid scope, merge collision, pause/cancel races, and optional A2A loss.
+- Browser/computer-use tests run the mock approval-form fixture with valid, stale, and profile-mismatched observations.
+- Security tests try scope widening, forged/expired/replayed delegation, unauthorized tools, evidence substitution, DOM/screen confusion, and approval bypass.
+- Fault tests inject worker timeout, conflicting findings, invalid scope, merge collision, browser/profile mismatch, pause/cancel races, and optional A2A loss.
 
 ## Architecture decisions and trade-offs
 
@@ -192,7 +197,7 @@ Docker Compose runs the FastAPI service, Chapter 9 ticket stub, and verifier. In
 | Architecture area | PRD requirements |
 |---|---|
 | State graph and workflow | CH10-FR-001, CH10-FR-002, CH10-FR-009, CH10-NFR-003 |
-| Single/orchestrator adapters | CH10-FR-003, CH10-FR-004, CH10-NFR-001, CH10-NFR-005 |
+| Single/browser/orchestrator adapters | CH10-FR-003, CH10-FR-004, CH10-FR-004A, CH10-NFR-001, CH10-NFR-005 |
 | Delegation and authority | CH10-FR-005, CH10-FR-006, CH10-SEC-001, CH10-SEC-002, CH10-SEC-006 |
 | Validation, merge, failure | CH10-FR-007, CH10-FR-008, CH10-SEC-003 |
 | A2A and comparison | CH10-FR-010, CH10-FR-011, CH10-NFR-002, CH10-NFR-004 |

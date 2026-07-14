@@ -13,7 +13,7 @@ Hybrid passage retrieval works well for local facts but can miss questions whose
 - Combine graph candidates with Chapter 6 evidence without losing provenance or authorization.
 - Retain contradictory claims and effective dates rather than silently collapsing them.
 - Apply corrections, supersession, and deletion through an atomic incremental updater.
-- Produce a graph-versus-standard-RAG decision record based on quality, latency, and cost by query class.
+- Produce a graph-versus-standard-RAG decision record based on quality, latency, total cost, and cost per successful answer by query class.
 
 ## Non-goals
 
