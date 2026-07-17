@@ -1,0 +1,20 @@
+chapter = "ch13"
+title = "Defend Against Indirect Prompt Injection"
+base_tag = "ed2-v1.0-ch13-start"
+profile = "fixture"
+verify = "uv run policyops verify ch13 --profile fixture --junit build/ch13/junit.xml --evidence build/ch13"
+fault = "uv run policyops fault ch13 --scenario all"
+
+[artifacts]
+source = "src/policyops/security"
+tests = "tests/security"
+evidence = "build/ch13"
+design = "docs/implementation-plans/chapters/ch13-prompt-injection-defense/design.md"
+
+[gates]
+unauthorized_high_impact_effects = 0
+secret_leaks = 0
+revoked_invocations_allowed = 0
+benign_false_positive_rate_max = 0.10
+stable_mcp_auth_passed = true
+rc_mcp_auth_passed = true

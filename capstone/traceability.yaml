@@ -383,3 +383,57 @@ chapters:
     rollback: remove src/policyops/telemetry, labs/ch12, tests/telemetry, and restore capstone traceability to ch01-ch11 only
     decision: GO
     notes: Fixture profile demonstrates semantic telemetry, pre-export minimization, artifact lineage, expert adjudication, trace-to-eval graduation, protected experiments, cost per successful outcome, behavior-canary rollback, outage tolerance, no-effect reconstruction, and harness-retirement evidence.
+  ch13:
+    status: accepted_fixture
+    checkpoint: work/ch13
+    contracts:
+      - ThreatModelEntry
+      - ContentEnvelope
+      - Principal
+      - AuthorizationQuery
+      - AuthorizationDecision
+      - CanonicalPreview
+      - ApprovalRecord
+      - CapabilityGrant
+      - SandboxProfile
+      - OutboundRequest
+      - EgressDecision
+      - SecretLease
+      - IntegrityRecord
+      - McpAuthResult
+      - AttackCase
+      - AttackResult
+      - IncidentRecord
+      - SecurityReport
+    evidence:
+      - threat_model.json
+      - attack_corpus.json
+      - authorization_policy.json
+      - sandbox_profile.json
+      - sbom.json
+      - integrity_allowlist.json
+      - security_report.json
+      - mcp_authorization.json
+      - incident_playbook.json
+      - residual_risks.json
+      - security_events.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/security
+      - tests/telemetry
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch13 --profile fixture --junit build/ch13/junit.xml --evidence build/ch13
+    rollback: remove src/policyops/security, labs/ch13, tests/security, and restore capstone traceability to ch01-ch12 only
+    decision: GO
+    notes: Fixture profile demonstrates threat modeling, provenance labels, identity-first authorization, exact-preview approval, sandbox and egress denial, secret minimization, integrity and revocation checks, MCP stable/RC authorization fixtures, incident containment, residual-risk evidence, and benign-neighbor false-positive control.

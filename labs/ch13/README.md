@@ -1,0 +1,40 @@
+# Chapter 13 Lab: Defend Against Indirect Prompt Injection
+
+This lab attacks the composed PolicyOps system with malicious documents, malicious web/tool observations, approval attacks, egress probes, sandbox probes, revoked extensions, MCP authorization mistakes, and benign near-neighbors.
+
+## What you build
+
+- A versioned threat model and frozen attack corpus.
+- Provenance and trust metadata for untrusted content.
+- An identity-first policy decision point.
+- Exact-preview approval verification.
+- Capability, sandbox, egress, secret, integrity, and revocation controls.
+- Stable and release-candidate MCP authorization tests.
+- A redacted security report, residual-risk record, and incident playbook.
+
+## Run
+
+```bash
+uv run policyops verify ch13 --profile fixture --junit build/ch13/junit.xml --evidence build/ch13
+uv run policyops fault ch13 --scenario all
+```
+
+## Evidence
+
+The verification command writes:
+
+- `threat_model.json`
+- `attack_corpus.json`
+- `authorization_policy.json`
+- `sandbox_profile.json`
+- `sbom.json`
+- `integrity_allowlist.json`
+- `security_report.json`
+- `mcp_authorization.json`
+- `incident_playbook.json`
+- `residual_risks.json`
+- `security_events.json`
+
+## Production lesson
+
+Prompt injection defense is not a better prompt. The production pattern is to separate instructions from data, authenticate identity outside the model, authorize capabilities outside the model, bind approval to exact effects, deny undeclared filesystem and network access, keep secrets out of model-visible channels, and treat every security claim as scoped evidence.
