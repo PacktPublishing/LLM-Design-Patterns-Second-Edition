@@ -126,3 +126,33 @@ chapters:
     rollback: remove src/policyops/context, labs/ch05, tests/context, and restore capstone traceability to ch01-ch04 only
     decision: GO
     notes: Fixture profile demonstrates authority-ranked context planning, lazy materialization, compaction, stable-prefix fingerprints, redacted manifests, and token reduction without external retrieval or memory services.
+  ch06:
+    status: accepted_fixture
+    checkpoint: work/ch06
+    contracts:
+      - Principal
+      - SourceVersion
+      - Span
+      - CitationRef
+      - EvidenceItem
+      - EvidencePack
+      - LifecycleReceipt
+      - RetrievalScorecard
+    evidence:
+      - evidence_packs.jsonl
+      - scorecard.json
+      - freshness_receipts.json
+      - retrieval_faults.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch06 --profile fixture --junit build/ch06/junit.xml --evidence build/ch06
+    rollback: remove src/policyops/retrieval, labs/ch06, tests/retrieval, and restore capstone traceability to ch01-ch05 only
+    decision: GO
+    notes: Fixture profile demonstrates authorization-first hybrid retrieval, citation resolution, table/OCR lineage, deletion and replacement receipts, poison exclusion, timeout abstention, and Chapter 5 context-source compatibility.

@@ -164,6 +164,7 @@ def verify(
         "ch03": ["tests/adaptation", "tests/boundary"],
         "ch04": ["tests/inference", "tests/contract", "tests/boundary"],
         "ch05": ["tests/context", "tests/inference", "tests/contract", "tests/boundary"],
+        "ch06": ["tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
 
     cmd = [
@@ -216,6 +217,11 @@ def verify(
 
         payload = run_context_verification(evidence_dir)
         eval_ok = payload["passed"] is True
+    elif lab == "ch06" and result.returncode == 0:
+        from policyops.retrieval import run_retrieval_verification
+
+        payload = run_retrieval_verification(evidence_dir)
+        eval_ok = payload["gates_passed"] is True
 
     settings_fingerprint = None
     fixture_hash = _tree_hash(_fixture_pack(lab))

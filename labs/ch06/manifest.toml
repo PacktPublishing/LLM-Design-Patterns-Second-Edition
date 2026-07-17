@@ -1,0 +1,14 @@
+[lab]
+id = "ch06"
+title = "Citation-First Hybrid RAG"
+profile = "fixture"
+requires = ["ch01", "ch02", "ch03", "ch04", "ch05"]
+
+[commands]
+verify = "uv run policyops verify ch06 --profile fixture --junit build/ch06/junit.xml --evidence build/ch06"
+fault = "uv run policyops fault ch06 --scenario all"
+
+[artifacts]
+source = ["src/policyops/retrieval"]
+tests = ["tests/retrieval"]
+evidence = ["build/ch06/evidence_packs.jsonl", "build/ch06/scorecard.json", "build/ch06/freshness_receipts.json", "build/ch06/retrieval_faults.json"]
