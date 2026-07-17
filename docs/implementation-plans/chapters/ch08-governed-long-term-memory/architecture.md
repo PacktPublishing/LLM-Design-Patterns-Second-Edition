@@ -128,7 +128,7 @@ The benchmark replays labeled sessions with a fake clock and compares no-memory 
 
 ## Deployment and local development
 
-Docker Compose runs the non-root FastAPI service and pinned PostgreSQL. The API and maintenance commands share one image but use separate database roles. Background expiry/consolidation may run as a short-lived scheduled command; no always-on queue or Redis is required. The fixture profile uses deterministic ranking. Optional vector or hosted-model adapters are configured at runtime, with secrets outside repository and model-visible context. Exact versions are locked at kickoff.
+Docker Compose runs the non-root FastAPI service and pinned PostgreSQL. The API and maintenance commands share one image but use separate database roles. `policyops memory seed|verify|benchmark` is a thin CLI over the same application ports used by the API and fixture verifier; it owns no separate policy or persistence behavior. Background expiry/consolidation may run as a short-lived scheduled command; no always-on queue or Redis is required. The fixture profile uses deterministic ranking. Optional vector or hosted-model adapters are configured at runtime, with secrets outside repository and model-visible context. Exact versions are locked at kickoff.
 
 ## Testing strategy
 

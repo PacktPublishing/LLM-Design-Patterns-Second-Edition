@@ -74,6 +74,8 @@ class EgressPolicy(Protocol):
 
 `AuthorizationQuery.from_run_context(run_context, action, resource, destination)` is the only supported identity construction path. It preserves the Chapter 1 request/trace, actor, tenant, roles/scopes, data classification, configuration, deadline, and budget fields, then adds action-specific risk and destination metadata. Chapter 13 uses the Chapter 9 `ExtensionRegistry`, `RevocationStore`, and `ApprovalRecordStore` ports; the policy layer validates them but does not create competing lifecycle stores.
 
+The HTTP MCP authorization adapter keeps protocol authentication separate from application authorization. Its stable `2025-11-25` fixture discovers protected-resource metadata, uses authorization code with PKCE, binds tokens to the MCP resource audience, and rejects downstream token passthrough. The opt-in `2026-07-28` release-candidate fixture also validates the authorization-server issuer (`iss`) and binds registered client credentials to the issuing authorization server. Profile selection is explicit, versioned evidence; release-candidate checks cannot silently redefine the stable gate.
+
 ```json
 {
   "principal": {"actor_id": "user-42", "tenant_id": "tenant-a", "roles": ["policy-reader"], "authn_strength": "fixture-mfa"},
@@ -134,6 +136,7 @@ The egress proxy is the only routable outbound path. It rejects plaintext destin
 - **Tenant boundary:** tenant predicates apply in retrieval, memory, trace, policy, approval, and tool stores.
 - **Authority boundary:** system/developer controls stay in distinct message and data structures from evidence.
 - **Extension boundary:** packages remain data until integrity, allowlist, trust, and revocation checks succeed.
+- **MCP authorization boundary:** a valid connection token does not authorize a tool, resource, tenant, data class, or effect; resource audience, profile-specific issuer rules, and backend policy are checked independently.
 - **Credential boundary:** secret broker writes ephemeral credentials directly to an authorized process channel, never model context.
 - **Effect boundary:** Chapter 11 idempotency and approval checks combine with current policy and egress grants.
 - **Evidence boundary:** field allowlists and fingerprints preserve auditability without copying secrets.
@@ -158,6 +161,7 @@ The project uses Python 3.12+, `uv`, FastAPI, Pydantic, pytest, OpenTelemetry, P
 
 - **Unit:** canonical preview, policy rule evaluation, obligations, redaction, destination normalization.
 - **Contract:** authorization queries, capability and egress grants, integrity records, security events.
+- **Protocol security:** stable MCP audience/PKCE/no-token-passthrough tests plus profile-gated release-candidate issuer and client-registration binding tests.
 - **Integration:** sandbox mounts and user, proxy routing, secret broker channel, revocation propagation.
 - **Adversarial:** all frozen injection, poisoning, privilege, exfiltration, tamper, resource, and duplicate cases.
 - **Privacy:** canary secret scans across prompts, outputs, logs, traces, evidence, and build artifacts.
@@ -188,6 +192,6 @@ The project uses Python 3.12+, `uv`, FastAPI, Pydantic, pytest, OpenTelemetry, P
 | CH13-FR-001, CH13-FR-002, CH13-FR-003 | Threat model, provenance wrapper, instruction/data separator |
 | CH13-FR-004, CH13-FR-005 | Policy decision point, approval verifier, canonical preview |
 | CH13-FR-006, CH13-FR-007, CH13-FR-008, CH13-FR-009 | Sandbox, egress, secret and capability brokers, integrity and revocation |
-| CH13-FR-010, CH13-FR-011, CH13-FR-012 | Attack harness, evidence adapter, quarantine and incident workflow |
+| CH13-FR-010, CH13-FR-011, CH13-FR-012, CH13-FR-013 | Attack harness, evidence adapter, quarantine and incident workflow, versioned MCP authorization tests |
 | CH13-NFR-001, CH13-NFR-002, CH13-NFR-003, CH13-NFR-004, CH13-NFR-005, CH13-NFR-006 | Deterministic Linux profile, stable reason codes, fail-closed behavior, SBOM, scoped claims |
 | CH13-SEC-001, CH13-SEC-002, CH13-SEC-003, CH13-SEC-004, CH13-SEC-005, CH13-SEC-006 | Tenant enforcement, trifecta break, denied access, narrow grants, secret minimization, frozen thresholds |

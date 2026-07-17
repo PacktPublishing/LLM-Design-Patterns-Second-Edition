@@ -4,7 +4,7 @@ This architecture implements the [Chapter 9 PRD](./prd.md). It exposes one bound
 
 ## Architecture goals and invariants
 
-The typed `ToolPort` is canonical; MCP, skill, plugin, and host adapters add interoperability, guidance, packaging, and lifecycle integration without changing authorization semantics. Every mutation reaches one final policy boundary. A skill teaches but cannot enforce or grant capability. Hooks are deterministic, bounded, and non-recursive. Packages are verified before execution and can be disabled, rolled back, or revoked. The fixture path is local and credential-free.
+The typed `ToolPort` is canonical; MCP, skill, plugin, and host adapters add interoperability, guidance, packaging, and lifecycle integration without changing authorization semantics. The host is the application and policy boundary and creates clients for admitted server connections. MCP tools are model-controlled, resources application-controlled, and prompts user-controlled for selection purposes; none of those control labels grants authorization. Every mutation reaches one final policy boundary. A skill teaches but cannot enforce or grant capability. Hooks are deterministic, bounded, and non-recursive. Packages are verified before execution and can be disabled, rolled back, or revoked. The fixture path is local and credential-free.
 
 ```mermaid
 flowchart LR
@@ -81,13 +81,15 @@ class ApprovalRecordStore(Protocol):
     ) -> ApprovalDecision: ...
 ```
 
-`ToolPort.preview(input, context: RunContext) -> EffectPreview` has no side effect; `context` is the canonical Chapter 1 envelope, not a second identity schema. `ToolPort.execute(preview, approval, idempotency_key, context: RunContext) -> TicketResult` re-canonicalizes the input and, at the final effect boundary, compares current actor, tenant, purpose, scopes, configuration, approval, and revocation state before validating the hash. The repository stores `(tenant_id, operation, idempotency_key, request_hash, result)` atomically.
+`ToolPort.preview_policy_ticket(input, context: RunContext) -> EffectPreview` has no side effect; `context` is the canonical Chapter 1 envelope, not a second identity schema. `ToolPort.create_policy_ticket(preview, approval, idempotency_key, context: RunContext) -> TicketResult` re-canonicalizes the input and, at the final effect boundary, compares current actor, tenant, purpose, scopes, configuration, approval, and revocation state before validating the hash. The repository stores `(tenant_id, operation, idempotency_key, request_hash, result)` atomically.
 
 `CapabilityContextSource` implements the frozen Chapter 5 `ContextSource.summaries()` and `materialize()` contract for allowlisted capability schemas and safe help. It exposes impact, input schema, availability, version, provenance, sensitivity, and token estimates, but never secrets, approval tokens, runtime grants, or mutation results. Tool invocation remains exclusively behind `ToolPort`; context materialization cannot execute a capability.
 
 The MCP tool schema mirrors the Pydantic-generated JSON Schema. Domain errors such as `APPROVAL_REQUIRED`, `APPROVAL_STALE`, `EFFECT_MISMATCH`, `EXTENSION_REVOKED`, and `HOOK_TIMEOUT` are mapped to protocol-safe error data. Skill files never contain tokens or privileged commands.
 
 The plugin manifest includes ID, version, build/source provenance, minimum/maximum host contract, MCP protocol profile, entry points, file hashes, requested filesystem/network/process permissions, skill/hook IDs, signing key ID, and rollback-compatible predecessor.
+
+The required compatibility profile is MCP stable `2025-11-25`. The announced breaking `2026-07-28` release candidate is a separate opt-in profile, never an automatic upgrade. The compatibility layer version-gates transport and session behavior, Tasks and Apps extensions, sampling and logging, schemas, and authorization. Workflow progress, approvals, idempotency records, subscriptions, and resumable results live in explicit application stores even when a transport is stateless or sessionless.
 
 ## Runtime sequence
 
@@ -150,12 +152,13 @@ The verifier drives direct and MCP calls through the same contract suite, evalua
 
 ## Deployment and local development
 
-Docker Compose runs the ticket stub, local HTTPS MCP service, development issuer, and verifier; stdio mode can run directly through the same image. Containers use non-root users, read-only roots, explicit volumes, and a private network. The test CA and ephemeral signing material are generated per run outside source control and removed during cleanup. The required replay profile needs no model. Exact MCP SDK/protocol and host contract versions are pinned in the lockfile and manifest at kickoff, not predicted here.
+Docker Compose runs the ticket stub, local HTTPS MCP service, development issuer, and verifier; stdio mode can run directly through the same image. Containers use non-root users, read-only roots, explicit volumes, and a private network. The test CA and ephemeral signing material are generated per run outside source control and removed during cleanup. The required replay profile needs no model. The lockfile and manifest pin the stable `2025-11-25` MCP SDK/protocol profile; the `2026-07-28` release-candidate fixture is isolated behind an explicit compatibility flag and may not change the required stable gate.
 
 ## Testing strategy
 
 - Unit tests cover schema/semantic validation, canonical hashes, approval claims, reason codes, idempotency, manifest canonicalization, and hook bounds.
 - Contract tests run direct, stdio MCP, and HTTPS MCP adapters against identical fixtures.
+- Compatibility tests prove the stable profile, reject unsupported feature negotiation, keep the release-candidate profile opt-in, and preserve explicit application state across transport/session replacement.
 - Skill tests measure activation precision/recall and validate progressive references and negative examples.
 - Integration tests cover preview/approval/create, outbox delivery, install/stage/activate/rollback, and live revocation.
 - Security tests inject metadata/results, inspect redaction, try path traversal, excessive permissions, token/audience confusion, unsigned/tampered packages, and alternate-path bypass.
@@ -186,5 +189,5 @@ Docker Compose runs the ticket stub, local HTTPS MCP service, development issuer
 | MCP and skill | CH09-FR-003, CH09-FR-004, CH09-NFR-002 |
 | Package and loader | CH09-FR-005, CH09-FR-008, CH09-FR-009, CH09-NFR-004, CH09-SEC-005 |
 | Hooks and common port | CH09-FR-006, CH09-FR-007, CH09-FR-010, CH09-SEC-006 |
-| Compatibility and fixtures | CH09-FR-011, CH09-NFR-001, CH09-NFR-005 |
+| Compatibility, versioned profiles, explicit state, and fixtures | CH09-FR-011, CH09-FR-012, CH09-NFR-001, CH09-NFR-005 |
 | Sandbox, secrets, telemetry | CH09-NFR-003, CH09-SEC-001, CH09-SEC-002, CH09-SEC-003, CH09-SEC-007 |

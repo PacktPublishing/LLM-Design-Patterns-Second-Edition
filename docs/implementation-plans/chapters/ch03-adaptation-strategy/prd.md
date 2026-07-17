@@ -33,6 +33,7 @@ Teams often fine-tune before measuring a baseline, mix evaluation examples into 
 - Optimizing online routing, batching, quantization, or provider failover.
 - Claiming that a small lab dataset demonstrates broad fairness or real-world safety.
 - Choosing an intervention after seeing protected-test results without recording a new experiment version.
+- Implementing preference/outcome optimization or a broad multi-model selection scorecard in the core lab; those patterns are discussed in the chapter, while the hands-on comparison is limited to baseline, prompt, retrieval replay, and the supplied lightweight adapter.
 
 ## Users
 

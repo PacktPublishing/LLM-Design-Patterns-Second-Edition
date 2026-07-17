@@ -37,7 +37,7 @@ flowchart LR
 |---|---|
 | Triage API | Validate run/control requests, authenticate principal, and expose state/version. |
 | Canonical state graph | Own typed states, deterministic guards, transitions, joins, interrupts, and terminal outcomes. |
-| Budget ledger | Enforce model, token, tool, worker, concurrency, time, and retry limits monotonically. |
+| Budget ledger | Atomically reserve and release run-local model, token, tool, worker, concurrency, time, spend, and retry capacity; emit typed `capacity_unavailable`. |
 | Deterministic adapter | Execute the graph using explicit rules and fixed steps only. |
 | Single-agent adapter | Request bounded decisions from `ModelClient` and translate them into validated graph events. |
 | Browser/computer-use adapter | Read fixture DOM/screen observations, perform bounded mock-form actions, and emit action traces without bypassing the secured ToolPort. |
@@ -96,6 +96,8 @@ class DelegatedTask(BaseModel):
 
 `TopologyAdapter.advance(state, event, ports) -> TransitionResult` may emit only events declared by the state graph. `WorkerPort.execute(task) -> WorkerResult` is implemented in process in the core; the A2A adapter serializes the same envelope. `MergePolicy.merge(expected_tasks, results) -> MergeResult` sorts by task ID and stable finding key, so arrival order cannot change state.
 
+Before a fan-out transition, `BudgetLedger.reserve_group(specs)` atomically reserves the full group across worker slots, concurrent tasks, model calls, tokens, tools, time, and spend. Failure returns `capacity_unavailable` before any worker starts and routes to the declared simpler topology, human review, or terminal failure. Join, cancellation, or failed start releases unused reservations deterministically; consumed capacity remains monotonic. This is run-local topology admission only. Chapter 14 owns fleet queues, tenant fairness, service-entry overload, and provider capacity operations.
+
 `PrincipalRef` is a narrow server-local view of the canonical Chapter 1 `RunContext`, not a lossless or independently trusted identity token. The API alone constructs it and binds `run_context_hash`; a worker may only narrow roles, scopes, evidence, tools, budgets, and expiry. Before a delegated task crosses a worker, process, network, or A2A trust boundary, the issuer and receiver rehydrate and reauthorize the full `RunContext` by hash, then validate the signed narrowing. Model responses use a tiny discriminated union such as `request_tool`, `submit_finding`, `request_review`, or `finish`; unrecognized actions fail validation. The `ToolPort` remains the secured Chapter 9 interface.
 
 ## Data and state
@@ -150,6 +152,7 @@ Workers receive only scoped evidence references and allowlisted read tools. They
 - The run-start idempotency key returns the existing run for the same request hash.
 - State version prevents simultaneous controls or worker completions from overwriting each other. Losers reload and re-evaluate the current state.
 - Worker timeout triggers cancellation and a typed `timed_out` result. A single retry is permitted only for read-only/idempotent tasks and consumes a new budget entry.
+- A fan-out group that cannot reserve its full run-local budget emits `capacity_unavailable`; partial spawn is forbidden and unused reservations are released on every join/cancel path.
 - Conflicting findings remain separate with provenance; no confidence average silently resolves them.
 - Stable merge keys and sorted task IDs make fan-in deterministic. A key collision with different payload hashes transitions to review.
 - Budget exhaustion is a terminal or review transition, never an implicit reset.
@@ -168,6 +171,7 @@ Docker Compose runs the FastAPI service, Chapter 9 ticket stub, and verifier. In
 ## Testing strategy
 
 - Unit tests cover transition tables, guards, budgets, deterministic routes, delegation canonicalization/signatures, result validation, and merge ordering.
+- Property tests cover atomic fan-out reservation, no partial spawn, monotonic consumption, and release of unused capacity after join or cancellation.
 - Model contract tests feed valid/invalid replay outputs through the single-agent adapter.
 - Property tests permute worker completion order and assert identical merged state and finite termination.
 - Integration tests run all variants against shared tools/evidence and compare environment state and telemetry schema.

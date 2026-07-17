@@ -60,6 +60,7 @@ A model cannot reliably distinguish trusted instructions from hostile text by wo
 - **CH13-FR-010:** The attack harness shall run supplied injection, malicious web/tool observation, retrieval and memory poisoning, privilege escalation, exfiltration, extension tampering, duplicate-effect, resource exhaustion, prohibited-content, and benign near-neighbor cases.
 - **CH13-FR-011:** Security events shall record redacted evidence for identity, authorization, approval, sandbox, egress, integrity, revocation, and postcondition decisions using Chapter 12's semantic fields.
 - **CH13-FR-012:** The incident workflow shall support containment, capability revocation, session quarantine, evidence preservation, recovery, and promotion of confirmed failures into regression cases.
+- **CH13-FR-013:** HTTP-based MCP authorization tests shall validate protected-resource discovery, authorization-code flow with PKCE, resource audience, and rejection of token passthrough under the stable `2025-11-25` profile. A separate opt-in `2026-07-28` release-candidate profile shall additionally validate authorization-server issuer (`iss`) and bind registered client credentials to that issuer without making release-candidate behavior a stable-profile requirement.
 
 ## Non-functional requirements
 
@@ -106,6 +107,7 @@ Deliver the threat model, frozen attack corpus, authorization and egress policy 
 - **AC-05 (CH13-FR-010, CH13-SEC-006):** Given the frozen corpus, when security verification runs, then no high-impact attack creates an unauthorized effect, prohibited cases fail safely, and the benign false-positive ceiling holds.
 - **AC-06 (CH13-FR-011, CH13-FR-012):** Given a detected attack, when containment runs, then the session is quarantined, capability is revoked, redacted evidence is preserved, and a regression record is produced.
 - **AC-07 (CH13-NFR-001, CH13-NFR-002, CH13-NFR-003, CH13-NFR-004, CH13-NFR-005, CH13-NFR-006):** Given a clean checkout, when the fixture verifier runs, then it requires no paid credentials, produces the declared evidence, and states only the tested isolation claims.
+- **AC-08 (CH13-FR-013, CH13-SEC-004):** Given stable and release-candidate MCP authorization fixtures, wrong resource audience and token passthrough always fail; issuer mismatch and issuer-bound client-credential substitution additionally fail only in the explicitly selected release-candidate profile.
 - **AC-08 (CH13-FR-001):** Given the versioned threat model, every supplied attack and benign neighbor resolves to an asset, actor, entry point, trust boundary, autonomy tier, abuse case, control, test ID, result, and residual-risk owner; an unmapped high-impact case fails the security gate.
 
 ## Success metrics

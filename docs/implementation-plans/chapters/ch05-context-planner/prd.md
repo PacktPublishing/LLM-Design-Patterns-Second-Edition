@@ -62,6 +62,7 @@ Large prompts often mix policy with untrusted documents, include irrelevant hist
 - **CH05-FR-010:** Detect missing required facts, conflicting high-authority instructions, impossible token plans, secret-bearing content, and unsafe trust transitions; reject, compact, or abstain with typed reasons.
 - **CH05-FR-011:** Produce deterministic context snapshots, an inclusion/exclusion manifest, token report, stable-prefix report, and A/B traces against the monolithic baseline.
 - **CH05-FR-012:** Execute drills for a secret, conflicting instruction, oversized tool result, missing fact, lost-in-the-middle distractor, and silent-truncation attempt.
+- **CH05-FR-013:** Normalize the supplied image/table observation fixture into a typed, provenance-bearing observation before planning; raw multimodal bytes and model- or tool-supplied instructions shall not enter the rendered context as trusted instructions.
 
 ## Non-functional requirements
 
@@ -83,7 +84,7 @@ Large prompts often mix policy with untrusted documents, include irrelevant hist
 
 ## Fixtures and data
 
-The starter includes a long prompt, typed `EvidenceSource` and `CapabilitySource` fixtures, current-conversation records, oversized tool-output fixtures, and expected context snapshots. A `MemorySource` fixture demonstrates the port but does not persist or claim authority. Evidence includes verified, stale, unauthorized, conflicting, and missing-fact cases. A frozen tokenizer implementation ensures deterministic counts, while optional adapters can compare another tokenizer/model.
+The starter includes a long prompt, typed `EvidenceSource` and `CapabilitySource` fixtures, current-conversation records, oversized and tool-overload fixtures, one synthetic image/table observation with extracted coordinates and provenance, and expected context snapshots. A `MemorySource` fixture demonstrates the port but does not persist or claim authority. Evidence includes verified, stale, unauthorized, conflicting, and missing-fact cases. A frozen tokenizer implementation ensures deterministic counts, while optional adapters can compare another tokenizer/model.
 
 Each item carries an opaque tenant, source version/hash, authority and trust label, sensitivity, timestamp/freshness, token estimate, and required/optional flag. Secret fixtures use obvious synthetic markers and must never appear in generated evidence.
 
@@ -112,7 +113,8 @@ uv run policyops verify ch05 --profile fixture --junit build/ch05/junit.xml --ev
 | Evidence, memory, and capability fixture adapters pass the same summary/materialization contract without gaining authority. | Parametrized source-port contract tests | CH05-FR-004 |
 | Only task-relevant selected IDs are materialized, and every source call and content hash appears in the manifest. | Spy-source lazy-loading and manifest assertions | CH05-FR-006 |
 | Rendered context binds the Chapter 1 answer schema; refusal and repair stop at the declared attempt limit. | Structured-output, refusal, invalid-repair, and attempt-budget tests | CH05-FR-009 |
-| Secret, conflict, oversized result, missing fact, distractor, and truncation drills each produce the declared safe outcome. | Parameterized chapter fault runner | CH05-FR-012 |
+| Secret, conflict, oversized result, tool overload, missing fact, distractor, and truncation drills each produce the declared safe outcome. | Parameterized chapter fault runner | CH05-FR-012 |
+| The supplied multimodal observation becomes a typed, budgeted, provenance-bearing observation; raw bytes or embedded instructions never become authority. | Normalization schema, coordinate/provenance, and injection tests | CH05-FR-013, CH05-SEC-001, CH05-SEC-004 |
 | Fixed inputs produce identical plans, manifests, snapshots, and fingerprints. | Two-run canonical diff | CH05-FR-001, CH05-NFR-001 |
 | Required evidence remains or planning fails explicitly. | Budget and truncation property tests | CH05-FR-005, CH05-FR-010, CH05-NFR-005 |
 | Untrusted instructions never become policy or authorization. | Trust-order/injection tests | CH05-FR-003, CH05-SEC-001, CH05-SEC-004 |

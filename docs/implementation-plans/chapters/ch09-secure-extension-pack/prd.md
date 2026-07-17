@@ -24,7 +24,7 @@ Teams often package every new behavior as an “agent,” blurring the differenc
 | Agent Skill | Repeatable workflow knowledge, examples, scripts, and references should load progressively | Teach when and how to draft, preview, approve, and create a ticket | Deterministic enforcement or a privileged mutation is required |
 | Plugin | A versioned bundle of related skill, MCP config, hooks, agents, and assets must be installed/distributed together | Distribute the PolicyOps ticket extension to one reference host | A personal/project-local experiment needs only standalone files |
 | Lifecycle hook | A bounded deterministic check or side effect must run at a named event | Block stale approval before action; write redacted evidence after action | Open-ended judgment, hidden agent loops, or long-running orchestration is needed |
-| Computer-use adapter | A host exposes screen, DOM, or browser observations as a capability surface | Provide a fixture adapter that lets Chapter 10 fill a mock approval form under policy | A stable API or typed tool is available, or the adapter would bypass approval and audit controls |
+| Computer-use adapter | A host exposes screen, DOM, or browser observations as a capability surface | Document the secured capability boundary; Chapter 10 builds the mock approval-form fixture | A stable API or typed tool is available, or the adapter would bypass approval and audit controls |
 
 ## Non-goals
 
@@ -62,6 +62,8 @@ Teams often package every new behavior as an “agent,” blurring the differenc
 - **CH09-FR-009 — Lifecycle controls:** Support list, enable, disable, stage, activate, rollback, and revoke; revocation prevents new loads and calls while preserving minimal audit evidence.
 - **CH09-FR-010 — Alternate-path coverage:** Direct tool, MCP, skill-driven host flow, and plugin entry point must converge on the same authorization and hook-enforcement boundary.
 - **CH09-FR-011 — Compatibility notes:** Record which concepts map cleanly to a second compatible host and where activation, packaging, hooks, or permissions differ, without implementing that host.
+
+- **CH09-FR-012 — Versioned MCP profiles and explicit state:** Ship the required lab against the stable `2025-11-25` profile, record the announced breaking `2026-07-28` release-candidate profile as an opt-in compatibility target, and version-gate transport/session behavior, Tasks/Apps extensions, sampling/logging, schemas, and authorization. Persist workflow, approval, idempotency, subscription, and resumable-result state explicitly even when the selected transport is stateless or sessionless.
 
 ## Non-functional requirements
 
@@ -105,13 +107,15 @@ Fixtures include a local ticket service, `ToolPort`, stdio and HTTPS clients, de
 8. Given direct, stdio-MCP, and HTTPS-MCP fixture clients, all transports pass the same tool contract; the signed one-host plugin installs the declared skill, hooks, schemas, and permissions; and the compatibility report names the concrete activation, packaging, hook, and permission gaps for a second host (`CH09-FR-003`, `CH09-FR-005`, `CH09-FR-011`).
 9. Given the Chapter 5 planner, `CapabilityContextSource` passes the shared two-phase source contract and exposes only allowlisted schema/help metadata; it never reveals a secret, approval, grant, or mutation result and cannot invoke the tool (`CH09-FR-001`, `CH09-FR-010`, `CH09-SEC-002`).
 
+10. Given stable and release-candidate compatibility fixtures, the required stable profile passes, the release candidate runs only when explicitly selected, unsupported negotiated features fail closed, and application state survives transport/session replacement (`CH09-FR-003`, `CH09-FR-012`).
+
 ## Success metrics
 
 Report tool/MCP contract pass rate, skill activation precision/recall and corpus hash, unauthorized mutation count, idempotency violations, approval reason distribution, package verification failures, revocation propagation, hook p50/p95/timeout rates, redaction failures, update/rollback success, and trace completeness. Hard gates are activation precision at least 0.95, recall at least 0.90, zero unauthorized tickets, zero secret exposure, one effect per idempotency key, and no load of tampered or revoked code.
 
 ## Prerequisites and dependencies
 
-Use Python 3.12+, `uv`, FastAPI, Pydantic, pytest, OpenTelemetry, Docker Compose, pinned MCP SDK/protocol fixtures, ticket stub, test CA, ephemeral signing keys, local HTTPS endpoint, and development issuer. Consume the canonical Chapter 1 `RunContext` and Chapter 8 memory/context adapter, but never derive authority from memory. No PostgreSQL or Redis is required for the core ticket stub; the audit/idempotency adapter may use SQLite. Lock all versions at kickoff.
+Use Python 3.12+, `uv`, FastAPI, Pydantic, pytest, OpenTelemetry, Docker Compose, MCP stable `2025-11-25` fixtures plus a profile-gated `2026-07-28` release-candidate compatibility fixture, ticket stub, test CA, ephemeral signing keys, local HTTPS endpoint, and development issuer. Consume the canonical Chapter 1 `RunContext` and Chapter 8 memory/context adapter, but never derive authority from memory. No PostgreSQL or Redis is required for the core ticket stub; the audit/idempotency adapter may use SQLite. Lock all versions at kickoff.
 
 ## Risks and mitigations
 

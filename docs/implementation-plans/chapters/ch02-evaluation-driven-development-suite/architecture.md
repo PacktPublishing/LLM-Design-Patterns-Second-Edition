@@ -42,7 +42,7 @@ The runner controls fixtures, seeds, fake clock, and candidate profile. Graders 
 | Component | Responsibility |
 |---|---|
 | Suite loader | Validate manifests, partitions, hashes, and protected-path policy |
-| Trial scheduler | Expand cases by trial count, seed, and candidate; bound concurrency and preserve order-independent IDs |
+| Trial scheduler | Expand cases by trial count, seed, and candidate; reserve independent candidate/grader concurrency and request-rate budgets; preserve order-independent IDs |
 | Candidate adapter | Invoke the Chapter 1 service or port and normalize result, trace, latency, and usage |
 | Grader registry | Resolve declared deterministic graders by stable name and version |
 | Reference verifier | Execute reference solutions and confirm grader expectations |
@@ -137,6 +137,8 @@ Rubric graders are also untrusted and cannot directly set release status. Their 
 
 Every trial has a deterministic ID derived from run manifest, candidate, task, trial index, and seed. Rerunning the same combination produces a new run envelope but comparable trial IDs. Completed trial files are append-only and written atomically, so a runner interruption can resume missing trials without double-counting.
 
+Candidate and live-rubric work use separate token-bucket admission and concurrency pools so a slow grader cannot starve candidate execution or vice versa. A throttled adapter honors valid `Retry-After` guidance, otherwise applies bounded exponential backoff with jitter inside the trial deadline and attempt budget. A retry reuses the stable trial or grader-attempt identity and never creates a second aggregate contribution. Exhausted throttling becomes typed infrastructure evidence; it cannot be converted into a candidate failure or a passing release gate.
+
 Candidate timeout, grader crash, invalid fixture, and environment failure are distinct statuses. The runner continues independent trials when safe, but mandatory infrastructure invalidity causes an `INVALID_RUN` outcome rather than pass or fail. A quarantine decision creates a signed manifest change with reason and owner; it does not delete history.
 
 ## Observability and evaluation semantics
@@ -202,7 +204,7 @@ Pull requests run `verify-ch02` with fixture mode and all Chapter 1 gates. Capab
 | Evidence writer | CH02-FR-012, CH02-NFR-004, CH02-NFR-006 |
 | Protected execution boundary | CH02-SEC-001, CH02-SEC-006 |
 | Canonical deterministic runner and result comparison | CH02-NFR-001 |
-| Pull-request regression partition and bounded scheduler | CH02-NFR-002 |
+| Pull-request regression partition and bounded, rate-aware scheduler | CH02-FR-013, CH02-NFR-002, CH02-NFR-005 |
 | Framework-neutral JSON/JSONL case and result ports | CH02-NFR-003 |
 | Out-of-band fixture selection and authorization-context guard | CH02-SEC-002 |
 | Classified fixture handling and CI artifact redaction | CH02-SEC-003 |

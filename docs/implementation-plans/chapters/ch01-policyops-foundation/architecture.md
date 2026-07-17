@@ -142,7 +142,7 @@ Configuration uses environment references or mounted secret locations; it never 
 
 ## Failure handling, recovery, and idempotency
 
-The answer operation is read-only in this chapter, so retries cannot duplicate an external effect. Nevertheless, request and trace IDs remain stable across a caller retry. Deadline exhaustion cancels the adapter and maps to a retry-classified `MODEL_TIMEOUT`; malformed output maps to non-success `MODEL_OUTPUT_INVALID`; unavailable configuration keeps readiness false. Unexpected exceptions map to a generic internal failure while preserving a server-side correlation ID.
+The answer operation is read-only in this chapter, so retries cannot duplicate an external effect. Nevertheless, request and trace IDs remain stable across a caller retry. Deadline exhaustion cancels the adapter and maps to `DEADLINE_EXCEEDED`; malformed model output maps to non-success `MODEL_BAD_OUTPUT`; upstream capacity or availability maps to retry-classified `MODEL_CAPACITY`; unavailable configuration keeps readiness false. Unexpected exceptions map to a generic internal failure while preserving a server-side correlation ID.
 
 The service performs no automatic cross-provider retry, which belongs to later routing and production chapters. Process restart is sufficient recovery because Chapter 1 has no durable state.
 

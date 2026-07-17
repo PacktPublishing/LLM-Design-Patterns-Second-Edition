@@ -79,7 +79,7 @@ class ExecutionEnvelope(BaseModel):
     budget: RuntimeBudget
 ```
 
-The work queue uses a durable record rather than an in-memory broker in the core. Fields include priority class, tenant, available time, deadline, attempt count, claim owner, claim expiry, session version, and payload reference. Workers claim rows with database locking, then apply Chapter 11 fencing at every state append. This keeps the lab's correctness boundary in one transactional system. A managed broker can be evaluated later behind the same `WorkQueue` protocol.
+The work queue uses a durable record rather than an in-memory broker in the core. Fields include priority class, tenant, available time, deadline, attempt count, claim owner, claim expiry, session version, and payload reference. Service-entry admission applies weighted tenant fairness, per-tenant/global concurrency, deadline feasibility, and a hard queue bound before insert. Rejection returns typed `429` plus safe `Retry-After` guidance and creates no queue row. Workers claim rows with database locking, then apply Chapter 11 fencing at every state append. This keeps the lab's correctness boundary in one transactional system. A managed broker can be evaluated later behind the same `WorkQueue` protocol.
 
 ```python
 class WorkQueue(Protocol):
@@ -161,8 +161,8 @@ The optional Kind profile maps the same processes to Deployments, Jobs, Services
 - **Unit:** admission, retry classification, backoff, breaker, deadline math, route policy.
 - **Contract:** internal envelope, WorkQueue, ModelClient, readiness reasons, backup catalog.
 - **Integration:** migrations, multi-worker claims, outbox delivery, tenant quotas, network policy.
-- **Load:** frozen workload with queue, latency, error, saturation, and cost evidence.
-- **Chaos:** kill workers/sandboxes, add latency/loss, fail stores/providers/tools, exhaust resources.
+- **Load:** frozen workload with weighted tenant fairness, service-entry `429`, queue, latency, error, saturation, and cost evidence.
+- **Chaos:** kill workers/sandboxes, race claims, redeliver effects, add latency/loss, brown out providers, overlap old/new binaries, fail stores/tools, exhaust resources, and reconcile restored state.
 - **Release:** unsafe migration, bad image, automatic rollback, accepted-digest verification.
 - **Recovery:** corrupt-backup rejection, isolated restore, integrity, RTO/RPO, readiness reconciliation.
 - **Security:** non-root images, secret scan, unauthorized network/tenant probes, SBOM and policy gates.
@@ -180,7 +180,7 @@ The optional Kind profile maps the same processes to Deployments, Jobs, Services
 
 1. Freeze topology, envelopes, manifests, thresholds, network zones, and recovery objectives.
 2. Implement health states, admission, bounded queue, deadline/cancellation propagation, and tenant quotas.
-3. Add replicated claims, retry/breaker policy, provider health routing, outbox reconciliation, and load tests.
+3. Add replicated claims, weighted-fair admission, service-entry `429`, retry/breaker policy, provider health routing, Chapter 11 outbox redelivery/reconciliation, and load tests.
 4. Add migrations, digest-pinned image canary, rollback, backups, isolated restore, and integrity checks.
 5. Complete chaos matrix, runbooks, evidence output, optional Kind mapping, and capstone registration.
 

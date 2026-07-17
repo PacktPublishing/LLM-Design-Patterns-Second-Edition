@@ -49,7 +49,7 @@ A correct loop can still fail when its worker is replicated, its dependency slow
 
 - **CH14-FR-001:** The deployment shall separate API/control plane, PostgreSQL durable state, stateless workers, outbox delivery, model gateway, sandbox/tool runtime, ticket service, egress proxy, and telemetry collector into declared processes and networks.
 - **CH14-FR-002:** The gateway shall propagate request, session, tenant, actor, configuration, deadline, cancellation, budget, authorization, approval, and idempotency metadata across service boundaries.
-- **CH14-FR-003:** Work admission shall enforce bounded queue depth, per-tenant and global concurrency, maximum payload size, deadline feasibility, and explicit overload responses.
+- **CH14-FR-003:** Work admission shall enforce bounded queue depth, weighted tenant fairness, per-tenant and global concurrency, maximum payload size, deadline feasibility, and explicit service-entry `429` overload responses with safe `Retry-After` guidance; rejected work shall never enter the durable queue.
 - **CH14-FR-004:** Workers shall claim work with durable ownership, acknowledge only after checkpoint or terminal state persistence, and preserve Chapter 11 fencing and idempotency invariants across replicas.
 - **CH14-FR-005:** Retry policy shall classify transient, throttling, timeout, semantic, policy, authorization, and permanent failures and cap attempts, elapsed time, and retry amplification.
 - **CH14-FR-006:** Circuit breakers shall isolate failing model, tool, store, and sandbox dependencies; half-open probes shall not consume normal request budgets or create effects.
@@ -58,7 +58,7 @@ A correct loop can still fail when its worker is replicated, its dependency slow
 - **CH14-FR-009:** Database changes shall use a migration plan with compatibility window, preflight, transactional or resumable execution, rollback or roll-forward action, and clean-database verification.
 - **CH14-FR-010:** The container rollout controller shall canary digest-pinned images against health, error, saturation, policy, and smoke-test gates and automatically restore the accepted digest on failure.
 - **CH14-FR-011:** Backup jobs shall capture required durable state and metadata, verify checksums and catalog, reject corrupt material, and restore into an isolated environment for integrity checks.
-- **CH14-FR-012:** Load and chaos suites shall inject worker, sandbox, model, tool, database, network, queue, and disk-pressure faults and measure SLO, recovery time objective (RTO), and recovery point objective (RPO) results.
+- **CH14-FR-012:** Load and chaos suites shall inject worker, sandbox, model, tool, database, network, queue, disk-pressure, redelivery, brownout, overlapping-binary rollout, and restore/reconciliation faults and measure SLO, recovery time objective (RTO), and recovery point objective (RPO) results.
 - **CH14-FR-013:** Operator commands and runbooks shall cover diagnosis, traffic containment, provider failover, queue draining, reconciliation, rollback, restore, validation, and escalation.
 
 ## Non-functional requirements
@@ -99,7 +99,7 @@ Deliver digest-pinned images, Compose and optional Kind/Helm bundles, migrations
 
 ## Acceptance criteria and traceability
 
-- **AC-01 (CH14-FR-003, CH14-FR-004, CH14-FR-005, CH14-FR-006):** Given the declared load and dependency faults, when capacity is exceeded, then queues remain bounded, retries do not amplify without limit, breakers isolate failures, and the service rejects or degrades explicitly.
+- **AC-01 (CH14-FR-003, CH14-FR-004, CH14-FR-005, CH14-FR-006):** Given the declared load and dependency faults, when capacity is exceeded, then weighted tenant fairness remains within its declared bound, queues remain bounded, service-entry overload returns typed `429` without enqueueing, retries do not amplify without limit, breakers isolate failures, and the service rejects or degrades explicitly.
 - **AC-02 (CH14-FR-004):** Given duplicate delivery and worker termination, when processing resumes, then one idempotency key produces one ticket and durable state remains consistent.
 - **AC-03 (CH14-FR-007):** Given primary model failure, when routing evaluates alternatives, then only a capability- and quality-compliant fallback runs; otherwise the result declares unavailability or approved degradation.
 - **AC-04 (CH14-FR-009, CH14-FR-010, CH14-SEC-006):** Given unsafe migration or bad image, when pull-request and canary gates run, then deployment is blocked or automatically rolled back to the accepted digest.
@@ -107,6 +107,7 @@ Deliver digest-pinned images, Compose and optional Kind/Helm bundles, migrations
 - **AC-06 (CH14-NFR-003, CH14-NFR-006):** Given declared hardware and workload, when load runs, then p95 and error results are captured and evaluated against frozen thresholds with complete evidence.
 - **AC-07 (CH14-SEC-001, CH14-SEC-002, CH14-SEC-003, CH14-SEC-004):** Given cross-zone, cross-tenant, secret, and health-endpoint probes, then unauthorized paths fail and sensitive data remains absent.
 - **AC-08 (CH14-FR-001, CH14-FR-002, CH14-FR-008, CH14-FR-013):** Given the Compose topology, then each declared process/network boundary is present, the full request/session/identity/configuration/budget/approval/idempotency envelope survives a cross-service trace, health states distinguish process/startup/readiness/dependency failures, and every injected incident resolves to an executable diagnosis, containment, recovery, validation, and escalation runbook step.
+- **AC-09 (CH14-FR-004, CH14-FR-010, CH14-FR-011, CH14-FR-012):** Given multi-worker claim races, effect redelivery, provider brownout, overlapping old/new binaries, and restored state, the Chapter 11 action-intent/outbox/idempotency/receipt protocol remains unchanged, exactly one business effect is observed, and reconciliation completes before readiness.
 
 ## Success metrics
 

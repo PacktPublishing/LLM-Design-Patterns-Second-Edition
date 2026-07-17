@@ -39,6 +39,7 @@ flowchart LR
 | Sufficiency policy | Decide sufficient, conflicting, or insufficient from explicit evidence features. |
 | Citation resolver | Resolve authorized immutable version/span references and coordinates. |
 | Verifier | Load gold fixtures, inject faults, compute metrics, and emit JSON, JUnit, and trace evidence. |
+| Stage bulkheads | Reserve independent bounded capacity for lexical, vector, rerank, and OCR/table work; propagate deadline, cancellation, and typed throttling. |
 
 ## Interfaces and contracts
 
@@ -68,12 +69,18 @@ class EvidenceItem(BaseModel):
     text: str
     lexical_score: float | None
     vector_score: float | None
-    rerank_score: float
+    rerank_score: float | None
+    excluded_reason: str | None = None
+
+class EvidenceBudget(BaseModel):
+    max_passages: int
+    max_tokens: int
 
 class EvidencePack(BaseModel):
     schema_version: Literal["1.0"]
     query_id: UUID
     items: list[EvidenceItem]
+    budget: EvidenceBudget
     sufficiency: Literal["sufficient", "conflicting", "insufficient"]
     reason_codes: list[str]
 ```
@@ -120,6 +127,8 @@ sequenceDiagram
 
 The classifier cannot recursively call itself. A monotonic budget records transformations, candidate counts, reranker calls, elapsed time, and packed tokens. Exhaustion becomes `EVIDENCE_INSUFFICIENT` or `RETRIEVAL_TIMEOUT`.
 
+Each retrieval stage owns a small semaphore and deadline slice rather than sharing one unbounded executor. Lexical and vector branches may run concurrently only after both reservations succeed; reranking and OCR/table materialization have separate limits. Downstream throttling honors bounded retry guidance only when the original deadline and query budget allow it. A saturated branch is cancelled or marked unavailable, and partial evidence may continue only when the existing sufficiency policy passes. Fleet-wide admission, tenant-fair queues, service-entry `429` responses, and provider quota operations belong to Chapter 14.
+
 ## Security and trust boundaries
 
 The API/auth boundary is the only place bearer credentials are accepted. Trusted tenant scope comes from verified claims, not request JSON. Database roles separate migrations, ingestion, and serving; serving cannot activate or delete versions. Row predicates are built from typed values and applied to FTS and vector statements. Retrieved content, filenames, metadata, and extension-like instructions remain untrusted data, are delimited in any downstream context, and cannot modify budgets or tools.
@@ -151,6 +160,7 @@ Docker Compose runs the FastAPI service and a pinned non-root PostgreSQL/pgvecto
 - Contract tests run every retriever and optional `ModelClient` against shared schemas.
 - Integration tests exercise migrations, transactions, FTS/vector filters, lifecycle races, OCR/table lineage, and citation resolution.
 - Fault tests inject poison, cross-tenant access, supersession, deletion, and repository timeouts.
+- Bulkhead tests saturate lexical, vector, rerank, and OCR/table stages independently and assert bounded concurrency, cancellation propagation, and typed degraded or abstention behavior.
 - Evaluation tests compare metric gates on visible and hidden gold splits.
 
 ## Architecture decisions and trade-offs
@@ -178,5 +188,5 @@ Docker Compose runs the FastAPI service and a pinned non-root PostgreSQL/pgvecto
 | Scoped repositories and guard | CH06-FR-003, CH06-FR-004, CH06-SEC-001, CH06-SEC-003 |
 | Fusion, pack, citation | CH06-FR-005, CH06-FR-006, CH06-FR-009 |
 | Classifier and sufficiency | CH06-FR-007, CH06-FR-008 |
-| Verifier and telemetry | CH06-FR-010, CH06-NFR-001, CH06-NFR-003, CH06-NFR-005 |
+| Verifier, stage bulkheads, and telemetry | CH06-FR-010, CH06-FR-011, CH06-NFR-001, CH06-NFR-003, CH06-NFR-005 |
 | Lifecycle security | CH06-SEC-002, CH06-SEC-004, CH06-SEC-005 |

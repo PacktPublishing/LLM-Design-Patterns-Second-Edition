@@ -45,9 +45,10 @@ A naive vector-search demo can return plausible text while losing document struc
 - **CH06-FR-005 — Evidence construction:** Fuse, rerank, deduplicate, and pack candidates under explicit passage and token budgets, retaining per-stage scores and exclusion reasons.
 - **CH06-FR-006 — Exact citations:** Return source ID, immutable version ID, span offsets, section path, and page or table coordinates where available. A citation resolver must reproduce the cited text.
 - **CH06-FR-007 — Sufficiency and abstention:** Classify evidence as sufficient, conflicting, or insufficient. Insufficient and unresolved-conflict cases return an abstention with reason codes rather than an unsupported answer.
-- **CH06-FR-008 — Bounded query transformation:** A typed query classifier may select direct, thematic, multi-hop, visual, or action-oriented handling and perform at most one decomposition or reformulation within call, token, and time budgets.
+- **CH06-FR-008 — Bounded query transformation:** A typed query classifier may select direct, thematic, multi-hop, visual, action-oriented, or `out_of_scope` handling and perform at most one decomposition or reformulation within call, token, and time budgets.
 - **CH06-FR-009 — Scanned and tabular evidence:** At least one gold query must retrieve a supplied scanned page or table and preserve its OCR and coordinate lineage.
 - **CH06-FR-010 — Evaluation and evidence:** Produce retrieval metrics, citation and abstention results, latency, cost estimates, freshness receipts, authorization tests, and a versioned index manifest.
+- **CH06-FR-011 — Retrieval-stage bulkheads:** Bound lexical search, vector search, reranking, OCR/table processing, and optional embedding concurrency independently; on downstream throttle or saturation, cancel or degrade only through declared sufficiency rules and return a typed partial failure or abstention.
 
 ## Non-functional requirements
 
@@ -86,10 +87,11 @@ Errors use stable codes such as `AUTH_SCOPE_REQUIRED`, `SOURCE_VERSION_CONFLICT`
 3. Given cross-tenant and protected-source queries, no forbidden source ID, text, score, or timing-dependent result appears (`CH06-FR-004`, `CH06-SEC-001`).
 4. Given a superseded or deleted source, it disappears within the freshness SLO and a repeat deletion is safe (`CH06-FR-002`, `CH06-NFR-004`).
 5. Given poisoned, conflicting, or unanswerable cases, the service abstains or excludes the passage and records a reason (`CH06-FR-007`, `CH06-SEC-002`).
-6. Given a retrieval timeout, the request returns a typed partial-failure or abstention and never silently generates (`CH06-FR-008`).
+6. Given a retrieval timeout, the request returns a typed partial-failure or abstention and never silently generates (`CH06-FR-011`).
 7. Given the scanned-page and table queries, citations include exact page-region or table-cell lineage (`CH06-FR-009`).
 8. Given mixed source fixtures and a fixed context budget, ingestion preserves structure, version, ACL, and coordinate lineage, and the resulting evidence pack records included/excluded candidates plus per-stage scores without exceeding its passage or token limit (`CH06-FR-001`, `CH06-FR-005`).
 9. Given the Chapter 5 planner, the evidence adapter passes the shared `ContextSource` contract suite, exposes only authorized summaries, lazily materializes selected items, and preserves authority, trust, provenance, tenant, sensitivity, freshness, placement, and token-budget metadata (`CH06-FR-004`, `CH06-FR-005`, `CH06-NFR-002`).
+10. Given a saturated or throttled retrieval stage, its bulkhead stays within the configured bound, unrelated stages remain available, retry behavior stays inside the original deadline, and the response is sufficient under an explicit degraded rule or a typed abstention (`CH06-FR-011`).
 
 ## Success metrics
 
@@ -106,6 +108,7 @@ Use Python 3.12+, `uv`, FastAPI, Pydantic, pytest, OpenTelemetry, a pinned Postg
 - **Citation offsets drift after parsing:** address spans by immutable version and normalized-content hash.
 - **Deletion races with queries:** use transactional manifest activation and version checks.
 - **Fixture overfitting:** retain a hidden query split and compare optional local-model runs.
+- **One retrieval stage exhausts the service:** isolate stage concurrency, propagate cancellation and deadlines, and defer fleet admission, tenant fairness, service-entry `429`, and provider quota operations to Chapter 14.
 
 ## Delivery milestones
 
@@ -113,7 +116,7 @@ Use Python 3.12+, `uv`, FastAPI, Pydantic, pytest, OpenTelemetry, a pinned Postg
 2. Implement lexical/vector retrieval, tenant filters, fusion, and deterministic reranking.
 3. Add EvidencePack budgeting, citation resolution, sufficiency, and abstention.
 4. Implement replacement/deletion lifecycle and scanned/table cases.
-5. Add fault drills, telemetry, evaluation scorecard, CI gate, and capstone evidence registration.
+5. Add retrieval-stage bulkheads, throttle/timeout drills, telemetry, evaluation scorecard, CI gate, and capstone evidence registration.
 
 ## Future extensions
 

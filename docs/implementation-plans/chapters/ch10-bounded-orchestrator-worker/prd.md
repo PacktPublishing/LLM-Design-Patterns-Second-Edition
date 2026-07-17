@@ -53,6 +53,8 @@ Agent frameworks make it easy to add routers, planners, workers, handoffs, and b
 - **CH10-FR-010 — Optional A2A adapter:** In a separate independent-runtime profile, map the delegation/result contract to a pinned A2A adapter and record whether ownership, trust, deployment, or interoperability boundaries justify it.
 - **CH10-FR-011 — Topology comparison:** Run identical evaluation cases through the deterministic, single-agent, browser/computer-use, and orchestrator-worker variants and produce a report and ADR against predeclared task-success, latency, cost, cost-per-successful-outcome, trace, supervision, and risk thresholds.
 
+- **CH10-FR-012 — Run-local fan-out admission:** Reserve the complete run-local worker, concurrency, model-call, token, tool, time, and spend budget before spawning a fan-out group. If the reservation cannot be made, emit typed `capacity_unavailable` and follow the declared simpler, review, or terminal path; release unused reservations deterministically after join or cancellation.
+
 ## Non-functional requirements
 
 - **CH10-NFR-001:** The required profile uses a deterministic replay `ModelClient`, in-process workers, test signing key, and no paid model/API credential.
@@ -94,6 +96,7 @@ The supplied policy-triage suite includes deterministic routing cases, ambiguous
 7. The ADR recommends browser/computer-use or orchestrator-worker only if its predeclared task-success gain clears 10 percentage points or it demonstrates required UI, independent parallel, or context-isolation value, while its latency, cost, cost-per-successful-outcome, supervision burden, and risk remain within declared budgets; otherwise a simpler topology is the accepted result (`CH10-FR-011`).
 8. A2A is implemented only when the independent-runtime profile has a real ownership, trust, deployment, or interoperability boundary; otherwise a no-use ADR is accepted (`CH10-FR-010`).
 9. Given the canonical state graph and identical fixtures, the deterministic, single-agent, and orchestrator-worker adapters validate every transition and terminal outcome; the worker variant runs genuinely independent tasks before a deterministic join; and pause/review/cancel/resume preserves a snapshot sufficient for Chapter 11 (`CH10-FR-001`, `CH10-FR-003`, `CH10-FR-004`, `CH10-FR-009`).
+10. Given insufficient run-local capacity, no partial fan-out is spawned, `capacity_unavailable` is recorded, the declared fallback or terminal transition occurs, and all acquired reservations are released after cancellation or join (`CH10-FR-012`).
 
 ## Success metrics
 
@@ -108,7 +111,7 @@ Use Python 3.12+, `uv`, FastAPI, Pydantic, pytest, OpenTelemetry, Docker Compose
 - **Role-play mistaken for architecture:** require independent context or parallel work and measurable comparison.
 - **Policy duplicated across adapters:** keep transitions/guards in the canonical state graph.
 - **Worker result trusted implicitly:** verify signature, task binding, schema, evidence, budget, and expiry.
-- **Fan-out explodes cost:** set hard worker/task/concurrency budgets before execution.
+- **Fan-out explodes cost:** atomically reserve hard worker/task/concurrency/call/token/spend budgets before spawn and return typed `capacity_unavailable` when the group cannot fit.
 - **Framework lock-in:** test each adapter against framework-neutral contracts.
 - **A2A added for novelty:** require a documented independent boundary or record no use.
 

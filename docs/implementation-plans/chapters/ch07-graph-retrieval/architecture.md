@@ -32,7 +32,7 @@ flowchart LR
 |---|---|
 | Graph API | Validate versioned requests, enforce route budgets, and return typed paths and evidence. |
 | Principal guard | Resolve tenant and labels and create mandatory graph/source predicates. |
-| Query classifier/router | Select standard, local, multi-hop, temporal, corpus, or hybrid behavior from typed features. |
+| Query classifier/router | Select `standard_rag`, `local_graph`, `multi_hop_graph`, `temporal_graph`, `global_graph`, or `hybrid_graph_vector` from typed features; keep `drift_graph` optional and ADR-gated. |
 | Snapshot loader | Verify manifest and hashes and materialize the persisted NetworkX/SQLite adapter. |
 | Entity resolver | Map aliases to canonical IDs while representing ambiguity and merge lineage. |
 | Graph query engine | Execute allowlisted, bounded traversals and community lookups against a pinned snapshot. |
@@ -53,23 +53,30 @@ class GraphQuery(BaseModel):
     max_fanout: int = Field(default=25, ge=1, le=100)
 
 class ClaimRef(BaseModel):
-    claim_id: UUID
-    source_id: UUID
-    version_id: UUID
-    span_id: UUID
-    valid_from: datetime | None
-    valid_to: datetime | None
+    claim_id: str
+    subject_entity_id: str
+    predicate: str
+    object_entity_id: str | None = None
+    value: str | None = None
+    source_id: str
+    source_version: str
+    span_id: str
+    extraction_version: str
     confidence: float
+    tenant_id: str
+    valid_from: date | None = None
+    valid_to: date | None = None
+    status: Literal["supported", "suspected", "refuted", "superseded"]
 
 class GraphPath(BaseModel):
     snapshot_id: str
     entity_ids: list[str]
     relation_ids: list[str]
-    claims: list[ClaimRef]
+    claim_refs: list[ClaimRef]
     status: Literal["supported", "conflicting", "partial"]
 ```
 
-`RetrievalAuthorization` is imported from Chapter 6 and can be constructed only from the canonical Chapter 1 `RunContext`. `GraphAdapter.neighbors(entity_id, authorization, relation_types, snapshot_id)` requires it on every call. `EvidenceProjector.project(path, authorization) -> EvidencePack` resolves each claim through the Chapter 6 citation repository. `SnapshotRegistry.activate(candidate_id, expected_active_id)` provides compare-and-swap semantics. Router implementations conform to `route(QueryFeatures) -> RouteDecision` and emit scores/reasons for evaluation.
+`RetrievalAuthorization` is imported from Chapter 6 and can be constructed only from the canonical Chapter 1 `RunContext`. `GraphAdapter.neighbors(entity_id, authorization, relation_types, snapshot_id)` requires it on every call. `EvidenceProjector.project(path, authorization) -> EvidencePack` resolves each `claim_refs` entry through the Chapter 6 citation repository. String identifiers carry the canonical serialized source/claim IDs and are validated at the adapter boundary. `SnapshotRegistry.activate(candidate_id, expected_active_id)` provides compare-and-swap semantics. Router implementations conform to `route(QueryFeatures) -> RouteDecision` and emit scores/reasons for evaluation.
 
 ## Data and storage
 

@@ -78,6 +78,7 @@ The benchmark defines two tenants, multiple users, consent grants and expiry, pr
 - `POST /v1/memory/records` and `PATCH|DELETE /v1/memory/records/{id}` require consent, expected version, and idempotency key as applicable.
 - `POST /v1/memory/recall` accepts task purpose, allowed scopes, effective time, and budgets; it returns typed records, exclusions, and provenance.
 - `GET /v1/memory/records`, `GET /v1/memory/records/{id}`, `POST /v1/memory/exports`, and `GET /v1/memory/receipts/{id}` implement user inspection and portability.
+- `uv run policyops memory seed|verify|benchmark --profile fixture` provides the local fixture lifecycle and diagnostic surface; these commands call the same application ports and do not introduce a second policy or persistence path.
 - `uv run policyops verify ch08 --profile fixture --junit build/ch08/junit.xml --evidence build/ch08` runs lifecycle, privacy, and benchmark gates.
 
 ## Acceptance criteria and traceability

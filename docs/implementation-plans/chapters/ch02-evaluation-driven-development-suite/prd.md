@@ -62,6 +62,7 @@ LLM teams frequently change prompts, models, data, or infrastructure before defi
 - **CH02-FR-010:** Detect grader gaming through a supplied candidate that satisfies superficial wording while violating deterministic state or citation checks.
 - **CH02-FR-011:** Enforce CI thresholds and mandatory zero-tolerance gates while keeping nondeterministic grading outside required pull-request checks.
 - **CH02-FR-012:** Emit a trial report, failure taxonomy, calibration report, and machine-readable evidence index for later chapter comparisons.
+- **CH02-FR-013:** Schedule candidate and grader work through independent bounded pools with declared concurrency and request-rate budgets; honor provider throttling with `Retry-After` when present, bounded exponential backoff with jitter, and resumable trial IDs without duplicating evidence or changing release-gate semantics.
 
 ## Non-functional requirements
 
@@ -84,6 +85,8 @@ LLM teams frequently change prompts, models, data, or infrastructure before defi
 ## Fixtures and data
 
 `evals/cases/` contains versioned JSONL records. Each case includes task ID, suite, risk, input, authenticated context reference, expected final state, required evidence, forbidden behavior, graders, trial count, and tolerances. `evals/holdouts/` is read-only in candidate workflows. Expert labels include annotator role, label version, rationale, and adjudication state without unnecessary personal identifiers. Frozen rubric replays permit deterministic CI; live rubric calibration is optional.
+
+The manuscript's human/domain-grader role is realized in this offline lab through versioned expert labels, adjudication, and calibration evidence rather than a blocking runtime human-grader service.
 
 The tool-argument cases use a simulated future capability contract rather than a real Chapter 9 tool. They grade typed arguments and authorization intent only and therefore do not introduce tool execution into this chapter.
 
@@ -114,6 +117,7 @@ Human reports show suite-level gates first, then distributions, adjudicated fail
 | A noisy trial is classified and repaired or quarantined before model judgment. | Adjudication workflow test | CH02-FR-009 |
 | Rubric calibration records agreement, variance, latency, and cost. | Frozen replay required; live adapter optional | CH02-FR-005, CH02-FR-012 |
 | Evaluation cost, runtime, and cost-per-successful-outcome inputs appear in evidence. | Report contract test | CH02-FR-008, CH02-NFR-006 |
+| A seeded candidate or grader throttle never causes an unbounded retry storm, duplicated trial, or false release decision. | Deterministic 429/timeout replay, concurrency-bound assertion, interruption/resume test | CH02-FR-013, CH02-NFR-002, CH02-NFR-005 |
 
 ## Success metrics
 
@@ -140,6 +144,7 @@ Primary paths are `evals/cases`, `evals/graders`, `evals/holdouts`, `tests/evals
 | Aggregate improvement hides severe regression. | Maintain zero-tolerance risk gates outside the weighted score. |
 | Suite becomes too slow for CI. | Split compact regression gates from capability and live-grader jobs. |
 | Broken infrastructure is blamed on the candidate. | Preserve trial evidence and require explicit failure classification. |
+| Evaluation traffic overloads a model or grader endpoint. | Isolate candidate and grader pools, enforce rate and concurrency budgets, honor retry guidance, and resume stable trial IDs. |
 
 ## Delivery milestones
 

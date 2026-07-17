@@ -61,8 +61,9 @@ The core profile uses no external network dependency. Deterministic adapters rep
 | Graph router/store | Source-linked graph snapshot, temporal/multi-hop routes, contradiction provenance | SQLite/NetworkX core | 7 |
 | Memory service | Provenance ledger, derived views, consent, TTL, conflict, quarantine, correction/export/deletion | PostgreSQL | 8 |
 | Capability registry | Canonical typed ticket contract, scope and lifecycle metadata | Config/registry | 9 |
-| Local MCP server | Protocol discovery/invocation around the same capability and policy boundary | Stateless | 9 |
+| Local MCP server | Stable-profile protocol discovery/invocation around the same capability and policy boundary; application state remains explicit | Stateless transport, durable application stores | 9 |
 | Skill/plugin/hooks | Workflow guidance and host packaging; pre-action denial and post-action redacted audit | Signed packages/config | 9 |
+| Computer-use/browser adapter | Read fixture DOM/screen observations as untrusted data, fill the mock approval form under bounded policy, and return the final mutation to the approval-bound `ToolPort` | Fixture action trace and browser state | 10 |
 | Accepted control topology | The Chapter 10-selected deterministic, single-agent, or orchestrator-worker adapter over one canonical graph; deterministic reference path remains available | Run state | 10 |
 | Durable harness | Append-only events, checkpoints, leases/fencing, outbox, replay, reconciliation | PostgreSQL | 11 |
 | Telemetry/improvement | Semantic spans, redaction/sampling, dashboards/SLOs, trace adjudication, experiment ledger, canary | Collector + evidence | 12 |
@@ -154,6 +155,8 @@ from policyops.extensions import ApprovalRecordStore, ExtensionRegistry, Revocat
 ```
 
 The capstone uses the exact Chapter 9 shapes: `TicketEffect` carries tenant, title, description, severity, and source references; `EffectPreview` carries schema version, canonical effect, `effect_hash`, and impact; `ApprovalClaims` binds actor, tenant, audience, operation, effect hash, scopes, expiry, and nonce. The execute endpoint independently reloads current authorization, approval, policy, capability/revocation status, and preview inputs. The MCP server, local tool, plugin, and any host route call the same `ToolPort`. No capstone-only ticket or approval type exists.
+
+The mandatory MCP overlay pins stable `2025-11-25`. The announced breaking `2026-07-28` release candidate is a separate opt-in compatibility overlay and cannot change the stable release gate. Contract tests version-gate transport/session behavior, Tasks/Apps, sampling/logging, schemas, and authorization. Workflow progress, approvals, idempotency, subscriptions, and resumable results remain in explicit application stores even when the chosen transport is stateless or sessionless.
 
 ### Durable run state
 
@@ -353,7 +356,7 @@ The implementation must verify teardown even after failed scenarios. The optiona
 
 ## Testing strategy
 
-1. **Contract tests:** Every model adapter, retrieval/graph/memory port, local tool/MCP transport, ticket stub, and evidence writer satisfies the same typed contract.
+1. **Contract tests:** Every model adapter, retrieval/graph/memory port, local tool/MCP transport, ticket stub, and evidence writer satisfies the same typed contract; MCP stable and opt-in release-candidate profiles are isolated and explicit application state survives transport/session replacement.
 2. **Unit and property tests:** Canonicalization, budgets, cache keys, authority ordering, policy, citation ranges, state transitions, approval binding, idempotency, redaction, and release rules.
 3. **Migration tests:** Forward/backward compatibility, rollback where supported, fixture upgrades, and deletion/rebuild behavior.
 4. **Integration tests:** Answer and action vertical slices with PostgreSQL, MCP, ticket stub, collector, and fault proxy.
@@ -407,7 +410,7 @@ Each step must keep earlier fixture gates green and record an ADR plus rollback 
 | CAP-FR-004-006 | Trusted request envelope, model gateway, typed context sources and planner |
 | CAP-FR-007-008 | Versioned hybrid/graph stores, access/freshness enforcement, citation verifier, typed abstention |
 | CAP-FR-009 | Provenance memory ledger, derived views, lifecycle policy, user inspector/rights workflow |
-| CAP-FR-010-011 | Canonical Chapter 9 ToolPort, tool/MCP adapters, signed extension packaging, hooks, effect hash and approval binding |
+| CAP-FR-010, CAP-FR-010A, CAP-FR-011 | Canonical Chapter 9 ToolPort, tool/MCP adapters, signed extension packaging, hooks, mandatory fixture computer-use/browser adapter, effect hash and approval binding |
 | CAP-FR-012-013 | Accepted Chapter 10 topology over the Chapter 11 harness, scoped delegation where selected, append-only events, leases, checkpoints, outbox, idempotency, reconciliation |
 | CAP-FR-014-015 | Layered eval runner, semantic telemetry adapter, experiment ledger, immutable holdout, canary/revert path |
 | CAP-FR-016 | Policy engine, sandbox/egress boundaries, supply-chain verification, attack harness |

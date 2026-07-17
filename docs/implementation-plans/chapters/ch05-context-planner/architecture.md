@@ -48,6 +48,7 @@ Solid source arrows represent fixture adapters in the core. Later chapters repla
 | Budget allocator | Reserve output/headroom, assign per-layer limits, and detect impossible plans |
 | Materializer | Fetch selected content under source-call/byte/time limits and revalidate it |
 | Compactor | Reduce current-call history/tool fixtures while preserving required structured facts |
+| Observation normalizer | Convert the supplied image/table observation into a typed text/region record with provenance, trust, sensitivity, and token estimate |
 | Ordering engine | Enforce authority/trust order, attention placement, and stable-before-variable layout |
 | Renderer | Produce the model request with structured-answer contract and safe delimiters |
 | Manifest writer | Record redacted decisions, counts, hashes, reason codes, and fingerprints |
@@ -95,7 +96,7 @@ An item contract includes:
 
 ## Data and storage
 
-Core fixtures live under `fixtures/context/` with immutable hashes and expected snapshots. Policy resides in `config/context_policy.yaml`. Tests and implementation live in `tests/context/` and `src/policyops/context/`. Evidence under `build/ch05/` includes redacted manifests, snapshots containing only approved synthetic fixture text, token reports, stable-prefix reports, and A/B outcomes.
+Core fixtures live under `fixtures/context/` with immutable hashes and expected snapshots, including the synthetic image/table observation and tool-overload case. Policy resides in `config/context_policy.yaml`. Tests and implementation live in `tests/context/` and `src/policyops/context/`. Evidence under `build/ch05/` includes redacted manifests, snapshots containing only approved synthetic fixture text, token reports, stable-prefix reports, and A/B outcomes.
 
 The planner has no durable database. It operates on one request and discards materialized text afterward. Conversation inputs are supplied current-call records, not long-term memory. A small request-local memo may prevent duplicate source materialization, but it is not the Chapter 4 response cache or a persistent source cache.
 
@@ -162,7 +163,8 @@ Exact library versions and tokenizer artifacts are pinned at implementation kick
 - **Compaction tests:** decisions, constraints, unresolved items, and artifact pointers survive; bulky observations are removed.
 - **Ordering tests:** high-authority stable layers precede variable content and distractors cannot displace required evidence.
 - **Snapshot tests:** deterministic plans, manifests, renders, and fingerprints.
-- **Fault drills:** secret, conflict, oversized tool fixture, missing fact, lost-in-middle, and silent truncation.
+- **Fault drills:** secret, conflict, oversized tool fixture, tool overload, missing fact, lost-in-middle, and silent truncation.
+- **Normalization tests:** image/table observation coordinates, provenance, authority/trust labels, budget accounting, and embedded-instruction isolation.
 - **A/B tests:** token reduction with unchanged Chapter 2 mandatory outcomes.
 - **Adapter contract tests:** alternate tokenizer/source implementations preserve semantics.
 
@@ -194,7 +196,7 @@ Exact library versions and tokenizer artifacts are pinned at implementation kick
 | Tokenizer and budget allocator | CH05-FR-005, CH05-NFR-004, CH05-NFR-005 |
 | Compactor | CH05-FR-007, CH05-SEC-004 |
 | Ordering and renderer | CH05-FR-008, CH05-FR-009, CH05-SEC-001 |
-| Typed failures and drills | CH05-FR-010, CH05-FR-012, CH05-SEC-002 |
+| Typed failures, drills, and observation normalization | CH05-FR-010, CH05-FR-012, CH05-FR-013, CH05-SEC-001, CH05-SEC-002, CH05-SEC-004 |
 | Manifest and A/B evidence | CH05-FR-011, CH05-NFR-001, CH05-SEC-006 |
 | Source-call, item-count, token, and materialization bounds | CH05-NFR-002 |
 | Provider-neutral source, tokenizer, and renderer ports | CH05-NFR-003 |
