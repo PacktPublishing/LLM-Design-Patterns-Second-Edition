@@ -2,7 +2,7 @@
 
 Private engineering workspace for the hands-on projects accompanying the proposed second edition of **LLM Design Patterns** by **Ken Huang**.
 
-> **Status:** Chapters 1–15 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
+> **Status:** Chapters 1–16 fixture labs are implemented and verified. The capstone closes the cumulative design → implement → verify loop.
 
 ## About the book
 
@@ -51,7 +51,7 @@ The Chapter 16 capstone integrates the accepted chapter checkpoints and runs a 1
 | 13 | Defend against indirect prompt injection | [PRD](docs/implementation-plans/chapters/ch13-prompt-injection-defense/prd.md) · [Architecture](docs/implementation-plans/chapters/ch13-prompt-injection-defense/architecture.md) · [Design](docs/implementation-plans/chapters/ch13-prompt-injection-defense/design.md) · [Lab README](labs/ch13/README.md) |
 | 14 | Deploy and recover the PolicyOps service | [PRD](docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/prd.md) · [Architecture](docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/architecture.md) · [Design](docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/design.md) · [Lab README](labs/ch14/README.md) |
 | 15 | Conduct a governance release review | [PRD](docs/implementation-plans/chapters/ch15-governance-release-review/prd.md) · [Architecture](docs/implementation-plans/chapters/ch15-governance-release-review/architecture.md) · [Design](docs/implementation-plans/chapters/ch15-governance-release-review/design.md) · [Lab README](labs/ch15/README.md) |
-| 16 | Integrate and release the PolicyOps agent | [PRD](docs/implementation-plans/chapters/ch16-policyops-capstone/prd.md) · [Architecture](docs/implementation-plans/chapters/ch16-policyops-capstone/architecture.md) |
+| 16 | Integrate and release the PolicyOps agent | [PRD](docs/implementation-plans/chapters/ch16-policyops-capstone/prd.md) · [Architecture](docs/implementation-plans/chapters/ch16-policyops-capstone/architecture.md) · [Design](docs/implementation-plans/chapters/ch16-policyops-capstone/design.md) · [Lab README](labs/ch16/README.md) |
 
 The [implementation-plan index](docs/implementation-plans/README.md) explains shared contracts, chapter ownership, cumulative handoffs, and the definition of done.
 
@@ -99,7 +99,7 @@ docs/
       ch16-policyops-capstone/architecture.md
 ```
 
-Chapter 1, Chapter 2, Chapter 3, Chapter 4, Chapter 5, Chapter 6, Chapter 7, Chapter 8, Chapter 9, Chapter 10, Chapter 11, Chapter 12, Chapter 13, Chapter 14, and Chapter 15 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
+Chapter 1, Chapter 2, Chapter 3, Chapter 4, Chapter 5, Chapter 6, Chapter 7, Chapter 8, Chapter 9, Chapter 10, Chapter 11, Chapter 12, Chapter 13, Chapter 14, Chapter 15, and Chapter 16 source code, fixtures, tests, Dockerfile, and executable verification workflows are included.
 
 ## Rights and repository scope
 

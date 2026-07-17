@@ -135,6 +135,7 @@ def eval_compare(
 def verify(
     lab: str = typer.Argument(...),
     profile: str = typer.Option("fixture", "--profile"),
+    all_: bool = typer.Option(False, "--all", help="Run all cumulative gates when supported"),
     junit: Optional[Path] = typer.Option(None, "--junit"),
     evidence: Optional[Path] = typer.Option(None, "--evidence"),
 ) -> None:
@@ -174,7 +175,10 @@ def verify(
         "ch13": ["tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch14": ["tests/deployment", "tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch15": ["tests/governance", "tests/deployment", "tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
+        "ch16": ["tests/capstone", "tests/governance", "tests/deployment", "tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
+    if all_ and lab != "ch16":
+        console.print(f"[yellow]--all is only meaningful for ch16; running {lab} configured gates[/yellow]")
 
     cmd = [
         sys.executable,
@@ -275,6 +279,11 @@ def verify(
         from policyops.governance import run_governance_verification
 
         payload = run_governance_verification(evidence_dir)
+        eval_ok = payload["gates_passed"] is True
+    elif lab == "ch16" and result.returncode == 0:
+        from policyops.capstone import run_capstone_verification
+
+        payload = run_capstone_verification(evidence_dir)
         eval_ok = payload["gates_passed"] is True
 
     settings_fingerprint = None
@@ -413,6 +422,14 @@ def fault(
         from policyops.governance import run_governance_faults
 
         payload = run_governance_faults(evidence_dir, scenario)
+        if not payload["passed"]:
+            raise typer.Exit(1)
+        console.print("[green]fault drills passed[/green]")
+        return
+    if lab == "ch16":
+        from policyops.capstone import run_capstone_faults
+
+        payload = run_capstone_faults(evidence_dir, scenario)
         if not payload["passed"]:
             raise typer.Exit(1)
         console.print("[green]fault drills passed[/green]")
