@@ -72,3 +72,29 @@ chapters:
     rollback: remove src/policyops/adaptation, evals/adaptation, labs/ch03, tests/adaptation, and restore capstone traceability to ch01-ch02 only
     decision: GO
     notes: Core path is CPU-only fixture comparison; optional retraining remains outside mandatory gates.
+  ch04:
+    status: accepted_fixture
+    checkpoint: work/ch04
+    contracts:
+      - InferenceRequest
+      - InferenceBudget
+      - ModelProfile
+      - CacheKey
+      - CandidateResult
+      - GatewayResult
+      - BenchmarkReport
+    evidence:
+      - benchmark_rows.jsonl
+      - inference_report.json
+      - serving_adr.json
+      - gateway_result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch04 --profile fixture --junit build/ch04/junit.xml --evidence build/ch04
+    rollback: remove src/policyops/inference, labs/ch04, tests/inference, and restore capstone traceability to ch01-ch03 only
+    decision: GO
+    notes: Fixture profile demonstrates routing, budget, verifier, cache, and benchmark behavior; latency and spend are not hosted-provider benchmarks.

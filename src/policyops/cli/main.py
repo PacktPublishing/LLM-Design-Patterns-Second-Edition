@@ -162,6 +162,7 @@ def verify(
         ],
         "ch02": ["tests/eval", "tests/contract", "tests/boundary"],
         "ch03": ["tests/adaptation", "tests/boundary"],
+        "ch04": ["tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
 
     cmd = [
@@ -204,6 +205,11 @@ def verify(
             inject_contamination=True,
         )
         eval_ok = eval_ok and blocked["decision"]["decision"] == "no_ship"
+    elif lab == "ch04" and result.returncode == 0:
+        from policyops.inference import run_gateway_verification
+
+        payload = run_gateway_verification(evidence_dir)
+        eval_ok = payload["passed"] is True
 
     settings_fingerprint = None
     fixture_hash = _tree_hash(_fixture_pack(lab))
