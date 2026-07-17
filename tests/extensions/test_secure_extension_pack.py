@@ -1,0 +1,230 @@
+"""Chapter 9 secure extension-pack tests."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from policyops.context import ContextRequest, SourceKind
+from policyops.extensions import (
+    CapabilityContextSource,
+    CapabilityResource,
+    DomainErrorCode,
+    ImpactClass,
+    McpAdapter,
+    McpProfile,
+    PluginLoader,
+    SecuredToolPort,
+    SkillActivator,
+    TicketInput,
+    TicketStatus,
+    fixture_context,
+    fixture_manifest,
+    fixture_ticket,
+    run_extension_verification,
+)
+
+
+def test_preview_is_canonical_and_side_effect_free() -> None:
+    port = SecuredToolPort()
+    context = fixture_context()
+    preview = port.preview_policy_ticket(fixture_ticket(), context)
+    assert preview.effect_hash.startswith("sha256:")
+    assert not port.repository.tickets
+    assert preview.canonical_effect.source_refs == sorted(preview.canonical_effect.source_refs)
+
+
+def test_missing_or_stale_approval_denies_before_repository_write() -> None:
+    port = SecuredToolPort()
+    context = fixture_context()
+    preview = port.preview_policy_ticket(fixture_ticket(), context)
+    denied = port.create_policy_ticket(preview, None, "idem-denied", context)
+    assert denied.status == TicketStatus.DENIED
+    assert denied.reason_code == DomainErrorCode.APPROVAL_REQUIRED
+    assert not port.repository.tickets
+
+    stale = port.approval_store.issuer.issue(
+        preview,
+        context,
+        nonce="stale",
+        expires_at=port.approval_store.now - 1,
+    )
+    denied_stale = port.create_policy_ticket(preview, stale, "idem-stale", context)
+    assert denied_stale.reason_code == DomainErrorCode.APPROVAL_STALE
+    assert not port.repository.tickets
+
+
+def test_exact_effect_hash_and_actor_are_bound_to_approval() -> None:
+    port = SecuredToolPort()
+    context = fixture_context()
+    preview = port.preview_policy_ticket(fixture_ticket(), context)
+    changed_preview = port.preview_policy_ticket(
+        TicketInput(
+            tenant_id="tenant_alpha",
+            title="Remote-work exception support",
+            description="Create a different ticket after the approval was issued.",
+            severity="medium",
+            source_refs=["policy_remote:v2:span_remote_approval"],
+        ),
+        context,
+    )
+    approval = port.approval_store.issuer.issue(
+        preview,
+        context,
+        nonce="exact",
+        expires_at=port.approval_store.now + 60,
+    )
+    result = port.create_policy_ticket(changed_preview, approval, "idem-mismatch", context)
+    assert result.status == TicketStatus.DENIED
+    assert result.reason_code == DomainErrorCode.EFFECT_MISMATCH
+
+
+def test_direct_and_mcp_paths_converge_on_same_toolport_and_idempotency() -> None:
+    port = SecuredToolPort()
+    context = fixture_context()
+    mcp = McpAdapter(port)
+    preview = mcp.preview(fixture_ticket(), context)
+    approval = port.approval_store.issuer.issue(
+        preview,
+        context,
+        nonce="mcp-1",
+        expires_at=port.approval_store.now + 60,
+    )
+    first = mcp.create(preview, approval, "idem-one", context)
+    duplicate = port.repository.create_once(preview, context, "idem-one")
+    assert first.status == TicketStatus.CREATED
+    assert duplicate.ticket_id == first.ticket_id
+    assert len(port.repository.tickets) == 1
+
+
+def test_pre_hook_timeout_and_revocation_fail_closed() -> None:
+    port = SecuredToolPort()
+    context = fixture_context()
+    preview = port.preview_policy_ticket(fixture_ticket(), context)
+    approval = port.approval_store.issuer.issue(
+        preview,
+        context,
+        nonce="timeout",
+        expires_at=port.approval_store.now + 60,
+    )
+    port.pre_hook.force_timeout = True
+    timeout = port.create_policy_ticket(preview, approval, "idem-timeout", context)
+    assert timeout.reason_code == DomainErrorCode.HOOK_TIMEOUT
+    assert not port.repository.tickets
+
+    port.pre_hook.force_timeout = False
+    port.registry.revoke(port.extension_id)
+    revoked = port.create_policy_ticket(preview, approval, "idem-revoked", context)
+    assert revoked.reason_code == DomainErrorCode.EXTENSION_REVOKED
+
+
+def test_post_hook_failure_degrades_evidence_without_duplicating_mutation() -> None:
+    port = SecuredToolPort()
+    context = fixture_context()
+    preview = port.preview_policy_ticket(fixture_ticket(), context)
+    approval = port.approval_store.issuer.issue(
+        preview,
+        context,
+        nonce="post-failure",
+        expires_at=port.approval_store.now + 60,
+    )
+    port.audit_store.fail_next = True
+    result = port.create_policy_ticket(preview, approval, "idem-post-failure", context)
+    assert result.status == TicketStatus.CREATED
+    assert result.evidence_status == "degraded"
+    assert len(port.repository.tickets) == 1
+
+
+def test_plugin_loader_rejects_tamper_revocation_and_excessive_permissions() -> None:
+    loader = PluginLoader()
+    manifest, files = fixture_manifest(loader)
+    accepted = loader.install(manifest, files)
+    assert accepted.accepted is True
+
+    tampered_manifest, tampered_files = fixture_manifest(loader, tampered=True)
+    tampered = loader.verify(tampered_manifest, tampered_files)
+    assert tampered.accepted is False
+    assert any(reason.startswith("hash_mismatch") for reason in tampered.reason_codes)
+
+    loader.revoke("policyops-ticket-pack")
+    revoked = loader.verify(manifest, files)
+    assert revoked.accepted is False
+    assert "revoked" in revoked.reason_codes
+
+    risky = manifest.model_copy(update={"permissions": ["filesystem:any"]})
+    risky.signature = loader.sign_manifest(risky)
+    risky_check = loader.verify(risky, files)
+    assert risky_check.accepted is False
+    assert "excessive_permission" in risky_check.reason_codes
+
+
+def test_rc_mcp_profile_is_opt_in_and_fails_closed_by_default() -> None:
+    port = SecuredToolPort()
+    mcp = McpAdapter(port, profile=McpProfile.RC_2026_07_28)
+    with pytest.raises(RuntimeError, match="unsupported_mcp_profile"):
+        mcp.preview(fixture_ticket(), fixture_context())
+
+
+def test_skill_activation_is_precise_and_requires_explicit_sensitive_mutation() -> None:
+    activator = SkillActivator()
+    scorecard = activator.benchmark()
+    assert scorecard.gates_passed is True
+    create_without_explicit = activator.evaluate(
+        "ambiguous-create",
+        "Create a policy exception ticket",
+        explicit=False,
+    )
+    assert create_without_explicit.activated is False
+    assert create_without_explicit.reason_code == "explicit_invocation_required"
+
+
+def test_capability_context_source_exposes_metadata_without_invocation_or_secrets() -> None:
+    resource = CapabilityResource(
+        resource_id="cap-ticket-preview",
+        name="preview_policy_ticket",
+        impact=ImpactClass.READ,
+        input_schema={"title": "str", "description": "str"},
+        extension_id="policyops-ticket-pack",
+        version="1.0.0",
+        available=True,
+    )
+    source = CapabilityContextSource([resource])
+    request = ContextRequest(
+        request_id="ctx-cap",
+        tenant_id="tenant_alpha",
+        actor_id="actor_reader",
+        task="answer",
+        question="What capability is available?",
+    )
+    summaries = source.summaries(request)
+    assert summaries[0].source_kind == SourceKind.CAPABILITY
+    item = source.materialize(summaries[0].item_id)
+    assert "approval" not in item.text.lower()
+    assert "token" not in item.text.lower()
+    assert "ToolPort" in item.text
+
+
+def test_secret_in_ticket_description_is_rejected_before_preview() -> None:
+    port = SecuredToolPort()
+    with pytest.raises(ValueError, match=DomainErrorCode.VALIDATION_ERROR.value):
+        port.preview_policy_ticket(
+            TicketInput(
+                tenant_id="tenant_alpha",
+                title="Remote-work exception support",
+                description="Please store sk-secret_1234567890 inside the ticket.",
+                severity="medium",
+                source_refs=["policy_remote:v2:span_remote_approval"],
+            ),
+            fixture_context(),
+        )
+
+
+def test_fixture_verification_writes_extension_evidence(tmp_path: Path) -> None:
+    result = run_extension_verification(tmp_path)
+    assert result["gates_passed"] is True
+    assert (tmp_path / "tool_contract.json").exists()
+    assert (tmp_path / "activation_scorecard.json").exists()
+    assert (tmp_path / "package_verification.json").exists()
+    assert (tmp_path / "compatibility_report.json").exists()
+    assert (tmp_path / "extension_scorecard.json").exists()

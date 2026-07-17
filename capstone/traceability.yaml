@@ -222,3 +222,39 @@ chapters:
     rollback: remove src/policyops/memory, labs/ch08, tests/memory, and restore capstone traceability to ch01-ch07 only
     decision: GO
     notes: Fixture profile demonstrates governed mutation, consent, scope isolation, quarantine, correction/versioning, consolidation, deletion receipts, context-source compatibility, and the invariant that memory cannot grant authority.
+  ch09:
+    status: accepted_fixture
+    checkpoint: work/ch09
+    contracts:
+      - TicketInput
+      - TicketEffect
+      - EffectPreview
+      - ApprovalClaims
+      - TicketResult
+      - PluginManifest
+      - ExtensionVersion
+      - CapabilityContextSource
+      - ExtensionScorecard
+    evidence:
+      - tool_contract.json
+      - activation_scorecard.json
+      - package_verification.json
+      - compatibility_report.json
+      - extension_scorecard.json
+      - audit_events.jsonl
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch09 --profile fixture --junit build/ch09/junit.xml --evidence build/ch09
+    rollback: remove src/policyops/extensions, labs/ch09, tests/extensions, and restore capstone traceability to ch01-ch08 only
+    decision: GO
+    notes: Fixture profile demonstrates typed tool previews, exact-effect approval, direct/MCP convergence, skill activation, plugin verification, lifecycle hooks, revocation, compatibility gating, and safe capability context without authority leakage.
