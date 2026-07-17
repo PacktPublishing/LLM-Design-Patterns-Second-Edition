@@ -163,6 +163,7 @@ def verify(
         "ch02": ["tests/eval", "tests/contract", "tests/boundary"],
         "ch03": ["tests/adaptation", "tests/boundary"],
         "ch04": ["tests/inference", "tests/contract", "tests/boundary"],
+        "ch05": ["tests/context", "tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
 
     cmd = [
@@ -209,6 +210,11 @@ def verify(
         from policyops.inference import run_gateway_verification
 
         payload = run_gateway_verification(evidence_dir)
+        eval_ok = payload["passed"] is True
+    elif lab == "ch05" and result.returncode == 0:
+        from policyops.context import run_context_verification
+
+        payload = run_context_verification(evidence_dir)
         eval_ok = payload["passed"] is True
 
     settings_fingerprint = None

@@ -1,0 +1,14 @@
+[lab]
+id = "ch05"
+title = "Context Planner"
+profile = "fixture"
+requires = ["ch01", "ch02", "ch03", "ch04"]
+
+[commands]
+verify = "uv run policyops verify ch05 --profile fixture --junit build/ch05/junit.xml --evidence build/ch05"
+fault = "uv run policyops fault ch05 --scenario all"
+
+[artifacts]
+source = ["src/policyops/context"]
+tests = ["tests/context"]
+evidence = ["build/ch05/context_manifest.json", "build/ch05/token_report.json", "build/ch05/fault_drills.json"]

@@ -98,3 +98,31 @@ chapters:
     rollback: remove src/policyops/inference, labs/ch04, tests/inference, and restore capstone traceability to ch01-ch03 only
     decision: GO
     notes: Fixture profile demonstrates routing, budget, verifier, cache, and benchmark behavior; latency and spend are not hosted-provider benchmarks.
+  ch05:
+    status: accepted_fixture
+    checkpoint: work/ch05
+    contracts:
+      - ContextRequest
+      - ContextItem
+      - SourceSummary
+      - ContextPlan
+      - ContextManifest
+      - CompactionResult
+      - RenderedContext
+    evidence:
+      - context_manifest.json
+      - rendered_context.txt
+      - token_report.json
+      - fault_drills.json
+      - context_result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch05 --profile fixture --junit build/ch05/junit.xml --evidence build/ch05
+    rollback: remove src/policyops/context, labs/ch05, tests/context, and restore capstone traceability to ch01-ch04 only
+    decision: GO
+    notes: Fixture profile demonstrates authority-ranked context planning, lazy materialization, compaction, stable-prefix fingerprints, redacted manifests, and token reduction without external retrieval or memory services.

@@ -2,7 +2,7 @@
 
 Private engineering workspace for the hands-on projects accompanying the proposed second edition of **LLM Design Patterns** by **Ken Huang**.
 
-> **Status:** Chapters 1–4 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
+> **Status:** Chapters 1–5 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
 
 ## About the book
 
@@ -40,7 +40,7 @@ The Chapter 16 capstone integrates the accepted chapter checkpoints and runs a 1
 | 2 | Create an evaluation-driven development suite | [PRD](docs/implementation-plans/chapters/ch02-evaluation-driven-development-suite/prd.md) · [Architecture](docs/implementation-plans/chapters/ch02-evaluation-driven-development-suite/architecture.md) · [Design](docs/implementation-plans/chapters/ch02-evaluation-driven-development-suite/design.md) · [Lab README](labs/ch02/README.md) |
 | 3 | Choose the right adaptation strategy | [PRD](docs/implementation-plans/chapters/ch03-adaptation-strategy/prd.md) · [Architecture](docs/implementation-plans/chapters/ch03-adaptation-strategy/architecture.md) · [Design](docs/implementation-plans/chapters/ch03-adaptation-strategy/design.md) · [Lab README](labs/ch03/README.md) |
 | 4 | Build an adaptive inference gateway | [PRD](docs/implementation-plans/chapters/ch04-adaptive-inference-gateway/prd.md) · [Architecture](docs/implementation-plans/chapters/ch04-adaptive-inference-gateway/architecture.md) · [Design](docs/implementation-plans/chapters/ch04-adaptive-inference-gateway/design.md) · [Lab README](labs/ch04/README.md) |
-| 5 | Build a context planner | [PRD](docs/implementation-plans/chapters/ch05-context-planner/prd.md) · [Architecture](docs/implementation-plans/chapters/ch05-context-planner/architecture.md) |
+| 5 | Build a context planner | [PRD](docs/implementation-plans/chapters/ch05-context-planner/prd.md) · [Architecture](docs/implementation-plans/chapters/ch05-context-planner/architecture.md) · [Design](docs/implementation-plans/chapters/ch05-context-planner/design.md) · [Lab README](labs/ch05/README.md) |
 | 6 | Build a citation-first hybrid RAG service | [PRD](docs/implementation-plans/chapters/ch06-citation-first-hybrid-rag/prd.md) · [Architecture](docs/implementation-plans/chapters/ch06-citation-first-hybrid-rag/architecture.md) |
 | 7 | Add graph retrieval for multi-hop questions | [PRD](docs/implementation-plans/chapters/ch07-graph-retrieval/prd.md) · [Architecture](docs/implementation-plans/chapters/ch07-graph-retrieval/architecture.md) |
 | 8 | Add governed long-term memory | [PRD](docs/implementation-plans/chapters/ch08-governed-long-term-memory/prd.md) · [Architecture](docs/implementation-plans/chapters/ch08-governed-long-term-memory/architecture.md) |
@@ -99,7 +99,7 @@ docs/
       ch16-policyops-capstone/architecture.md
 ```
 
-Chapter 1, Chapter 2, Chapter 3, and Chapter 4 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
+Chapter 1, Chapter 2, Chapter 3, Chapter 4, and Chapter 5 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
 
 ## Rights and repository scope
 
