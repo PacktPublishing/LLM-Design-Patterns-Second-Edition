@@ -1,0 +1,65 @@
+{
+  "_routing": {
+    "How many remote days are allowed?": "success_basic",
+    "What is the equipment stipend rule?": "success_stipend"
+  },
+  "success_basic": {
+    "kind": "success",
+    "answer": {
+      "schema_version": "1.0",
+      "answer_type": "direct",
+      "text": "Employees may work remotely up to three days per week with manager approval.",
+      "citations": [
+        {
+          "schema_version": "1.0",
+          "source_id": "pol-remote-work-v1",
+          "title": "Remote Work Policy",
+          "locator": "section:remote-days",
+          "excerpt": "Employees may work remotely up to three days per week with manager approval."
+        }
+      ]
+    },
+    "usage": {
+      "schema_version": "1.0",
+      "input_tokens": 24,
+      "output_tokens": 32,
+      "adapter": "replay"
+    }
+  },
+  "success_stipend": {
+    "kind": "success",
+    "answer": {
+      "schema_version": "1.0",
+      "answer_type": "direct",
+      "text": "Equipment stipends require Finance sign-off.",
+      "citations": [
+        {
+          "schema_version": "1.0",
+          "source_id": "pol-remote-work-v1",
+          "title": "Remote Work Policy",
+          "locator": "section:stipend",
+          "excerpt": "Equipment stipends require Finance sign-off."
+        }
+      ]
+    },
+    "usage": {
+      "schema_version": "1.0",
+      "input_tokens": 20,
+      "output_tokens": 18,
+      "adapter": "replay"
+    }
+  },
+  "timeout": {
+    "kind": "timeout",
+    "delay_ms": 10
+  },
+  "invalid_json": {
+    "kind": "invalid_json"
+  },
+  "schema_invalid": {
+    "kind": "schema_invalid"
+  },
+  "upstream_error": {
+    "kind": "upstream_error"
+  }
+}

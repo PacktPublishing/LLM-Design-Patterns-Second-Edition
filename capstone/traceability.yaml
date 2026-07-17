@@ -1,0 +1,21 @@
+chapters:
+  ch01:
+    status: accepted_fixture
+    checkpoint: work/ch01
+    contracts:
+      - RunContext
+      - ModelRequest
+      - Answer
+      - Citation
+      - Usage
+      - ModelClient
+    configuration_fingerprint_source: policyops.config.Settings.fingerprint
+    tests:
+      - tests/contract
+      - tests/api
+      - tests/fault
+      - tests/boundary
+    verify_command: uv run policyops verify ch01 --profile fixture
+    rollback: revert to ed2-v1.0-ch01-start and drop labs/ch01 evidence
+    decision: GO
+    notes: Fixture profile verified offline; replay is not real-model quality evidence.

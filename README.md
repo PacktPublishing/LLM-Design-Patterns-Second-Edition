@@ -2,7 +2,7 @@
 
 Private engineering workspace for the hands-on projects accompanying the proposed second edition of **LLM Design Patterns** by **Ken Huang**.
 
-> **Status:** Proposal-stage specifications. The project requirements and architectures are complete; implementation will begin after publisher approval.
+> **Status:** Chapter 1 fixture lab is implemented and verified. Remaining chapters follow the same design → implement → verify loop.
 
 ## About the book
 
@@ -36,7 +36,7 @@ The Chapter 16 capstone integrates the accepted chapter checkpoints and runs a 1
 
 | Chapter | Project | Specifications |
 |---:|---|---|
-| 1 | Build the PolicyOps foundation | [PRD](docs/implementation-plans/chapters/ch01-policyops-foundation/prd.md) · [Architecture](docs/implementation-plans/chapters/ch01-policyops-foundation/architecture.md) |
+| 1 | Build the PolicyOps foundation | [PRD](docs/implementation-plans/chapters/ch01-policyops-foundation/prd.md) · [Architecture](docs/implementation-plans/chapters/ch01-policyops-foundation/architecture.md) · [Design](docs/implementation-plans/chapters/ch01-policyops-foundation/design.md) · [Lab README](labs/ch01/README.md) |
 | 2 | Create an evaluation-driven development suite | [PRD](docs/implementation-plans/chapters/ch02-evaluation-driven-development-suite/prd.md) · [Architecture](docs/implementation-plans/chapters/ch02-evaluation-driven-development-suite/architecture.md) |
 | 3 | Choose the right adaptation strategy | [PRD](docs/implementation-plans/chapters/ch03-adaptation-strategy/prd.md) · [Architecture](docs/implementation-plans/chapters/ch03-adaptation-strategy/architecture.md) |
 | 4 | Build an adaptive inference gateway | [PRD](docs/implementation-plans/chapters/ch04-adaptive-inference-gateway/prd.md) · [Architecture](docs/implementation-plans/chapters/ch04-adaptive-inference-gateway/architecture.md) |
@@ -99,7 +99,7 @@ docs/
       ch16-policyops-capstone/architecture.md
 ```
 
-Source code, fixtures, deployment manifests, tests, CI workflows, and executable evidence will be added only after the book proposal and implementation scope are approved.
+Chapter 1 source code, fixtures, tests, Dockerfile, and executable verification workflow are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
 
 ## Rights and repository scope
 

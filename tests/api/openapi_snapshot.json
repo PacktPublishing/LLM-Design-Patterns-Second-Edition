@@ -1,0 +1,19 @@
+{
+  "paths": [
+    "/health/live",
+    "/health/ready",
+    "/v1/answer"
+  ],
+  "schemas": [
+    "Answer",
+    "AnswerResponse",
+    "Citation",
+    "HTTPValidationError",
+    "Usage",
+    "ValidationError"
+  ],
+  "answer_post_responses": [
+    "200",
+    "422"
+  ]
+}

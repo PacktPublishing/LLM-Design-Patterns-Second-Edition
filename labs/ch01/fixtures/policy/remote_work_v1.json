@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "policy_id": "pol-remote-work-v1",
+  "version": "policy-v1",
+  "title": "Remote Work Policy",
+  "content_hash": "sha256:fixture-policy-v1",
+  "excerpt": "Employees may work remotely up to three days per week with manager approval. Equipment stipends require Finance sign-off."
+}
