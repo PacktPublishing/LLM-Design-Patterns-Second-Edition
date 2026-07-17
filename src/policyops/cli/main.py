@@ -173,6 +173,7 @@ def verify(
         "ch12": ["tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch13": ["tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch14": ["tests/deployment", "tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
+        "ch15": ["tests/governance", "tests/deployment", "tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
 
     cmd = [
@@ -269,6 +270,11 @@ def verify(
         from policyops.deployment import run_deployment_verification
 
         payload = run_deployment_verification(evidence_dir)
+        eval_ok = payload["gates_passed"] is True
+    elif lab == "ch15" and result.returncode == 0:
+        from policyops.governance import run_governance_verification
+
+        payload = run_governance_verification(evidence_dir)
         eval_ok = payload["gates_passed"] is True
 
     settings_fingerprint = None
@@ -399,6 +405,14 @@ def fault(
         from policyops.deployment import run_deployment_faults
 
         payload = run_deployment_faults(evidence_dir, scenario)
+        if not payload["passed"]:
+            raise typer.Exit(1)
+        console.print("[green]fault drills passed[/green]")
+        return
+    if lab == "ch15":
+        from policyops.governance import run_governance_faults
+
+        payload = run_governance_faults(evidence_dir, scenario)
         if not payload["passed"]:
             raise typer.Exit(1)
         console.print("[green]fault drills passed[/green]")

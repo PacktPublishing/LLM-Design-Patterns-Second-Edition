@@ -495,3 +495,53 @@ chapters:
     rollback: remove src/policyops/deployment, labs/ch14, tests/deployment, and restore capstone traceability to ch01-ch13 only
     decision: GO
     notes: Fixture profile demonstrates bounded admission, durable queue claims, idempotent redelivery, retry and breaker policy, quality-floor model fallback, health/readiness separation, migration gates, digest-pinned image rollback, backup/restore integrity, load and chaos evidence, and operator runbooks.
+  ch15:
+    status: accepted_fixture
+    checkpoint: work/ch15
+    contracts:
+      - SystemInventory
+      - RiskRecord
+      - OwnerRecord
+      - ApprovalPolicy
+      - EvidenceRef
+      - ControlRecord
+      - ChangeSet
+      - RightsRequest
+      - RightsReceipt
+      - TransparencyNotice
+      - ReleaseDecision
+      - GovernanceScorecard
+    evidence:
+      - system_inventory.json
+      - risk_autonomy_records.json
+      - ownership_records.json
+      - approval_matrix.json
+      - control_evidence_graph.json
+      - evidence_index.json
+      - rights_receipts.json
+      - transparency_notice.json
+      - invalid_evidence_decisions.json
+      - release_decision.json
+      - governance_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/governance
+      - tests/deployment
+      - tests/security
+      - tests/telemetry
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch15 --profile fixture --junit build/ch15/junit.xml --evidence build/ch15
+    rollback: remove src/policyops/governance, labs/ch15, tests/governance, and restore capstone traceability to ch01-ch14 only
+    decision: GO
+    notes: Fixture profile demonstrates executable governance, owner and role checks, signed evidence validation, control graph release gating, deterministic invalid-evidence NO-GO decisions, rights receipts across primary and derived stores, transparency notice generation, separation-of-duties enforcement, and final GO decision digest.

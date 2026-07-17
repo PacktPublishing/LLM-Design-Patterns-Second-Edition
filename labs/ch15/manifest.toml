@@ -1,0 +1,21 @@
+chapter = "ch15"
+title = "Conduct a Governance Release Review"
+base_tag = "ed2-v1.0-ch15-start"
+profile = "fixture"
+verify = "uv run policyops verify ch15 --profile fixture --junit build/ch15/junit.xml --evidence build/ch15"
+fault = "uv run policyops fault ch15 --scenario all"
+
+[artifacts]
+source = "src/policyops/governance"
+tests = "tests/governance"
+evidence = "build/ch15"
+design = "docs/implementation-plans/chapters/ch15-governance-release-review/design.md"
+
+[gates]
+high_risk_paths_resolved = true
+invalid_evidence_cases_blocked_min = 5
+independent_approver_valid = true
+rights_receipt_complete = true
+deterministic_digest = true
+agent_self_approval_denied = true
+secret_leaks = 0
