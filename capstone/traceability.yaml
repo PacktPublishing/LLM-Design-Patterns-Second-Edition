@@ -19,3 +19,31 @@ chapters:
     rollback: revert to ed2-v1.0-ch01-start and drop labs/ch01 evidence
     decision: GO
     notes: Fixture profile verified offline; replay is not real-model quality evidence.
+  ch02:
+    status: accepted_fixture
+    checkpoint: work/ch02
+    contracts:
+      - TaskCase
+      - TrialContext
+      - TrialRecord
+      - GraderResult
+      - Outcome
+      - SuiteManifest
+      - SuiteSummary
+    evidence:
+      - manifest.lock.json
+      - trials.jsonl
+      - grades.jsonl
+      - summary.json
+      - failure_taxonomy.json
+      - calibration_report.json
+      - evidence_index.json
+      - holdout_hashes.json
+    tests:
+      - tests/eval
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch02 --profile fixture --junit build/ch02/junit.xml --evidence build/ch02
+    rollback: remove src/policyops/eval, evals/cases, evals/holdouts, evals/labels, labs/ch02, and restore capstone traceability to ch01 only
+    decision: GO
+    notes: Deterministic fixture profile only; live rubric/model grading remains optional and non-blocking.

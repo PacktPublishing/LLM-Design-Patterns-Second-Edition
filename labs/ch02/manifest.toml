@@ -1,0 +1,15 @@
+lab_id = "ch02"
+title = "Evaluation-Driven Development Suite"
+profile = "fixture"
+upstream = "ch01"
+
+[commands]
+verify = "uv run policyops verify ch02 --profile fixture --junit build/ch02/junit.xml --evidence build/ch02"
+eval_regression = "uv run policyops eval run --suite regression --profile fixture"
+up = "uv run policyops env up --lab ch02 --profile fixture"
+down = "uv run policyops env down --lab ch02"
+
+[gates]
+eval = true
+contract = true
+boundary = true
