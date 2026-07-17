@@ -1,0 +1,18 @@
+chapter = "ch11"
+title = "Make the Agent Loop Resumable"
+base_tag = "ed2-v1.0-ch11-start"
+profile = "fixture"
+verify = "uv run policyops verify ch11 --profile fixture --junit build/ch11/junit.xml --evidence build/ch11"
+fault = "uv run policyops fault ch11 --scenario all"
+
+[artifacts]
+source = "src/policyops/harness"
+tests = "tests/harness"
+evidence = "build/ch11"
+design = "docs/implementation-plans/chapters/ch11-resumable-agent-loop/design.md"
+
+[gates]
+duplicate_tickets = 0
+out_of_scope_changes = 0
+replay_external_calls = 0
+stale_fence_writes_rejected = 1

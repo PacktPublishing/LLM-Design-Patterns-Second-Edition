@@ -295,3 +295,40 @@ chapters:
     rollback: remove src/policyops/orchestration, labs/ch10, tests/orchestration, and restore capstone traceability to ch01-ch09 only
     decision: GO
     notes: Fixture profile demonstrates a canonical transient state graph, deterministic/single-agent/browser/orchestrator-worker variants, signed narrow delegation, deterministic merge, no-partial fan-out admission, human interrupt states, Chapter 9 final-action boundary, topology comparison, and A2A no-use ADR evidence.
+  ch11:
+    status: accepted_fixture
+    checkpoint: work/ch11
+    contracts:
+      - SessionEvent
+      - SessionState
+      - SessionCheckpoint
+      - Lease
+      - ActionIntent
+      - OutboxMessage
+      - EffectReceipt
+      - ReviewBundle
+      - HarnessScorecard
+    evidence:
+      - review_bundle.json
+      - fault_results.json
+      - replay_result.json
+      - runbook.json
+      - harness_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch11 --profile fixture --junit build/ch11/junit.xml --evidence build/ch11
+    rollback: remove src/policyops/harness, labs/ch11, tests/harness, and restore capstone traceability to ch01-ch10 only
+    decision: GO
+    notes: Fixture profile demonstrates scoped engineering review, append-only events, checkpoints, lease fencing, action intents, transactional outbox semantics, idempotent delivery, crash-window recovery, no-effect replay, budget stops, and recovery runbook evidence.
