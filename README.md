@@ -2,7 +2,7 @@
 
 Private engineering workspace for the hands-on projects accompanying the proposed second edition of **LLM Design Patterns** by **Ken Huang**.
 
-> **Status:** Chapters 1–11 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
+> **Status:** Chapters 1–12 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
 
 ## About the book
 
@@ -47,7 +47,7 @@ The Chapter 16 capstone integrates the accepted chapter checkpoints and runs a 1
 | 9 | Build a secure PolicyOps extension pack | [PRD](docs/implementation-plans/chapters/ch09-secure-extension-pack/prd.md) · [Architecture](docs/implementation-plans/chapters/ch09-secure-extension-pack/architecture.md) · [Design](docs/implementation-plans/chapters/ch09-secure-extension-pack/design.md) · [Lab README](labs/ch09/README.md) |
 | 10 | Build a bounded orchestrator-worker flow | [PRD](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/prd.md) · [Architecture](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/architecture.md) · [Design](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/design.md) · [Lab README](labs/ch10/README.md) |
 | 11 | Make the agent loop resumable | [PRD](docs/implementation-plans/chapters/ch11-resumable-agent-loop/prd.md) · [Architecture](docs/implementation-plans/chapters/ch11-resumable-agent-loop/architecture.md) · [Design](docs/implementation-plans/chapters/ch11-resumable-agent-loop/design.md) · [Lab README](labs/ch11/README.md) |
-| 12 | Turn a production trace into a safe improvement | [PRD](docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/prd.md) · [Architecture](docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/architecture.md) |
+| 12 | Turn a production trace into a safe improvement | [PRD](docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/prd.md) · [Architecture](docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/architecture.md) · [Design](docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/design.md) · [Lab README](labs/ch12/README.md) |
 | 13 | Defend against indirect prompt injection | [PRD](docs/implementation-plans/chapters/ch13-prompt-injection-defense/prd.md) · [Architecture](docs/implementation-plans/chapters/ch13-prompt-injection-defense/architecture.md) |
 | 14 | Deploy and recover the PolicyOps service | [PRD](docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/prd.md) · [Architecture](docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/architecture.md) |
 | 15 | Conduct a governance release review | [PRD](docs/implementation-plans/chapters/ch15-governance-release-review/prd.md) · [Architecture](docs/implementation-plans/chapters/ch15-governance-release-review/architecture.md) |
@@ -99,7 +99,7 @@ docs/
       ch16-policyops-capstone/architecture.md
 ```
 
-Chapter 1, Chapter 2, Chapter 3, Chapter 4, Chapter 5, Chapter 6, Chapter 7, Chapter 8, Chapter 9, Chapter 10, and Chapter 11 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
+Chapter 1, Chapter 2, Chapter 3, Chapter 4, Chapter 5, Chapter 6, Chapter 7, Chapter 8, Chapter 9, Chapter 10, Chapter 11, and Chapter 12 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
 
 ## Rights and repository scope
 

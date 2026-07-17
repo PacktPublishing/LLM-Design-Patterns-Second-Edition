@@ -1,8 +1,23 @@
-"""Telemetry redaction tests — only allow-listed attributes are recorded."""
+"""Chapter 12 telemetry, privacy, experiment, and canary tests."""
 
 from __future__ import annotations
 
-from policyops.telemetry import ALLOWED_ATTRS, clear_spans, recorded_spans, span
+from policyops.telemetry import (
+    ALLOWED_ATTRS,
+    ArtifactRegistry,
+    ExperimentDecision,
+    FailureClass,
+    SamplingDecision,
+    SpanKind,
+    TelemetryPolicy,
+    TraceImprovementPipeline,
+    clear_spans,
+    fixture_raw_events,
+    recorded_spans,
+    run_observability_faults,
+    run_observability_verification,
+    span,
+)
 
 
 def test_span_redacts_non_allowlisted_attributes() -> None:
@@ -24,3 +39,124 @@ def test_span_redacts_non_allowlisted_attributes() -> None:
     assert "authorization_token" not in attrs
     assert "question" not in attrs
     assert set(attrs).issubset(ALLOWED_ATTRS)
+
+
+def test_semantic_adapter_correlates_required_fixture_spans() -> None:
+    pipeline = TraceImprovementPipeline()
+    artifacts, spans = pipeline.correlated_trace()
+    observed = {span.span_kind for span in spans}
+    assert observed == set(SpanKind)
+    assert {span.context.correlation_id for span in spans} == {"corr-policyops-1201"}
+    assert all(span.context.artifact_set_id == artifacts.artifact_set_id for span in spans)
+    assert set(artifacts.by_type()) >= {
+        "prompt",
+        "context_policy",
+        "model_adapter",
+        "index",
+        "memory_policy",
+        "tool",
+        "protocol",
+        "grader",
+        "security_policy",
+        "deployment_profile",
+    }
+
+
+def test_redaction_hashing_sampling_and_cardinality_are_applied_before_export() -> None:
+    policy = TelemetryPolicy(cardinality_limit=2)
+    redacted = [policy.normalize(event) for event in fixture_raw_events()]
+    exported = "\n".join(span.model_dump_json() for span in redacted)
+    assert "123-45-6789" not in exported
+    assert "ken@example.com" not in exported
+    assert "sk-not-a-real-secret" not in exported
+    assert "tenant-alpha" not in exported
+    assert {span.context.sampling_decision for span in redacted if span.span_kind == SpanKind.APPROVAL} == {
+        SamplingDecision.REQUIRED
+    }
+    assert any("raw_prompt" in span.dropped_fields for span in redacted)
+    assert any("authorization_token" in span.dropped_fields for span in redacted)
+
+
+def test_only_expert_adjudicated_product_failure_can_graduate_to_eval_case() -> None:
+    pipeline = TraceImprovementPipeline()
+    _, spans = pipeline.correlated_trace()
+    adjudication = pipeline.adjudicate(spans, failure_class=FailureClass.PRODUCT_FAILURE)
+    case = pipeline.graduate_case(spans, adjudication)
+    assert case.source_correlation_id == adjudication.correlation_id
+    assert case.redacted_trace_hash.startswith("sha256:")
+    noisy = pipeline.adjudicate(spans, failure_class=FailureClass.INFRASTRUCTURE_NOISE)
+    assert noisy.may_graduate is False
+
+
+def test_overfit_candidate_is_reverted_and_protected_hashes_are_unchanged() -> None:
+    ledger = TraceImprovementPipeline().run_experiment(overfit=True)
+    assert ledger.decision == ExperimentDecision.REVERT
+    assert ledger.protected_hashes_before == ledger.protected_hashes_after
+    by_suite = {result.suite: result for result in ledger.results}
+    assert by_suite["target"].candidate_score > by_suite["target"].baseline_score
+    assert by_suite["holdout"].candidate_score < by_suite["holdout"].baseline_score
+
+
+def test_good_candidate_reports_cost_per_successful_outcome() -> None:
+    ledger = TraceImprovementPipeline().run_experiment(overfit=False)
+    assert ledger.decision == ExperimentDecision.KEEP
+    assert all(result.candidate_cost_per_success > 0 for result in ledger.results)
+
+
+def test_behavior_canary_rolls_back_seeded_bad_release() -> None:
+    report = TraceImprovementPipeline().simulate_canary(bad_release=True)
+    assert report.decision.value == "rollback"
+    assert report.accepted_alias_after == report.baseline_alias_before
+    assert report.metrics.safety_incidents == 1
+
+
+def test_reconstruction_and_backend_outage_do_not_repeat_effects_or_fail_request() -> None:
+    pipeline = TraceImprovementPipeline()
+    _, spans = pipeline.correlated_trace()
+    reconstruction = pipeline.reconstruct(spans)
+    outage = pipeline.backend_outage_drill()
+    assert reconstruction.external_calls_attempted == 0
+    assert reconstruction.model_calls_attempted == 0
+    assert reconstruction.tool_calls_attempted == 0
+    assert outage["request_failures"] == 0
+    assert outage["non_blocking"] is True
+
+
+def test_observability_verifier_writes_required_evidence(tmp_path) -> None:
+    payload = run_observability_verification(tmp_path)
+    assert payload["gates_passed"] is True
+    required = [
+        "artifact_registry.json",
+        "trace_export.jsonl",
+        "privacy_report.json",
+        "slo_records.json",
+        "adjudication.json",
+        "eval_case_from_trace.json",
+        "experiment_ledger.json",
+        "accepted_candidate_ledger.json",
+        "canary_report.json",
+        "reconstruction_report.json",
+        "telemetry_outage.json",
+        "harness_event_spans.json",
+        "harness_retirement_adr.json",
+        "observability_scorecard.json",
+    ]
+    for name in required:
+        assert (tmp_path / name).exists(), name
+
+
+def test_chapter_12_fault_drills_cover_required_scenarios(tmp_path) -> None:
+    payload = run_observability_faults(tmp_path, "all")
+    assert payload["passed"] is True
+    assert payload["results"] == {
+        "privacy": True,
+        "overfit": True,
+        "canary": True,
+        "outage": True,
+        "reconstruction": True,
+    }
+
+
+def test_artifact_registry_uses_sha256_digests() -> None:
+    artifacts = ArtifactRegistry().fixture_artifacts()
+    assert all(artifact.digest.startswith("sha256:") for artifact in artifacts.artifacts)

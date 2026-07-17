@@ -170,6 +170,7 @@ def verify(
         "ch09": ["tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch10": ["tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch11": ["tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
+        "ch12": ["tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
 
     cmd = [
@@ -251,6 +252,11 @@ def verify(
         from policyops.harness import run_harness_verification
 
         payload = run_harness_verification(evidence_dir)
+        eval_ok = payload["gates_passed"] is True
+    elif lab == "ch12" and result.returncode == 0:
+        from policyops.telemetry import run_observability_verification
+
+        payload = run_observability_verification(evidence_dir)
         eval_ok = payload["gates_passed"] is True
 
     settings_fingerprint = None
@@ -360,9 +366,17 @@ def fault(
     lab: str = typer.Argument(...),
     scenario: str = typer.Option("all", "--scenario"),
 ) -> None:
+    evidence_dir = _build_dir(lab)
+    if lab == "ch12":
+        from policyops.telemetry import run_observability_faults
+
+        payload = run_observability_faults(evidence_dir, scenario)
+        if not payload["passed"]:
+            raise typer.Exit(1)
+        console.print("[green]fault drills passed[/green]")
+        return
     if lab != "ch01":
         console.print(f"[yellow]fault drills for {lab} reuse ch01 model faults[/yellow]")
-    evidence_dir = _build_dir(lab)
     env = os.environ.copy()
     env["POLICYOPS_FIXTURE_PACK"] = str(_fixture_pack("ch01"))
     env["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
