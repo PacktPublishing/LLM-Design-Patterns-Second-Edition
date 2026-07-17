@@ -188,3 +188,37 @@ chapters:
     rollback: remove src/policyops/graph, labs/ch07, tests/graph, and restore capstone traceability to ch01-ch06 only
     decision: GO
     notes: Fixture profile demonstrates route classification, source-linked graph paths, temporal contradictions, tenant isolation, evidence projection, timeout partials, snapshot repair, and graph-versus-RAG ADR evidence.
+  ch08:
+    status: accepted_fixture
+    checkpoint: work/ch08
+    contracts:
+      - MemoryProposal
+      - MutationDecision
+      - MemoryRecord
+      - MemoryEvent
+      - RecallRequest
+      - RecallResult
+      - DeletionReceipt
+      - MemoryScorecard
+      - MemoryContextSource
+    evidence:
+      - memory_events.jsonl
+      - memory_views.json
+      - recall_report.json
+      - deletion_receipt.json
+      - memory_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch08 --profile fixture --junit build/ch08/junit.xml --evidence build/ch08
+    rollback: remove src/policyops/memory, labs/ch08, tests/memory, and restore capstone traceability to ch01-ch07 only
+    decision: GO
+    notes: Fixture profile demonstrates governed mutation, consent, scope isolation, quarantine, correction/versioning, consolidation, deletion receipts, context-source compatibility, and the invariant that memory cannot grant authority.

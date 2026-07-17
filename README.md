@@ -2,7 +2,7 @@
 
 Private engineering workspace for the hands-on projects accompanying the proposed second edition of **LLM Design Patterns** by **Ken Huang**.
 
-> **Status:** Chapters 1–7 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
+> **Status:** Chapters 1–8 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
 
 ## About the book
 
@@ -43,7 +43,7 @@ The Chapter 16 capstone integrates the accepted chapter checkpoints and runs a 1
 | 5 | Build a context planner | [PRD](docs/implementation-plans/chapters/ch05-context-planner/prd.md) · [Architecture](docs/implementation-plans/chapters/ch05-context-planner/architecture.md) · [Design](docs/implementation-plans/chapters/ch05-context-planner/design.md) · [Lab README](labs/ch05/README.md) |
 | 6 | Build a citation-first hybrid RAG service | [PRD](docs/implementation-plans/chapters/ch06-citation-first-hybrid-rag/prd.md) · [Architecture](docs/implementation-plans/chapters/ch06-citation-first-hybrid-rag/architecture.md) · [Design](docs/implementation-plans/chapters/ch06-citation-first-hybrid-rag/design.md) · [Lab README](labs/ch06/README.md) |
 | 7 | Add graph retrieval for multi-hop questions | [PRD](docs/implementation-plans/chapters/ch07-graph-retrieval/prd.md) · [Architecture](docs/implementation-plans/chapters/ch07-graph-retrieval/architecture.md) · [Design](docs/implementation-plans/chapters/ch07-graph-retrieval/design.md) · [Lab README](labs/ch07/README.md) |
-| 8 | Add governed long-term memory | [PRD](docs/implementation-plans/chapters/ch08-governed-long-term-memory/prd.md) · [Architecture](docs/implementation-plans/chapters/ch08-governed-long-term-memory/architecture.md) |
+| 8 | Add governed long-term memory | [PRD](docs/implementation-plans/chapters/ch08-governed-long-term-memory/prd.md) · [Architecture](docs/implementation-plans/chapters/ch08-governed-long-term-memory/architecture.md) · [Design](docs/implementation-plans/chapters/ch08-governed-long-term-memory/design.md) · [Lab README](labs/ch08/README.md) |
 | 9 | Build a secure PolicyOps extension pack | [PRD](docs/implementation-plans/chapters/ch09-secure-extension-pack/prd.md) · [Architecture](docs/implementation-plans/chapters/ch09-secure-extension-pack/architecture.md) |
 | 10 | Build a bounded orchestrator-worker flow | [PRD](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/prd.md) · [Architecture](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/architecture.md) |
 | 11 | Make the agent loop resumable | [PRD](docs/implementation-plans/chapters/ch11-resumable-agent-loop/prd.md) · [Architecture](docs/implementation-plans/chapters/ch11-resumable-agent-loop/architecture.md) |
@@ -99,7 +99,7 @@ docs/
       ch16-policyops-capstone/architecture.md
 ```
 
-Chapter 1, Chapter 2, Chapter 3, Chapter 4, Chapter 5, Chapter 6, and Chapter 7 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
+Chapter 1, Chapter 2, Chapter 3, Chapter 4, Chapter 5, Chapter 6, Chapter 7, and Chapter 8 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
 
 ## Rights and repository scope
 

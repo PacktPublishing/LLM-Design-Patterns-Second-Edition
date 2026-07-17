@@ -166,6 +166,7 @@ def verify(
         "ch05": ["tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch06": ["tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch07": ["tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
+        "ch08": ["tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
 
     cmd = [
@@ -227,6 +228,11 @@ def verify(
         from policyops.graph import run_graph_verification
 
         payload = run_graph_verification(evidence_dir)
+        eval_ok = payload["gates_passed"] is True
+    elif lab == "ch08" and result.returncode == 0:
+        from policyops.memory import run_memory_verification
+
+        payload = run_memory_verification(evidence_dir)
         eval_ok = payload["gates_passed"] is True
 
     settings_fingerprint = None
