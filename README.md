@@ -2,7 +2,7 @@
 
 Private engineering workspace for the hands-on projects accompanying the proposed second edition of **LLM Design Patterns** by **Ken Huang**.
 
-> **Status:** Chapters 1–9 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
+> **Status:** Chapters 1–10 fixture labs are implemented and verified. Remaining chapters follow the same design → implement → verify loop.
 
 ## About the book
 
@@ -45,7 +45,7 @@ The Chapter 16 capstone integrates the accepted chapter checkpoints and runs a 1
 | 7 | Add graph retrieval for multi-hop questions | [PRD](docs/implementation-plans/chapters/ch07-graph-retrieval/prd.md) · [Architecture](docs/implementation-plans/chapters/ch07-graph-retrieval/architecture.md) · [Design](docs/implementation-plans/chapters/ch07-graph-retrieval/design.md) · [Lab README](labs/ch07/README.md) |
 | 8 | Add governed long-term memory | [PRD](docs/implementation-plans/chapters/ch08-governed-long-term-memory/prd.md) · [Architecture](docs/implementation-plans/chapters/ch08-governed-long-term-memory/architecture.md) · [Design](docs/implementation-plans/chapters/ch08-governed-long-term-memory/design.md) · [Lab README](labs/ch08/README.md) |
 | 9 | Build a secure PolicyOps extension pack | [PRD](docs/implementation-plans/chapters/ch09-secure-extension-pack/prd.md) · [Architecture](docs/implementation-plans/chapters/ch09-secure-extension-pack/architecture.md) · [Design](docs/implementation-plans/chapters/ch09-secure-extension-pack/design.md) · [Lab README](labs/ch09/README.md) |
-| 10 | Build a bounded orchestrator-worker flow | [PRD](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/prd.md) · [Architecture](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/architecture.md) |
+| 10 | Build a bounded orchestrator-worker flow | [PRD](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/prd.md) · [Architecture](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/architecture.md) · [Design](docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/design.md) · [Lab README](labs/ch10/README.md) |
 | 11 | Make the agent loop resumable | [PRD](docs/implementation-plans/chapters/ch11-resumable-agent-loop/prd.md) · [Architecture](docs/implementation-plans/chapters/ch11-resumable-agent-loop/architecture.md) |
 | 12 | Turn a production trace into a safe improvement | [PRD](docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/prd.md) · [Architecture](docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/architecture.md) |
 | 13 | Defend against indirect prompt injection | [PRD](docs/implementation-plans/chapters/ch13-prompt-injection-defense/prd.md) · [Architecture](docs/implementation-plans/chapters/ch13-prompt-injection-defense/architecture.md) |
@@ -99,7 +99,7 @@ docs/
       ch16-policyops-capstone/architecture.md
 ```
 
-Chapter 1, Chapter 2, Chapter 3, Chapter 4, Chapter 5, Chapter 6, Chapter 7, Chapter 8, and Chapter 9 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
+Chapter 1, Chapter 2, Chapter 3, Chapter 4, Chapter 5, Chapter 6, Chapter 7, Chapter 8, Chapter 9, and Chapter 10 source code, fixtures, tests, Dockerfile, and executable verification workflows are included. Later chapter implementation code should be added only when that chapter's manuscript/lab scope is approved.
 
 ## Rights and repository scope
 

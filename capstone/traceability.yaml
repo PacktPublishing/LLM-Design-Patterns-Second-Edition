@@ -258,3 +258,40 @@ chapters:
     rollback: remove src/policyops/extensions, labs/ch09, tests/extensions, and restore capstone traceability to ch01-ch08 only
     decision: GO
     notes: Fixture profile demonstrates typed tool previews, exact-effect approval, direct/MCP convergence, skill activation, plugin verification, lifecycle hooks, revocation, compatibility gating, and safe capability context without authority leakage.
+  ch10:
+    status: accepted_fixture
+    checkpoint: work/ch10
+    contracts:
+      - TaskState
+      - PrincipalRef
+      - BudgetLedger
+      - DelegatedTask
+      - WorkerResult
+      - BrowserObservation
+      - BrowserActionTrace
+      - TopologyComparison
+      - OrchestrationScorecard
+    evidence:
+      - state_graph_runs.json
+      - delegation_contract.json
+      - worker_results.json
+      - topology_comparison.json
+      - a2a_no_use_adr.json
+      - orchestration_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch10 --profile fixture --junit build/ch10/junit.xml --evidence build/ch10
+    rollback: remove src/policyops/orchestration, labs/ch10, tests/orchestration, and restore capstone traceability to ch01-ch09 only
+    decision: GO
+    notes: Fixture profile demonstrates a canonical transient state graph, deterministic/single-agent/browser/orchestrator-worker variants, signed narrow delegation, deterministic merge, no-partial fan-out admission, human interrupt states, Chapter 9 final-action boundary, topology comparison, and A2A no-use ADR evidence.
