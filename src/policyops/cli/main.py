@@ -165,6 +165,7 @@ def verify(
         "ch04": ["tests/inference", "tests/contract", "tests/boundary"],
         "ch05": ["tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch06": ["tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
+        "ch07": ["tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
 
     cmd = [
@@ -221,6 +222,11 @@ def verify(
         from policyops.retrieval import run_retrieval_verification
 
         payload = run_retrieval_verification(evidence_dir)
+        eval_ok = payload["gates_passed"] is True
+    elif lab == "ch07" and result.returncode == 0:
+        from policyops.graph import run_graph_verification
+
+        payload = run_graph_verification(evidence_dir)
         eval_ok = payload["gates_passed"] is True
 
     settings_fingerprint = None

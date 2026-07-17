@@ -156,3 +156,35 @@ chapters:
     rollback: remove src/policyops/retrieval, labs/ch06, tests/retrieval, and restore capstone traceability to ch01-ch05 only
     decision: GO
     notes: Fixture profile demonstrates authorization-first hybrid retrieval, citation resolution, table/OCR lineage, deletion and replacement receipts, poison exclusion, timeout abstention, and Chapter 5 context-source compatibility.
+  ch07:
+    status: accepted_fixture
+    checkpoint: work/ch07
+    contracts:
+      - Entity
+      - ClaimRef
+      - GraphPath
+      - GraphQuery
+      - SnapshotManifest
+      - RepairReceipt
+      - GraphQueryResult
+      - GraphScorecard
+    evidence:
+      - graph_results.jsonl
+      - graph_scorecard.json
+      - repair_receipt.json
+      - graph_faults.json
+      - graph_vs_rag_adr.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch07 --profile fixture --junit build/ch07/junit.xml --evidence build/ch07
+    rollback: remove src/policyops/graph, labs/ch07, tests/graph, and restore capstone traceability to ch01-ch06 only
+    decision: GO
+    notes: Fixture profile demonstrates route classification, source-linked graph paths, temporal contradictions, tenant isolation, evidence projection, timeout partials, snapshot repair, and graph-versus-RAG ADR evidence.
