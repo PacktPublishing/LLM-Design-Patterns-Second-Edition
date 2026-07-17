@@ -47,3 +47,28 @@ chapters:
     rollback: remove src/policyops/eval, evals/cases, evals/holdouts, evals/labels, labs/ch02, and restore capstone traceability to ch01 only
     decision: GO
     notes: Deterministic fixture profile only; live rubric/model grading remains optional and non-blocking.
+  ch03:
+    status: accepted_fixture
+    checkpoint: work/ch03
+    contracts:
+      - DataRecord
+      - DatasetManifest
+      - SplitManifest
+      - AdaptationCandidate
+      - ModelArtifact
+      - ExperimentRun
+      - ReleaseDecision
+    evidence:
+      - adaptation_report.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/adaptation
+      - tests/eval
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch03 --profile fixture --junit build/ch03/junit.xml --evidence build/ch03
+    rollback: remove src/policyops/adaptation, evals/adaptation, labs/ch03, tests/adaptation, and restore capstone traceability to ch01-ch02 only
+    decision: GO
+    notes: Core path is CPU-only fixture comparison; optional retraining remains outside mandatory gates.

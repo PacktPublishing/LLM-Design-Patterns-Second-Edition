@@ -1,0 +1,7 @@
+lab_id = "ch03"
+title = "Adaptation Strategy"
+profile = "fixture"
+upstream = "ch02"
+
+[commands]
+verify = "uv run policyops verify ch03 --profile fixture --junit build/ch03/junit.xml --evidence build/ch03"
