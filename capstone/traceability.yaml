@@ -437,3 +437,61 @@ chapters:
     rollback: remove src/policyops/security, labs/ch13, tests/security, and restore capstone traceability to ch01-ch12 only
     decision: GO
     notes: Fixture profile demonstrates threat modeling, provenance labels, identity-first authorization, exact-preview approval, sandbox and egress denial, secret minimization, integrity and revocation checks, MCP stable/RC authorization fixtures, incident containment, residual-risk evidence, and benign-neighbor false-positive control.
+  ch14:
+    status: accepted_fixture
+    checkpoint: work/ch14
+    contracts:
+      - ExecutionEnvelope
+      - AdmissionLimits
+      - WorkItem
+      - OfferResult
+      - WorkLease
+      - RetryPolicy
+      - CircuitBreakerState
+      - ModelRouteDecision
+      - HealthReport
+      - MigrationPlan
+      - ImageRecord
+      - CanaryReport
+      - BackupCatalog
+      - RestoreReport
+      - LoadReport
+      - ChaosResult
+      - RunbookStep
+      - DeploymentScorecard
+    evidence:
+      - topology.json
+      - admission_queue.json
+      - retry_breaker_policy.json
+      - model_route.json
+      - health_reports.json
+      - migration_reports.json
+      - image_records.json
+      - canary_report.json
+      - backup_catalogs.json
+      - restore_reports.json
+      - load_report.json
+      - chaos_results.json
+      - operator_runbooks.json
+      - deployment_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/deployment
+      - tests/security
+      - tests/telemetry
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch14 --profile fixture --junit build/ch14/junit.xml --evidence build/ch14
+    rollback: remove src/policyops/deployment, labs/ch14, tests/deployment, and restore capstone traceability to ch01-ch13 only
+    decision: GO
+    notes: Fixture profile demonstrates bounded admission, durable queue claims, idempotent redelivery, retry and breaker policy, quality-floor model fallback, health/readiness separation, migration gates, digest-pinned image rollback, backup/restore integrity, load and chaos evidence, and operator runbooks.

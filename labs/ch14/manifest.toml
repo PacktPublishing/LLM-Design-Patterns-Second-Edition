@@ -1,0 +1,22 @@
+chapter = "ch14"
+title = "Deploy and Recover the PolicyOps Service"
+base_tag = "ed2-v1.0-ch14-start"
+profile = "fixture"
+verify = "uv run policyops verify ch14 --profile fixture --junit build/ch14/junit.xml --evidence build/ch14"
+fault = "uv run policyops fault ch14 --scenario all"
+
+[artifacts]
+source = "src/policyops/deployment"
+tests = "tests/deployment"
+evidence = "build/ch14"
+design = "docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/design.md"
+
+[gates]
+queue_bound_held = true
+duplicate_tickets = 0
+bad_image_rolled_back = true
+corrupt_backup_rejected = true
+valid_restore_integrity = true
+rto_met = true
+rpo_met = true
+secret_leaks = 0

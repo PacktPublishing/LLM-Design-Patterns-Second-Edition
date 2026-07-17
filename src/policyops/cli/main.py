@@ -172,6 +172,7 @@ def verify(
         "ch11": ["tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch12": ["tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
         "ch13": ["tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
+        "ch14": ["tests/deployment", "tests/security", "tests/telemetry", "tests/harness", "tests/orchestration", "tests/extensions", "tests/memory", "tests/graph", "tests/retrieval", "tests/context", "tests/inference", "tests/contract", "tests/boundary"],
     }.get(lab, ["tests"])
 
     cmd = [
@@ -263,6 +264,11 @@ def verify(
         from policyops.security import run_security_verification
 
         payload = run_security_verification(evidence_dir)
+        eval_ok = payload["gates_passed"] is True
+    elif lab == "ch14" and result.returncode == 0:
+        from policyops.deployment import run_deployment_verification
+
+        payload = run_deployment_verification(evidence_dir)
         eval_ok = payload["gates_passed"] is True
 
     settings_fingerprint = None
@@ -385,6 +391,14 @@ def fault(
         from policyops.security import run_security_faults
 
         payload = run_security_faults(evidence_dir, scenario)
+        if not payload["passed"]:
+            raise typer.Exit(1)
+        console.print("[green]fault drills passed[/green]")
+        return
+    if lab == "ch14":
+        from policyops.deployment import run_deployment_faults
+
+        payload = run_deployment_faults(evidence_dir, scenario)
         if not payload["passed"]:
             raise typer.Exit(1)
         console.print("[green]fault drills passed[/green]")
