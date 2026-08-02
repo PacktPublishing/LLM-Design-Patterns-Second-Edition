@@ -17,8 +17,10 @@ from rich.console import Console
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 env_app = typer.Typer(help="Lab environment lifecycle")
 eval_app = typer.Typer(help="Evaluation suite commands (Chapter 2+)")
+session_app = typer.Typer(help="Session runtime commands (Chapter 11)")
 app.add_typer(env_app, name="env")
 app.add_typer(eval_app, name="eval")
+app.add_typer(session_app, name="session")
 console = Console()
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -39,6 +41,12 @@ def _fixture_pack(lab: str) -> Path:
     if lab_fixtures.exists():
         return lab_fixtures
     return ROOT / "labs" / "ch01" / "fixtures"
+
+
+def _session_runtime_root() -> Path:
+    path = _build_dir("ch11") / "runtime"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def _tree_hash(root: Path) -> str:
@@ -129,6 +137,101 @@ def eval_compare(
     out = _build_dir("ch02") / "compare.json"
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     console.print(f"[green]compare written[/green] {out}")
+
+
+@session_app.command("run")
+def session_run(
+    session_id: str = typer.Argument(...),
+    tenant_id: str = typer.Option("tenant_alpha", "--tenant-id"),
+    actor_id: str = typer.Option("actor_reader", "--actor-id"),
+    expected_version: int = typer.Option(0, "--expected-version"),
+    owner_id: str = typer.Option("worker-a", "--owner-id"),
+    fault: str | None = typer.Option(None, "--fault"),
+) -> None:
+    from policyops.harness import FaultScenario, SessionRunRequest, SessionRuntime
+
+    runtime = SessionRuntime(_session_runtime_root())
+    request = SessionRunRequest(
+        expected_version=expected_version,
+        owner_id=owner_id,
+        fault=FaultScenario(fault) if fault else None,
+    )
+    envelope = runtime.run(
+        session_id,
+        request,
+        tenant_id=tenant_id,
+        actor_id=actor_id,
+        configuration_id="cli-session-runtime",
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@session_app.command("inspect")
+def session_inspect(session_id: str = typer.Argument(...)) -> None:
+    from policyops.harness import SessionRuntime
+
+    envelope = SessionRuntime(_session_runtime_root()).inspect(session_id)
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@session_app.command("replay")
+def session_replay(
+    session_id: str = typer.Argument(...),
+    no_effects: bool = typer.Option(False, "--no-effects"),
+) -> None:
+    from policyops.harness import SessionRuntime
+
+    if not no_effects:
+        console.print("[red]session replay requires --no-effects[/red]")
+        raise typer.Exit(1)
+    envelope = SessionRuntime(_session_runtime_root()).replay_no_effects(session_id)
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@session_app.command("reconcile")
+def session_reconcile(session_id: str = typer.Argument(...)) -> None:
+    from policyops.harness import SessionRuntime
+
+    envelope = SessionRuntime(_session_runtime_root()).reconcile(session_id)
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@session_app.command("resume")
+def session_resume(
+    session_id: str = typer.Argument(...),
+    tenant_id: str = typer.Option("tenant_alpha", "--tenant-id"),
+    actor_id: str = typer.Option("actor_reader", "--actor-id"),
+    expected_version: int | None = typer.Option(None, "--expected-version"),
+    owner_id: str = typer.Option("worker-b", "--owner-id"),
+) -> None:
+    from policyops.harness import SessionResumeRequest, SessionRuntime
+
+    envelope = SessionRuntime(_session_runtime_root()).resume(
+        session_id,
+        SessionResumeRequest(expected_version=expected_version, owner_id=owner_id),
+        tenant_id=tenant_id,
+        actor_id=actor_id,
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@session_app.command("cancel")
+def session_cancel(
+    session_id: str = typer.Argument(...),
+    tenant_id: str = typer.Option("tenant_alpha", "--tenant-id"),
+    actor_id: str = typer.Option("actor_reader", "--actor-id"),
+    expected_version: int | None = typer.Option(None, "--expected-version"),
+    owner_id: str = typer.Option("operator-a", "--owner-id"),
+) -> None:
+    from policyops.harness import SessionCancelRequest, SessionRuntime
+
+    envelope = SessionRuntime(_session_runtime_root()).cancel(
+        session_id,
+        SessionCancelRequest(expected_version=expected_version, owner_id=owner_id),
+        tenant_id=tenant_id,
+        actor_id=actor_id,
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
 
 
 @app.command("verify")

@@ -12,6 +12,7 @@ from policyops.adapters.replay import ReplayModelClient
 from policyops.api import create_app
 from policyops.composition import AppContainer
 from policyops.config import Settings
+from policyops.harness import SessionRuntime
 from policyops.services import AnswerService
 
 FIXTURES = Path("labs/ch01/fixtures")
@@ -34,8 +35,10 @@ def _container(fixture_pack: Path = FIXTURES) -> AppContainer:
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(create_app(_container()))
+def client(tmp_path: Path) -> TestClient:
+    app = create_app(_container())
+    app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
+    return TestClient(app)
 
 
 def _headers(**extra: str) -> dict[str, str]:
@@ -170,3 +173,74 @@ def test_ready_returns_503_when_adapter_not_ready(tmp_path: Path) -> None:
     r = client.get("/health/ready")
     assert r.status_code == 503
     assert r.json()["status"] == "not_ready"
+
+
+def test_session_run_inspect_and_checkpoint_routes(client: TestClient) -> None:
+    run = client.post(
+        "/v1/sessions/session-api-1/run",
+        headers=_headers(),
+        json={"expected_version": 0, "owner_id": "worker-a", "fault": "before_effect"},
+    )
+    assert run.status_code == 200
+    body = run.json()
+    assert body["session"]["session_id"] == "session-api-1"
+    assert body["session"]["state"] == "action_ready"
+    inspect = client.get("/v1/sessions/session-api-1", headers=_headers())
+    assert inspect.status_code == 200
+    assert inspect.json()["session"]["version"] >= 4
+    events = client.get("/v1/sessions/session-api-1/events", headers=_headers())
+    assert events.status_code == 200
+    assert len(events.json()) >= 4
+    checkpoint = client.get("/v1/sessions/session-api-1/checkpoint", headers=_headers())
+    assert checkpoint.status_code == 200
+    assert checkpoint.json() is None
+
+
+def test_session_resume_completes_pending_effect(client: TestClient) -> None:
+    client.post(
+        "/v1/sessions/session-api-2/run",
+        headers=_headers(),
+        json={"expected_version": 0, "fault": "after_effect_before_ack"},
+    )
+    resume = client.post(
+        "/v1/sessions/session-api-2/resume",
+        headers=_headers(),
+        json={"expected_version": 4, "owner_id": "worker-b"},
+    )
+    assert resume.status_code == 200
+    body = resume.json()
+    assert body["session"]["state"] == "verified"
+    assert len(body["receipts"]) == 1
+    checkpoint = client.get("/v1/sessions/session-api-2/checkpoint", headers=_headers())
+    assert checkpoint.status_code == 200
+    assert checkpoint.json()["state"]["state"] == "effect_delivered"
+
+
+def test_session_conflict_returns_typed_409(client: TestClient) -> None:
+    client.post(
+        "/v1/sessions/session-api-3/run",
+        headers=_headers(),
+        json={"expected_version": 0, "fault": "before_effect"},
+    )
+    conflict = client.post(
+        "/v1/sessions/session-api-3/resume",
+        headers=_headers(),
+        json={"expected_version": 999, "owner_id": "worker-b"},
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["code"] == "CONFLICT"
+
+
+def test_session_cancel_stops_future_reconcile(client: TestClient) -> None:
+    client.post(
+        "/v1/sessions/session-api-4/run",
+        headers=_headers(),
+        json={"expected_version": 0, "fault": "before_effect"},
+    )
+    cancel = client.post(
+        "/v1/sessions/session-api-4/cancel",
+        headers=_headers(),
+        json={"expected_version": 4, "owner_id": "operator-a"},
+    )
+    assert cancel.status_code == 200
+    assert cancel.json()["session"]["state"] == "cancelled"

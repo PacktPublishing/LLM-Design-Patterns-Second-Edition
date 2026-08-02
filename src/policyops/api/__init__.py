@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -22,6 +23,17 @@ from policyops.contracts import (
     RetryClass,
     RunContext,
 )
+from policyops.harness import (
+    SessionCancelRequest,
+    SessionConflictError,
+    SessionEnvelope,
+    SessionEvent,
+    SessionCheckpoint,
+    SessionNotFoundError,
+    SessionResumeRequest,
+    SessionRunRequest,
+    SessionRuntime,
+)
 from policyops.telemetry import setup_telemetry, span
 from policyops.util import fake_now
 
@@ -30,6 +42,9 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     setup_telemetry()
     application = FastAPI(title="PolicyOps", version="0.1.0")
     application.state.container = container or build_container()
+    application.state.session_runtime = SessionRuntime(
+        Path(__file__).resolve().parents[3] / "build" / "ch11" / "runtime"
+    )
 
     @application.exception_handler(DomainError)
     async def domain_error_handler(_request: Request, exc: DomainError) -> JSONResponse:
@@ -46,6 +61,32 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         payload = problem.model_dump()
         payload["details"] = {"errors": json.loads(json.dumps(exc.errors(), default=str))}
         return JSONResponse(status_code=400, content=payload)
+
+    def _problem(
+        code: ErrorCode,
+        message: str,
+        *,
+        http_status: int,
+        trace_id: str | None = None,
+        request_id: str | None = None,
+    ) -> DomainError:
+        return DomainError(
+            code,
+            message,
+            retry_class=RetryClass.NONE,
+            http_status=http_status,
+            trace_id=trace_id,
+            request_id=request_id,
+        )
+
+    def _require_identity(x_tenant_id: str | None, x_actor_id: str | None) -> tuple[str, str]:
+        if not x_tenant_id or not x_actor_id:
+            raise _problem(
+                ErrorCode.UNAUTHORIZED,
+                "missing tenant or actor identity",
+                http_status=401,
+            )
+        return x_tenant_id, x_actor_id
 
     @application.get("/health/live")
     async def live() -> dict[str, str]:
@@ -164,6 +205,103 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
                 )
 
             return await c.answer_service.answer(body, context)
+
+    @application.get("/v1/sessions/{session_id}", response_model=SessionEnvelope)
+    async def session_inspect(
+        session_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> SessionEnvelope:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        runtime: SessionRuntime = request.app.state.session_runtime
+        try:
+            envelope = runtime.inspect(session_id)
+        except SessionNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
+        if envelope.session.tenant_id != tenant_id or envelope.session.actor_id != actor_id:
+            raise _problem(ErrorCode.FORBIDDEN, "session identity mismatch", http_status=403)
+        return envelope
+
+    @application.get("/v1/sessions/{session_id}/events", response_model=list[SessionEvent])
+    async def session_events(
+        session_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> list[SessionEvent]:
+        envelope = await session_inspect(session_id, request, x_tenant_id, x_actor_id)
+        return envelope.events
+
+    @application.get("/v1/sessions/{session_id}/checkpoint", response_model=SessionCheckpoint | None)
+    async def session_checkpoint(
+        session_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> SessionCheckpoint | None:
+        envelope = await session_inspect(session_id, request, x_tenant_id, x_actor_id)
+        return envelope.checkpoint
+
+    @application.post("/v1/sessions/{session_id}/run", response_model=SessionEnvelope)
+    async def session_run(
+        session_id: str,
+        body: SessionRunRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_request_id: str | None = Header(default=None),
+        x_trace_id: str | None = Header(default=None),
+    ) -> SessionEnvelope:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        runtime: SessionRuntime = request.app.state.session_runtime
+        configuration_id = request.app.state.container.settings.fingerprint()
+        try:
+            return runtime.run(
+                session_id,
+                body,
+                tenant_id=tenant_id,
+                actor_id=actor_id,
+                configuration_id=configuration_id,
+                request_id=x_request_id,
+                trace_id=x_trace_id,
+            )
+        except SessionConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
+
+    @application.post("/v1/sessions/{session_id}/resume", response_model=SessionEnvelope)
+    async def session_resume(
+        session_id: str,
+        body: SessionResumeRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> SessionEnvelope:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        runtime: SessionRuntime = request.app.state.session_runtime
+        try:
+            return runtime.resume(session_id, body, tenant_id=tenant_id, actor_id=actor_id)
+        except SessionNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
+        except SessionConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
+
+    @application.post("/v1/sessions/{session_id}/cancel", response_model=SessionEnvelope)
+    async def session_cancel(
+        session_id: str,
+        body: SessionCancelRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> SessionEnvelope:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        runtime: SessionRuntime = request.app.state.session_runtime
+        try:
+            return runtime.cancel(session_id, body, tenant_id=tenant_id, actor_id=actor_id)
+        except SessionNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
+        except SessionConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
 
     return application
 

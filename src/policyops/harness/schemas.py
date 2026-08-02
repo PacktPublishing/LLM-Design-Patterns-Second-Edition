@@ -212,3 +212,29 @@ class HarnessScorecard(StrictModel):
         ):
             raise ValueError("harness gates cannot pass with duplicate effects or unsafe replay")
         return self
+
+
+class SessionRunRequest(StrictModel):
+    expected_version: int | None = Field(default=None, ge=0)
+    owner_id: str = "worker-a"
+    budget: BudgetSnapshot | None = None
+    fault: FaultScenario | None = None
+
+
+class SessionResumeRequest(StrictModel):
+    expected_version: int | None = Field(default=None, ge=0)
+    owner_id: str = "worker-b"
+
+
+class SessionCancelRequest(StrictModel):
+    expected_version: int | None = Field(default=None, ge=0)
+    owner_id: str = "operator-a"
+
+
+class SessionEnvelope(StrictModel):
+    session: SessionState
+    lease: Lease | None = None
+    checkpoint: SessionCheckpoint | None = None
+    events: list[SessionEvent] = Field(default_factory=list)
+    pending_outbox: list[OutboxMessage] = Field(default_factory=list)
+    receipts: list[EffectReceipt] = Field(default_factory=list)
