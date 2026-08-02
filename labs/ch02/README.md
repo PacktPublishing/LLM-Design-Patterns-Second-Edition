@@ -2,6 +2,12 @@
 
 Offline evaluation runner for PolicyOps: versioned cases, deterministic graders, failure adjudication, and cost-per-successful-outcome evidence.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/eval](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/eval)
+- Primary tests: [tests/eval](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/eval)
+- Recorded verification evidence: [build/ch02](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch02) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch02/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch02/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch02/scorecard.json)
+
 Specs: [PRD](../../docs/implementation-plans/chapters/ch02-evaluation-driven-development-suite/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch02-evaluation-driven-development-suite/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch02-evaluation-driven-development-suite/design.md)
 
 ## What this code teaches

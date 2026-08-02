@@ -2,6 +2,12 @@
 
 This lab turns the cumulative PolicyOps implementation into an operable production-shaped system. The fixture verifier models the key reliability contracts locally so readers can test failure behavior without paid model credentials.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/deployment](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/deployment)
+- Primary tests: [tests/deployment](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/deployment)
+- Recorded verification evidence: [build/ch14](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch14) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch14/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch14/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch14/scorecard.json)
+
 ## What you build
 
 - A declared API, worker, database, model gateway, sandbox, egress, ticket, telemetry, release, and backup topology.

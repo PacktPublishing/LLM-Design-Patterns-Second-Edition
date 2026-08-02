@@ -2,6 +2,12 @@
 
 This lab compares four ways to run the same PolicyOps triage task: deterministic workflow, single replay-backed agent, browser/computer-use fixture, and orchestrator-worker fan-out. The lesson is deliberately practical: use the least complex topology that satisfies the measured requirement.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/orchestration](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/orchestration)
+- Primary tests: [tests/orchestration](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/orchestration)
+- Recorded verification evidence: [build/ch10](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch10) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch10/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch10/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch10/scorecard.json)
+
 ## What you build
 
 - A canonical transient `TaskState` and state-graph boundary.

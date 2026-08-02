@@ -2,6 +2,12 @@
 
 Hands-on lab for the PolicyOps service shell: provider-neutral model contracts, deterministic replay, FastAPI identity boundary, and fixture verification.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/contracts](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/contracts), [src/policyops/adapters](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/adapters), [src/policyops/api](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/api)
+- Primary tests: [tests/contract](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/contract), [tests/api](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/api), [tests/boundary](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/boundary), [tests/fault](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/fault)
+- Recorded verification evidence: [build/ch01](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch01) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch01/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch01/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch01/scorecard.json)
+
 Specs: [PRD](../../docs/implementation-plans/chapters/ch01-policyops-foundation/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch01-policyops-foundation/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch01-policyops-foundation/design.md)
 
 ## What this code teaches

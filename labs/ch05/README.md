@@ -15,3 +15,10 @@ Evidence is written under `build/ch05/`: rendered fixture context, redacted
 manifest, token report, fault drill results, JUnit, fingerprints, and the shared
 trace-redaction sample. The mandatory path is offline and does not require a
 hosted model, vector database, memory store, or capability protocol.
+
+## GitHub evidence
+
+- Source implementation: [src/policyops/context](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/context)
+- Primary tests: [tests/context](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/context)
+- Recorded verification evidence: [build/ch05](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch05) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch05/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch05/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch05/scorecard.json)
+

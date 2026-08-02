@@ -2,6 +2,12 @@
 
 This lab attacks the composed PolicyOps system with malicious documents, malicious web/tool observations, approval attacks, egress probes, sandbox probes, revoked extensions, MCP authorization mistakes, and benign near-neighbors.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/security](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/security)
+- Primary tests: [tests/security](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/security)
+- Recorded verification evidence: [build/ch13](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch13) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch13/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch13/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch13/scorecard.json)
+
 ## What you build
 
 - A versioned threat model and frozen attack corpus.

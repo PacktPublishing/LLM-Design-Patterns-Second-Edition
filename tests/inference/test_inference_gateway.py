@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from policyops.contracts import ModelRequest
+from policyops.contracts import AuthorizationContext, Budget, ModelRequest, RunContext
 from policyops.inference import (
     AdaptiveInferenceGateway,
     CacheEntry,
@@ -35,6 +36,26 @@ def _request(**overrides) -> InferenceRequest:
     )
     base.update(overrides)
     return InferenceRequest(**base)
+
+
+def _context(**overrides) -> RunContext:
+    base = dict(
+        request_id="req_gateway_fixture",
+        trace_id="trace_gateway_fixture",
+        tenant_id="tenant_alpha",
+        actor_id="actor_reader",
+        roles=["policy-reader"],
+        purpose="policy-question",
+        configuration_id="sha256:gateway-test",
+        configuration_versions={"model": "gateway-fixture", "policy": "policy-v1"},
+        deadline_at=datetime(2030, 1, 1, 0, 0, 5, tzinfo=UTC),
+        budget=Budget(max_input_tokens=2048, max_output_tokens=512),
+        authorization_context=AuthorizationContext(
+            scopes=["policy:read"], decision_id="authz-gateway-fixture"
+        ),
+    )
+    base.update(overrides)
+    return RunContext(**base)
 
 
 def test_easy_request_exits_after_first_verified_candidate() -> None:
@@ -190,8 +211,6 @@ def test_gateway_verification_writes_evidence(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_gateway_implements_chapter_one_model_client_port() -> None:
-    from tests.contract.test_contracts import _context
-
     gateway = AdaptiveInferenceGateway()
     result = await gateway.generate(
         ModelRequest(question="How many remote days are allowed?"),

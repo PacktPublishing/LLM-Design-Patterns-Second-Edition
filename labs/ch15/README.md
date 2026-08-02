@@ -2,6 +2,12 @@
 
 This lab builds the executable governance package for PolicyOps. The release gate checks not just whether controls exist, but whether current accountable humans, signatures, tests, evidence, rights receipts, and approvals make the system releasable.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/governance](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/governance)
+- Primary tests: [tests/governance](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/governance)
+- Recorded verification evidence: [build/ch15](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch15) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch15/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch15/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch15/scorecard.json)
+
 ## What you build
 
 - A system inventory, risk/autonomy records, owner directory, and approval matrix.

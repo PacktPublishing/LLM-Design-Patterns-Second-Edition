@@ -2,6 +2,12 @@
 
 This lab makes the selected PolicyOps loop resumable. It uses append-only events, checkpoints, fencing leases, approval-bound action intents, a transactional outbox, idempotent delivery, no-effect replay, and a scoped engineering review bundle.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/harness](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/harness)
+- Primary tests: [tests/harness](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/harness)
+- Recorded verification evidence: [build/ch11](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch11) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch11/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch11/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch11/scorecard.json)
+
 ## What you build
 
 - A scoped engineering plan and review bundle.

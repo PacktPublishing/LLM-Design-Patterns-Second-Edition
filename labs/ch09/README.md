@@ -2,6 +2,12 @@
 
 This lab turns PolicyOps ticket creation into a governed capability pack. The typed tool is canonical; MCP, skills, plugins, and hooks add interoperability, guidance, distribution, and lifecycle controls without changing the final authorization boundary.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/extensions](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/extensions)
+- Primary tests: [tests/extensions](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/extensions)
+- Recorded verification evidence: [build/ch09](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch09) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch09/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch09/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch09/scorecard.json)
+
 ## What you build
 
 - `preview_policy_ticket` and `create_policy_ticket` contracts with canonical effect hashes.

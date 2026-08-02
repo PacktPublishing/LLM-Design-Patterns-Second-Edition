@@ -2,6 +2,12 @@
 
 This lab runs the capstone release verifier. It validates the accepted Chapter 1-15 handoffs, executes the ordered production game day, signs the evidence bundle, and returns a final `GO` or `NO-GO` decision.
 
+## GitHub evidence
+
+- Source implementation: [src/policyops/capstone](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/capstone)
+- Primary tests: [tests/capstone](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/capstone)
+- Recorded verification evidence: [build/ch16](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch16) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch16/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch16/result.json) | [capstone_scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch16/capstone_scorecard.json)
+
 ## What you build
 
 - A traceability closure validator.

@@ -16,3 +16,10 @@ Evidence is written under `build/ch04/`, including raw benchmark rows, an infere
 report, a serving ADR, fingerprints, JUnit, and the standard redacted trace sample.
 Fixture latency and spend are learning evidence, not hosted-provider performance
 claims.
+
+## GitHub evidence
+
+- Source implementation: [src/policyops/inference](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/inference)
+- Primary tests: [tests/inference](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/inference)
+- Recorded verification evidence: [build/ch04](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch04) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch04/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch04/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch04/scorecard.json)
+

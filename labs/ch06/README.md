@@ -16,3 +16,10 @@ uv run policyops fault ch06 --scenario all
 The mandatory profile runs offline. It does not require a hosted embedding model,
 reranker, PostgreSQL instance, or vector database, but the code keeps the same
 contracts that a production-backed implementation would need to preserve.
+
+## GitHub evidence
+
+- Source implementation: [src/policyops/retrieval](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/retrieval)
+- Primary tests: [tests/retrieval](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/retrieval)
+- Recorded verification evidence: [build/ch06](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch06) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch06/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch06/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch06/scorecard.json)
+
