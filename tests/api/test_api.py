@@ -13,6 +13,7 @@ from policyops.api import create_app
 from policyops.composition import AppContainer
 from policyops.config import Settings
 from policyops.harness import SessionRuntime
+from policyops.orchestration import TriageRuntime
 from policyops.services import AnswerService
 
 FIXTURES = Path("labs/ch01/fixtures")
@@ -56,6 +57,7 @@ def _local_container(fixture_pack: Path = FIXTURES) -> AppContainer:
 def client(tmp_path: Path) -> TestClient:
     app = create_app(_container())
     app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
+    app.state.triage_runtime = TriageRuntime(tmp_path / "triage-runtime")
     return TestClient(app)
 
 
@@ -196,6 +198,7 @@ def test_ready_returns_503_when_adapter_not_ready(tmp_path: Path) -> None:
 def test_answer_success_with_local_adapter(tmp_path: Path) -> None:
     app = create_app(_local_container())
     app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
+    app.state.triage_runtime = TriageRuntime(tmp_path / "triage-runtime")
     client = TestClient(app)
     r = client.post(
         "/v1/answer",
@@ -206,6 +209,94 @@ def test_answer_success_with_local_adapter(tmp_path: Path) -> None:
     body = r.json()
     assert body["answer"]["text"].startswith("Employees may work remotely")
     assert body["usage"]["adapter"] == "local"
+
+
+def test_triage_run_create_inspect_and_idempotency(client: TestClient) -> None:
+    created = client.post(
+        "/v1/triage/runs",
+        headers=_headers(),
+        json={
+            "scenario_id": "policy-triage-default",
+            "variant": "orchestrator_worker",
+            "idempotency_key": "triage-api-1",
+        },
+    )
+    assert created.status_code == 200
+    body = created.json()
+    assert body["run"]["variant"] == "orchestrator_worker"
+    assert body["delegated_tasks"]
+    assert body["worker_results"]
+    assert body["available_controls"] == []
+
+    second = client.post(
+        "/v1/triage/runs",
+        headers=_headers(),
+        json={
+            "scenario_id": "policy-triage-default",
+            "variant": "orchestrator_worker",
+            "idempotency_key": "triage-api-1",
+        },
+    )
+    assert second.status_code == 200
+    assert second.json()["run"]["run_id"] == body["run"]["run_id"]
+
+    inspect = client.get(f"/v1/triage/runs/{body['run']['run_id']}", headers=_headers())
+    assert inspect.status_code == 200
+    assert inspect.json()["run"]["run_id"] == body["run"]["run_id"]
+
+
+def test_triage_pause_resume_cancel_routes(client: TestClient) -> None:
+    created = client.post(
+        "/v1/triage/runs",
+        headers=_headers(),
+        json={
+            "scenario_id": "policy-triage-default",
+            "variant": "orchestrator_worker",
+            "budget": {"worker_limit": 1},
+        },
+    )
+    assert created.status_code == 200
+    run = created.json()["run"]
+    run_id = run["run_id"]
+    paused = client.post(
+        f"/v1/triage/runs/{run_id}:pause",
+        headers=_headers(),
+        json={"expected_version": run["version"]},
+    )
+    assert paused.status_code == 200
+    assert paused.json()["run"]["status"] == "paused"
+
+    resumed = client.post(
+        f"/v1/triage/runs/{run_id}:resume",
+        headers=_headers(),
+        json={"expected_version": paused.json()['run']['version']},
+    )
+    assert resumed.status_code == 200
+    assert resumed.json()["run"]["status"] == "awaiting_review"
+
+    cancelled = client.post(
+        f"/v1/triage/runs/{run_id}:cancel",
+        headers=_headers(),
+        json={"expected_version": resumed.json()['run']['version']},
+    )
+    assert cancelled.status_code == 200
+    assert cancelled.json()["run"]["status"] == "cancelled"
+
+
+def test_triage_state_version_conflict_returns_409(client: TestClient) -> None:
+    created = client.post(
+        "/v1/triage/runs",
+        headers=_headers(),
+        json={"variant": "workflow"},
+    )
+    run_id = created.json()["run"]["run_id"]
+    conflict = client.post(
+        f"/v1/triage/runs/{run_id}:pause",
+        headers=_headers(),
+        json={"expected_version": 999},
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["code"] == "CONFLICT"
 
 
 def test_session_run_inspect_and_checkpoint_routes(client: TestClient) -> None:

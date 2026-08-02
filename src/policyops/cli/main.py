@@ -18,9 +18,11 @@ app = typer.Typer(add_completion=False, no_args_is_help=True)
 env_app = typer.Typer(help="Lab environment lifecycle")
 eval_app = typer.Typer(help="Evaluation suite commands (Chapter 2+)")
 session_app = typer.Typer(help="Session runtime commands (Chapter 11)")
+triage_app = typer.Typer(help="Triage runtime commands (Chapter 10)")
 app.add_typer(env_app, name="env")
 app.add_typer(eval_app, name="eval")
 app.add_typer(session_app, name="session")
+app.add_typer(triage_app, name="triage")
 console = Console()
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -45,6 +47,12 @@ def _fixture_pack(lab: str) -> Path:
 
 def _session_runtime_root() -> Path:
     path = _build_dir("ch11") / "runtime"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _triage_runtime_root() -> Path:
+    path = _build_dir("ch10") / "runtime"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -230,6 +238,101 @@ def session_cancel(
         SessionCancelRequest(expected_version=expected_version, owner_id=owner_id),
         tenant_id=tenant_id,
         actor_id=actor_id,
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@triage_app.command("run")
+def triage_run(
+    variant: str = typer.Option(..., "--variant"),
+    scenario_id: str = typer.Option("policy-triage-default", "--scenario-id"),
+    tenant_id: str = typer.Option("tenant_alpha", "--tenant-id"),
+    actor_id: str = typer.Option("actor_reader", "--actor-id"),
+    idempotency_key: str | None = typer.Option(None, "--idempotency-key"),
+    browser_profile: str | None = typer.Option(None, "--browser-profile"),
+    worker_limit: int | None = typer.Option(None, "--worker-limit"),
+) -> None:
+    from datetime import UTC, datetime
+
+    from policyops.contracts import AuthorizationContext, Budget, RunContext
+    from policyops.orchestration import BudgetLedger, TopologyVariant, TriageRunRequest, TriageRuntime
+
+    budget = BudgetLedger(worker_limit=worker_limit) if worker_limit is not None else None
+    context = RunContext(
+        request_id=f"req_triage_{variant}",
+        trace_id=f"trace_triage_{variant}",
+        tenant_id=tenant_id,
+        actor_id=actor_id,
+        roles=["policy-reader"],
+        purpose="policy-triage",
+        configuration_id="cli-triage-runtime",
+        configuration_versions={"orchestration": "1.0.0"},
+        deadline_at=datetime(2030, 1, 1, 0, 0, 5, tzinfo=UTC),
+        budget=Budget(max_input_tokens=2048, max_output_tokens=512),
+        authorization_context=AuthorizationContext(
+            scopes=["policy:read", "ticket:create", "ticket:preview"],
+            decision_id="authz-triage-cli",
+        ),
+    )
+    envelope = TriageRuntime(_triage_runtime_root()).create(
+        TriageRunRequest(
+            scenario_id=scenario_id,
+            variant=TopologyVariant(variant),
+            budget=budget,
+            browser_profile=browser_profile,
+            idempotency_key=idempotency_key,
+        ),
+        context=context,
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@triage_app.command("inspect")
+def triage_inspect(run_id: str = typer.Argument(...)) -> None:
+    from policyops.orchestration import TriageRuntime
+
+    envelope = TriageRuntime(_triage_runtime_root()).inspect(run_id)
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@triage_app.command("pause")
+def triage_pause(
+    run_id: str = typer.Argument(...),
+    expected_version: int = typer.Option(..., "--expected-version"),
+) -> None:
+    from policyops.orchestration import TriageControlRequest, TriageRuntime
+
+    envelope = TriageRuntime(_triage_runtime_root()).pause(
+        run_id,
+        TriageControlRequest(expected_version=expected_version),
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@triage_app.command("resume")
+def triage_resume(
+    run_id: str = typer.Argument(...),
+    expected_version: int = typer.Option(..., "--expected-version"),
+) -> None:
+    from policyops.orchestration import TriageControlRequest, TriageRuntime
+
+    envelope = TriageRuntime(_triage_runtime_root()).resume(
+        run_id,
+        TriageControlRequest(expected_version=expected_version),
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@triage_app.command("cancel")
+def triage_cancel(
+    run_id: str = typer.Argument(...),
+    expected_version: int = typer.Option(..., "--expected-version"),
+) -> None:
+    from policyops.orchestration import TriageControlRequest, TriageRuntime
+
+    envelope = TriageRuntime(_triage_runtime_root()).cancel(
+        run_id,
+        TriageControlRequest(expected_version=expected_version),
     )
     console.print_json(json.dumps(envelope.model_dump(mode="json")))
 

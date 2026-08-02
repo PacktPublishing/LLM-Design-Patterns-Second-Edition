@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from policyops.contracts import RunContext
 from policyops.extensions import SecuredToolPort, fixture_context, fixture_ticket, sha_json, sha_text
@@ -24,6 +25,9 @@ from policyops.orchestration.schemas import (
     TopologyComparison,
     TopologyMetrics,
     TopologyVariant,
+    TriageControlRequest,
+    TriageRunEnvelope,
+    TriageRunRequest,
     WorkerResult,
 )
 
@@ -217,6 +221,14 @@ class BrowserFixture:
         return actions, None
 
 
+class TriageNotFoundError(RuntimeError):
+    pass
+
+
+class TriageConflictError(RuntimeError):
+    pass
+
+
 class TriageEngine:
     def __init__(self, tool_port: SecuredToolPort | None = None) -> None:
         self.tool_port = tool_port or SecuredToolPort()
@@ -234,12 +246,13 @@ class TriageEngine:
         self,
         variant: TopologyVariant,
         *,
+        run_id: str | None = None,
         context: RunContext | None = None,
         budget: BudgetLedger | None = None,
         browser_profile: str | None = None,
     ) -> TaskState:
         context = context or fixture_context()
-        run_id = f"run_{variant.value}"
+        run_id = run_id or f"run_{variant.value}_{uuid4().hex[:10]}"
         state = TaskState(
             run_id=run_id,
             variant=variant,
@@ -259,6 +272,18 @@ class TriageEngine:
             self._orchestrator_worker(state, context)
         self.runs[run_id] = state
         return state
+
+    def inspect(self, run_id: str) -> TaskState:
+        try:
+            return self.runs[run_id]
+        except KeyError as exc:
+            raise TriageNotFoundError(f"run not found: {run_id}") from exc
+
+    def delegated_tasks_for(self, run_id: str) -> list[DelegatedTask]:
+        return [task for task in self.issued_tasks if task.run_id == run_id]
+
+    def worker_results_for(self, run_id: str) -> list[WorkerResult]:
+        return [result for result in self.worker_results if result.run_id == run_id]
 
     def pause(self, run_id: str, *, expected_version: int) -> TaskState:
         state = self._versioned(run_id, expected_version)
@@ -291,9 +316,12 @@ class TriageEngine:
         return state
 
     def _versioned(self, run_id: str, expected_version: int) -> TaskState:
-        state = self.runs[run_id]
+        try:
+            state = self.runs[run_id]
+        except KeyError as exc:
+            raise TriageNotFoundError(f"run not found: {run_id}") from exc
         if state.version != expected_version:
-            raise RuntimeError("STATE_VERSION_CONFLICT")
+            raise TriageConflictError("STATE_VERSION_CONFLICT")
         return state
 
     def _deterministic(self, state: TaskState, context: RunContext) -> None:
@@ -414,6 +442,167 @@ class TriageEngine:
             state.status = RunStatus.AWAITING_REVIEW
             state.terminal_reason = TerminalReason.APPROVAL_DENIED
             state.trace.append("approval_denied")
+
+
+class TriageRuntime:
+    def __init__(self, root: Path, tool_port: SecuredToolPort | None = None) -> None:
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.tool_port = tool_port
+
+    def _run_path(self, run_id: str) -> Path:
+        return self.root / f"{run_id}.json"
+
+    def _idempotency_path(self) -> Path:
+        return self.root / "_idempotency.json"
+
+    def _load_idempotency(self) -> dict[str, str]:
+        path = self._idempotency_path()
+        if not path.exists():
+            return {}
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def _save_idempotency(self, mapping: dict[str, str]) -> None:
+        self._idempotency_path().write_text(
+            json.dumps(mapping, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+
+    def _load_engine(self, run_id: str) -> TriageEngine:
+        path = self._run_path(run_id)
+        if not path.exists():
+            raise TriageNotFoundError(f"run not found: {run_id}")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        engine = TriageEngine(self.tool_port)
+        state = TaskState.model_validate(payload["run"])
+        engine.runs[state.run_id] = state
+        engine.issued_tasks = [
+            DelegatedTask.model_validate(task) for task in payload.get("delegated_tasks", [])
+        ]
+        engine.worker_results = [
+            WorkerResult.model_validate(result) for result in payload.get("worker_results", [])
+        ]
+        engine.seen_delegation_nonces = set(payload.get("seen_delegation_nonces", []))
+        return engine
+
+    def _save_engine(
+        self,
+        run_id: str,
+        engine: TriageEngine,
+        *,
+        scenario_id: str,
+        idempotency_key: str | None,
+    ) -> None:
+        state = engine.inspect(run_id)
+        payload = {
+            "run": state.model_dump(mode="json"),
+            "delegated_tasks": [
+                task.model_dump(mode="json") for task in engine.delegated_tasks_for(run_id)
+            ],
+            "worker_results": [
+                result.model_dump(mode="json") for result in engine.worker_results_for(run_id)
+            ],
+            "seen_delegation_nonces": sorted(engine.seen_delegation_nonces),
+            "scenario_id": scenario_id,
+            "idempotency_key": idempotency_key,
+        }
+        self._run_path(run_id).write_text(
+            json.dumps(payload, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+
+    def _available_controls(self, state: TaskState) -> list[str]:
+        if state.status == RunStatus.SUCCEEDED:
+            return []
+        if state.status == RunStatus.CANCELLED:
+            return []
+        if state.status == RunStatus.PAUSED:
+            return ["resume", "cancel"]
+        return ["pause", "cancel"]
+
+    def _envelope(self, run_id: str, engine: TriageEngine) -> TriageRunEnvelope:
+        payload = json.loads(self._run_path(run_id).read_text(encoding="utf-8"))
+        state = engine.inspect(run_id)
+        return TriageRunEnvelope(
+            run=state,
+            delegated_tasks=engine.delegated_tasks_for(run_id),
+            worker_results=engine.worker_results_for(run_id),
+            available_controls=self._available_controls(state),
+            scenario_id=payload.get("scenario_id", "policy-triage-default"),
+            idempotency_key=payload.get("idempotency_key"),
+        )
+
+    def create(
+        self,
+        request: TriageRunRequest,
+        *,
+        context: RunContext,
+    ) -> TriageRunEnvelope:
+        idempotency = self._load_idempotency()
+        if request.idempotency_key and request.idempotency_key in idempotency:
+            run_id = idempotency[request.idempotency_key]
+            engine = self._load_engine(run_id)
+            return self._envelope(run_id, engine)
+
+        engine = TriageEngine(self.tool_port)
+        run_id = f"triage_{request.variant.value}_{uuid4().hex[:10]}"
+        engine.start(
+            request.variant,
+            run_id=run_id,
+            context=context,
+            budget=request.budget,
+            browser_profile=request.browser_profile,
+        )
+        if request.idempotency_key:
+            idempotency[request.idempotency_key] = run_id
+            self._save_idempotency(idempotency)
+        self._save_engine(
+            run_id,
+            engine,
+            scenario_id=request.scenario_id,
+            idempotency_key=request.idempotency_key,
+        )
+        return self._envelope(run_id, engine)
+
+    def inspect(self, run_id: str) -> TriageRunEnvelope:
+        engine = self._load_engine(run_id)
+        return self._envelope(run_id, engine)
+
+    def pause(self, run_id: str, request: TriageControlRequest) -> TriageRunEnvelope:
+        engine = self._load_engine(run_id)
+        state = engine.pause(run_id, expected_version=request.expected_version)
+        payload = json.loads(self._run_path(run_id).read_text(encoding="utf-8"))
+        self._save_engine(
+            run_id,
+            engine,
+            scenario_id=payload.get("scenario_id", "policy-triage-default"),
+            idempotency_key=payload.get("idempotency_key"),
+        )
+        return self._envelope(state.run_id, engine)
+
+    def resume(self, run_id: str, request: TriageControlRequest) -> TriageRunEnvelope:
+        engine = self._load_engine(run_id)
+        state = engine.resume(run_id, expected_version=request.expected_version)
+        payload = json.loads(self._run_path(run_id).read_text(encoding="utf-8"))
+        self._save_engine(
+            run_id,
+            engine,
+            scenario_id=payload.get("scenario_id", "policy-triage-default"),
+            idempotency_key=payload.get("idempotency_key"),
+        )
+        return self._envelope(state.run_id, engine)
+
+    def cancel(self, run_id: str, request: TriageControlRequest) -> TriageRunEnvelope:
+        engine = self._load_engine(run_id)
+        state = engine.cancel(run_id, expected_version=request.expected_version)
+        payload = json.loads(self._run_path(run_id).read_text(encoding="utf-8"))
+        self._save_engine(
+            run_id,
+            engine,
+            scenario_id=payload.get("scenario_id", "policy-triage-default"),
+            idempotency_key=payload.get("idempotency_key"),
+        )
+        return self._envelope(state.run_id, engine)
 
 
 def run_topology_comparison(states: list[TaskState]) -> TopologyComparison:

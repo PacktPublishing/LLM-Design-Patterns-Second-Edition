@@ -34,6 +34,14 @@ from policyops.harness import (
     SessionRunRequest,
     SessionRuntime,
 )
+from policyops.orchestration import (
+    TriageConflictError,
+    TriageControlRequest,
+    TriageNotFoundError,
+    TriageRunEnvelope,
+    TriageRunRequest,
+    TriageRuntime,
+)
 from policyops.telemetry import setup_telemetry, span
 from policyops.util import fake_now
 
@@ -44,6 +52,9 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     application.state.container = container or build_container()
     application.state.session_runtime = SessionRuntime(
         Path(__file__).resolve().parents[3] / "build" / "ch11" / "runtime"
+    )
+    application.state.triage_runtime = TriageRuntime(
+        Path(__file__).resolve().parents[3] / "build" / "ch10" / "runtime"
     )
 
     @application.exception_handler(DomainError)
@@ -87,6 +98,37 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
                 http_status=401,
             )
         return x_tenant_id, x_actor_id
+
+    def _run_context(
+        *,
+        tenant_id: str,
+        actor_id: str,
+        settings,
+        request_id: str | None,
+        trace_id: str | None,
+        roles_header: str | None,
+        scopes_header: str | None,
+        decision_id: str | None,
+        purpose: str,
+    ) -> RunContext:
+        roles = [r.strip() for r in (roles_header or "policy-reader").split(",") if r.strip()]
+        scopes = [s.strip() for s in (scopes_header or "policy:read").split(",") if s.strip()]
+        return RunContext(
+            request_id=request_id or f"req_{uuid4().hex[:12]}",
+            trace_id=trace_id or f"trace_{uuid4().hex[:12]}",
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            roles=roles,
+            purpose=purpose,
+            configuration_id=settings.fingerprint(),
+            configuration_versions=dict(settings.configuration_versions),
+            deadline_at=fake_now() + timedelta(seconds=5),
+            budget=Budget(max_input_tokens=2048, max_output_tokens=512),
+            authorization_context=AuthorizationContext(
+                scopes=scopes,
+                decision_id=decision_id or "authz-fixture-1",
+            ),
+        )
 
     @application.get("/health/live")
     async def live() -> dict[str, str]:
@@ -170,41 +212,120 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
                     http_status=400,
                 ) from exc
 
-            roles = [r.strip() for r in (x_roles or "policy-reader").split(",") if r.strip()]
-            scopes = [
-                s.strip() for s in (x_authz_scopes or "policy:read").split(",") if s.strip()
-            ]
-            request_id = x_request_id or f"req_{uuid4().hex[:12]}"
-            trace_id = x_trace_id or f"trace_{uuid4().hex[:12]}"
             c: AppContainer = request.app.state.container
             settings = c.settings
-            context = RunContext(
-                request_id=request_id,
-                trace_id=trace_id,
+            context = _run_context(
                 tenant_id=x_tenant_id,
                 actor_id=x_actor_id,
-                roles=roles,
+                settings=settings,
+                request_id=x_request_id,
+                trace_id=x_trace_id,
+                roles_header=x_roles,
+                scopes_header=x_authz_scopes,
+                decision_id=x_authz_decision_id,
                 purpose="policy-question",
-                configuration_id=settings.fingerprint(),
-                configuration_versions=dict(settings.configuration_versions),
-                deadline_at=fake_now() + timedelta(seconds=5),
-                budget=Budget(max_input_tokens=2048, max_output_tokens=512),
-                authorization_context=AuthorizationContext(
-                    scopes=scopes,
-                    decision_id=x_authz_decision_id or "authz-fixture-1",
-                ),
             )
-            if "policy:read" not in scopes:
+            if "policy:read" not in context.authorization_context.scopes:
                 raise DomainError(
                     ErrorCode.FORBIDDEN,
                     "insufficient authorization scope",
                     retry_class=RetryClass.NONE,
                     http_status=403,
-                    trace_id=trace_id,
-                    request_id=request_id,
+                    trace_id=context.trace_id,
+                    request_id=context.request_id,
                 )
 
             return await c.answer_service.answer(body, context)
+
+    @application.post("/v1/triage/runs", response_model=TriageRunEnvelope)
+    async def triage_run_create(
+        body: TriageRunRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_request_id: str | None = Header(default=None),
+        x_trace_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+        x_authz_scopes: str | None = Header(default=None),
+        x_authz_decision_id: str | None = Header(default=None),
+    ) -> TriageRunEnvelope:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        settings = request.app.state.container.settings
+        context = _run_context(
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            settings=settings,
+            request_id=x_request_id,
+            trace_id=x_trace_id,
+            roles_header=x_roles,
+            scopes_header=x_authz_scopes or "policy:read,ticket:create,ticket:preview",
+            decision_id=x_authz_decision_id,
+            purpose="policy-triage",
+        )
+        runtime: TriageRuntime = request.app.state.triage_runtime
+        return runtime.create(body, context=context)
+
+    @application.get("/v1/triage/runs/{run_id}", response_model=TriageRunEnvelope)
+    async def triage_run_inspect(
+        run_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> TriageRunEnvelope:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        runtime: TriageRuntime = request.app.state.triage_runtime
+        try:
+            envelope = runtime.inspect(run_id)
+        except TriageNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
+        if envelope.run.principal.tenant_id != tenant_id or envelope.run.principal.actor_id != actor_id:
+            raise _problem(ErrorCode.FORBIDDEN, "run identity mismatch", http_status=403)
+        return envelope
+
+    @application.post("/v1/triage/runs/{run_id}:pause", response_model=TriageRunEnvelope)
+    async def triage_run_pause(
+        run_id: str,
+        body: TriageControlRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> TriageRunEnvelope:
+        await triage_run_inspect(run_id, request, x_tenant_id, x_actor_id)
+        runtime: TriageRuntime = request.app.state.triage_runtime
+        try:
+            return runtime.pause(run_id, body)
+        except TriageConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
+
+    @application.post("/v1/triage/runs/{run_id}:resume", response_model=TriageRunEnvelope)
+    async def triage_run_resume(
+        run_id: str,
+        body: TriageControlRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> TriageRunEnvelope:
+        await triage_run_inspect(run_id, request, x_tenant_id, x_actor_id)
+        runtime: TriageRuntime = request.app.state.triage_runtime
+        try:
+            return runtime.resume(run_id, body)
+        except TriageConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
+
+    @application.post("/v1/triage/runs/{run_id}:cancel", response_model=TriageRunEnvelope)
+    async def triage_run_cancel(
+        run_id: str,
+        body: TriageControlRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> TriageRunEnvelope:
+        await triage_run_inspect(run_id, request, x_tenant_id, x_actor_id)
+        runtime: TriageRuntime = request.app.state.triage_runtime
+        try:
+            return runtime.cancel(run_id, body)
+        except TriageConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
 
     @application.get("/v1/sessions/{session_id}", response_model=SessionEnvelope)
     async def session_inspect(

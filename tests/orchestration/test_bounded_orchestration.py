@@ -17,6 +17,9 @@ from policyops.orchestration import (
     TerminalReason,
     TopologyVariant,
     TriageEngine,
+    TriageControlRequest,
+    TriageRunRequest,
+    TriageRuntime,
     Worker,
     principal_from_context,
     run_orchestration_verification,
@@ -181,3 +184,54 @@ def test_fixture_verification_writes_orchestration_evidence(tmp_path: Path) -> N
     assert (tmp_path / "worker_results.json").exists()
     assert (tmp_path / "a2a_no_use_adr.json").exists()
     assert (tmp_path / "orchestration_scorecard.json").exists()
+
+
+def test_triage_runtime_persists_run_snapshots_and_idempotency(tmp_path: Path) -> None:
+    runtime = TriageRuntime(tmp_path / "runtime")
+    first = runtime.create(
+        TriageRunRequest(
+            scenario_id="policy-triage-default",
+            variant=TopologyVariant.ORCHESTRATOR_WORKER,
+            idempotency_key="same-run",
+        ),
+        context=fixture_context(),
+    )
+    again = runtime.create(
+        TriageRunRequest(
+            scenario_id="policy-triage-default",
+            variant=TopologyVariant.ORCHESTRATOR_WORKER,
+            idempotency_key="same-run",
+        ),
+        context=fixture_context(),
+    )
+    assert first.run.run_id == again.run.run_id
+    inspected = runtime.inspect(first.run.run_id)
+    assert inspected.delegated_tasks
+    assert inspected.worker_results
+
+
+def test_triage_runtime_controls_update_persisted_state(tmp_path: Path) -> None:
+    runtime = TriageRuntime(tmp_path / "runtime")
+    created = runtime.create(
+        TriageRunRequest(
+            scenario_id="policy-triage-default",
+            variant=TopologyVariant.ORCHESTRATOR_WORKER,
+            budget=BudgetLedger(worker_limit=1),
+        ),
+        context=fixture_context(),
+    )
+    paused = runtime.pause(
+        created.run.run_id,
+        TriageControlRequest(expected_version=created.run.version),
+    )
+    assert paused.run.status == RunStatus.PAUSED
+    resumed = runtime.resume(
+        created.run.run_id,
+        TriageControlRequest(expected_version=paused.run.version),
+    )
+    assert resumed.run.status == RunStatus.AWAITING_REVIEW
+    cancelled = runtime.cancel(
+        created.run.run_id,
+        TriageControlRequest(expected_version=resumed.run.version),
+    )
+    assert cancelled.run.status == RunStatus.CANCELLED

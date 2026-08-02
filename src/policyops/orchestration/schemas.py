@@ -200,3 +200,24 @@ class OrchestrationScorecard(StrictModel):
         ):
             raise ValueError("orchestration hard gates cannot pass with boundary failures")
         return self
+
+
+class TriageRunRequest(StrictModel):
+    scenario_id: str = "policy-triage-default"
+    variant: TopologyVariant
+    budget: BudgetLedger | None = None
+    browser_profile: str | None = None
+    idempotency_key: str | None = None
+
+
+class TriageControlRequest(StrictModel):
+    expected_version: int = Field(ge=1)
+
+
+class TriageRunEnvelope(StrictModel):
+    run: TaskState
+    delegated_tasks: list[DelegatedTask] = Field(default_factory=list)
+    worker_results: list[WorkerResult] = Field(default_factory=list)
+    available_controls: list[str] = Field(default_factory=list)
+    scenario_id: str = "policy-triage-default"
+    idempotency_key: str | None = None
