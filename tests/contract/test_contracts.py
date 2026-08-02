@@ -104,6 +104,41 @@ async def test_local_adapter_tags_usage_adapter() -> None:
 
 
 @pytest.mark.asyncio
+async def test_local_adapter_supports_abstain_without_replay() -> None:
+    client = LocalModelClient(FIXTURES)
+    result = await client.generate(
+        ModelRequest(question="What is the parental leave rule?"),
+        _context(),
+    )
+    assert result.kind == "success"
+    assert result.answer.answer_type == "abstain"
+    assert result.answer.abstention_reason == "policy_excerpt_missing_fact"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("fault", "code"),
+    [
+        ("timeout", "DEADLINE_EXCEEDED"),
+        ("invalid_json", "MODEL_BAD_OUTPUT"),
+        ("schema_invalid", "MODEL_BAD_OUTPUT"),
+        ("upstream_error", "MODEL_CAPACITY"),
+    ],
+)
+async def test_local_adapter_faults_map_to_typed_failures(fault: str, code: str) -> None:
+    client = LocalModelClient(FIXTURES, fault_scenario=fault)
+    result = await client.generate(ModelRequest(question="x"), _context())
+    assert result.kind == "failure"
+    assert result.failure.code.value == code
+
+
+@pytest.mark.asyncio
+async def test_local_adapter_ready_fails_closed_when_policy_missing(tmp_path: Path) -> None:
+    client = LocalModelClient(tmp_path)
+    assert await client.ready() is False
+
+
+@pytest.mark.asyncio
 async def test_replay_unknown_scenario_reports_capacity() -> None:
     client = ReplayModelClient(FIXTURES, fault_scenario="does_not_exist")
     result = await client.generate(ModelRequest(question="x"), _context())

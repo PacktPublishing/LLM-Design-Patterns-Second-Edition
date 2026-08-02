@@ -34,6 +34,24 @@ def _container(fixture_pack: Path = FIXTURES) -> AppContainer:
     )
 
 
+def _local_container(fixture_pack: Path = FIXTURES) -> AppContainer:
+    from policyops.adapters.local import LocalModelClient
+
+    settings = Settings(
+        profile="local",
+        adapter="local",
+        fixture_pack=fixture_pack,
+        lab_id="ch01",
+        configuration_versions={"model": "local-v1", "policy": "policy-v1"},
+    )
+    client = LocalModelClient(fixture_pack)
+    return AppContainer(
+        settings=settings,
+        client=client,
+        answer_service=AnswerService(client),
+    )
+
+
 @pytest.fixture
 def client(tmp_path: Path) -> TestClient:
     app = create_app(_container())
@@ -173,6 +191,21 @@ def test_ready_returns_503_when_adapter_not_ready(tmp_path: Path) -> None:
     r = client.get("/health/ready")
     assert r.status_code == 503
     assert r.json()["status"] == "not_ready"
+
+
+def test_answer_success_with_local_adapter(tmp_path: Path) -> None:
+    app = create_app(_local_container())
+    app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
+    client = TestClient(app)
+    r = client.post(
+        "/v1/answer",
+        headers=_headers(),
+        json={"question": "How many remote days are allowed?"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["answer"]["text"].startswith("Employees may work remotely")
+    assert body["usage"]["adapter"] == "local"
 
 
 def test_session_run_inspect_and_checkpoint_routes(client: TestClient) -> None:
