@@ -170,3 +170,16 @@ def test_deleted_fixture_source_is_not_returned() -> None:
     retriever = HybridRetriever()
     pack = retriever.query(_request("deleted source searchable"))
     assert all(item.citation.source_id != "policy_deleted" for item in pack.items)
+
+
+def test_sqlite_backed_fixture_corpus_persists_replacements_and_deletions(tmp_path: Path) -> None:
+    db_path = tmp_path / "retrieval.sqlite3"
+    corpus = FixtureCorpus(db_path=db_path)
+    corpus.replace_source("policy_remote", "Remote work now allows three days.", "replace-persist")
+    corpus.delete_source("policy_scanned", "v1", "delete-persist")
+
+    reloaded = FixtureCorpus(db_path=db_path)
+
+    assert reloaded.versions["policy_remote"].version_id == "v3"
+    assert reloaded.versions["policy_scanned"].deleted is True
+    assert len(reloaded.receipts) == 2

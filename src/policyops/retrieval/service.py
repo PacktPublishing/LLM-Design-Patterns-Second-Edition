@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import re
+import sqlite3
 from pathlib import Path
 from statistics import quantiles
 
@@ -45,12 +46,161 @@ def _tokens(text: str) -> list[str]:
 
 
 class FixtureCorpus:
-    def __init__(self) -> None:
-        self.manifest_generation = 1
-        self.versions: dict[str, SourceVersion] = {}
-        self.spans: dict[str, Span] = {}
-        self.receipts: list[LifecycleReceipt] = []
-        self._load()
+    def __init__(self, db_path: str | Path | None = None) -> None:
+        self.db_path = ":memory:" if db_path is None else str(Path(db_path))
+        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._init_schema()
+        if self._is_empty():
+            self.manifest_generation = 1
+            self._load()
+
+    def _init_schema(self) -> None:
+        with self._conn:
+            self._conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS corpus_meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS source_versions (
+                    source_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    version_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS spans (
+                    span_id TEXT PRIMARY KEY,
+                    source_id TEXT NOT NULL,
+                    version_id TEXT NOT NULL,
+                    span_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS lifecycle_receipts (
+                    receipt_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                    receipt_json TEXT NOT NULL
+                );
+                """
+            )
+
+    def _is_empty(self) -> bool:
+        row = self._conn.execute("SELECT COUNT(*) AS count FROM source_versions").fetchone()
+        return int(row["count"]) == 0
+
+    def _dump(self, payload: object) -> str:
+        return json.dumps(payload, sort_keys=True, default=str)
+
+    def _load_json(self, payload: str) -> object:
+        return json.loads(payload)
+
+    @property
+    def manifest_generation(self) -> int:
+        row = self._conn.execute(
+            "SELECT value FROM corpus_meta WHERE key = 'manifest_generation'"
+        ).fetchone()
+        return int(row["value"]) if row is not None else 1
+
+    @manifest_generation.setter
+    def manifest_generation(self, value: int) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO corpus_meta(key, value) VALUES ('manifest_generation', ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """,
+                (str(value),),
+            )
+
+    @property
+    def versions(self) -> dict[str, SourceVersion]:
+        rows = self._conn.execute("SELECT source_id, version_json FROM source_versions ORDER BY source_id").fetchall()
+        return {
+            row["source_id"]: SourceVersion.model_validate(self._load_json(row["version_json"]))
+            for row in rows
+        }
+
+    @versions.setter
+    def versions(self, payload: dict[str, SourceVersion]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM source_versions")
+            self._conn.executemany(
+                "INSERT INTO source_versions(source_id, tenant_id, version_json) VALUES (?, ?, ?)",
+                [
+                    (source_id, version.tenant_id, self._dump(version.model_dump(mode="json")))
+                    for source_id, version in payload.items()
+                ],
+            )
+
+    @property
+    def spans(self) -> dict[str, Span]:
+        rows = self._conn.execute("SELECT span_id, span_json FROM spans ORDER BY span_id").fetchall()
+        return {
+            row["span_id"]: Span.model_validate(self._load_json(row["span_json"]))
+            for row in rows
+        }
+
+    @spans.setter
+    def spans(self, payload: dict[str, Span]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM spans")
+            self._conn.executemany(
+                "INSERT INTO spans(span_id, source_id, version_id, span_json) VALUES (?, ?, ?, ?)",
+                [
+                    (span_id, span.source_id, span.version_id, self._dump(span.model_dump(mode="json")))
+                    for span_id, span in payload.items()
+                ],
+            )
+
+    @property
+    def receipts(self) -> list[LifecycleReceipt]:
+        rows = self._conn.execute(
+            "SELECT receipt_json FROM lifecycle_receipts ORDER BY receipt_sequence"
+        ).fetchall()
+        return [LifecycleReceipt.model_validate(self._load_json(row["receipt_json"])) for row in rows]
+
+    @receipts.setter
+    def receipts(self, payload: list[LifecycleReceipt]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM lifecycle_receipts")
+            self._conn.executemany(
+                "INSERT INTO lifecycle_receipts(receipt_json) VALUES (?)",
+                [(self._dump(receipt.model_dump(mode="json")),) for receipt in payload],
+            )
+
+    def _save_version(self, version: SourceVersion) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO source_versions(source_id, tenant_id, version_json) VALUES (?, ?, ?)
+                ON CONFLICT(source_id) DO UPDATE SET
+                    tenant_id = excluded.tenant_id,
+                    version_json = excluded.version_json
+                """,
+                (version.source_id, version.tenant_id, self._dump(version.model_dump(mode="json"))),
+            )
+
+    def _save_span(self, span: Span) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO spans(span_id, source_id, version_id, span_json) VALUES (?, ?, ?, ?)
+                ON CONFLICT(span_id) DO UPDATE SET
+                    source_id = excluded.source_id,
+                    version_id = excluded.version_id,
+                    span_json = excluded.span_json
+                """,
+                (span.span_id, span.source_id, span.version_id, self._dump(span.model_dump(mode="json"))),
+            )
+
+    def _append_receipt(self, receipt: LifecycleReceipt) -> None:
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO lifecycle_receipts(receipt_json) VALUES (?)",
+                (self._dump(receipt.model_dump(mode="json")),),
+            )
 
     def _load(self) -> None:
         self._add_source(
@@ -179,7 +329,7 @@ class FixtureCorpus:
         deleted: bool = False,
     ) -> None:
         body = "\n".join(span.text for span in spans)
-        self.versions[source_id] = SourceVersion(
+        version = SourceVersion(
             source_id=source_id,
             version_id=version_id,
             tenant_id=tenant_id,
@@ -189,8 +339,9 @@ class FixtureCorpus:
             deleted=deleted,
             content_hash=sha_text(body),
         )
+        self._save_version(version)
         for span in spans:
-            self.spans[span.span_id] = span
+            self._save_span(span)
 
     def active_spans(self, principal: Principal) -> list[Span]:
         allowed: list[Span] = []
@@ -251,7 +402,7 @@ class FixtureCorpus:
             manifest_generation=self.manifest_generation,
             freshness_lag_ms=100,
         )
-        self.receipts.append(receipt)
+        self._append_receipt(receipt)
         return receipt
 
     def delete_source(self, source_id: str, expected_version: str, idempotency_key: str) -> LifecycleReceipt:
@@ -262,6 +413,7 @@ class FixtureCorpus:
             self.manifest_generation += 1
         version.active = False
         version.deleted = True
+        self._save_version(version)
         receipt = LifecycleReceipt(
             source_id=source_id,
             previous_version_id=version.version_id,
@@ -271,7 +423,7 @@ class FixtureCorpus:
             manifest_generation=self.manifest_generation,
             freshness_lag_ms=100,
         )
-        self.receipts.append(receipt)
+        self._append_receipt(receipt)
         return receipt
 
 
