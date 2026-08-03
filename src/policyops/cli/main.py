@@ -19,10 +19,16 @@ env_app = typer.Typer(help="Lab environment lifecycle")
 eval_app = typer.Typer(help="Evaluation suite commands (Chapter 2+)")
 session_app = typer.Typer(help="Session runtime commands (Chapter 11)")
 triage_app = typer.Typer(help="Triage runtime commands (Chapter 10)")
+trace_app = typer.Typer(help="Trace inspection commands (Chapter 12)")
+experiment_app = typer.Typer(help="Experiment commands (Chapter 12)")
+canary_app = typer.Typer(help="Canary commands (Chapter 12)")
 app.add_typer(env_app, name="env")
 app.add_typer(eval_app, name="eval")
 app.add_typer(session_app, name="session")
 app.add_typer(triage_app, name="triage")
+app.add_typer(trace_app, name="trace")
+app.add_typer(experiment_app, name="experiment")
+app.add_typer(canary_app, name="canary")
 console = Console()
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -53,6 +59,12 @@ def _session_runtime_root() -> Path:
 
 def _triage_runtime_root() -> Path:
     path = _build_dir("ch10") / "runtime"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _telemetry_runtime_root() -> Path:
+    path = _build_dir("ch12") / "runtime"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -145,6 +157,29 @@ def eval_compare(
     out = _build_dir("ch02") / "compare.json"
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     console.print(f"[green]compare written[/green] {out}")
+
+
+@eval_app.command("graduate")
+def eval_graduate(
+    correlation_id: str = typer.Option("corr-policyops-1201", "--correlation-id"),
+    failure_class: str = typer.Option("product_failure", "--failure-class"),
+    expert_role: str = typer.Option("policy operations lead", "--expert-role"),
+    expected_behavior: str = typer.Option(
+        "Answer should cite the current reimbursement policy and ask for approval before creating a ticket.",
+        "--expected-behavior",
+    ),
+) -> None:
+    from policyops.telemetry import AdjudicationRequest, FailureClass, TelemetryRuntime
+
+    envelope = TelemetryRuntime(_telemetry_runtime_root()).adjudicate(
+        AdjudicationRequest(
+            correlation_id=correlation_id,
+            failure_class=FailureClass(failure_class),
+            expert_role=expert_role,
+            expected_behavior=expected_behavior,
+        )
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
 
 
 @session_app.command("run")
@@ -335,6 +370,54 @@ def triage_cancel(
         TriageControlRequest(expected_version=expected_version),
     )
     console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@trace_app.command("inspect")
+def trace_inspect(
+    correlation_id: str = typer.Argument(...),
+) -> None:
+    from policyops.telemetry import TelemetryRuntime
+
+    envelope = TelemetryRuntime(_telemetry_runtime_root()).inspect_operation(correlation_id)
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@experiment_app.command("run")
+def experiment_run(
+    candidate_profile: str = typer.Option("overfit", "--candidate-profile"),
+) -> None:
+    from policyops.telemetry import ExperimentRunRequest, TelemetryRuntime
+
+    envelope = TelemetryRuntime(_telemetry_runtime_root()).run_experiment(
+        ExperimentRunRequest(candidate_profile=candidate_profile)
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@canary_app.command("simulate")
+def canary_simulate(
+    bad_release: bool = typer.Option(True, "--bad-release/--good-release"),
+) -> None:
+    from policyops.telemetry import TelemetryRuntime
+
+    report = TelemetryRuntime(_telemetry_runtime_root()).simulate_canary(
+        bad_release=bad_release
+    )
+    console.print_json(json.dumps(report.model_dump(mode="json")))
+
+
+@canary_app.command("stop")
+def canary_stop(
+    canary_id: str = typer.Argument(...),
+    reason: str = typer.Option("operator stopped canary", "--reason"),
+) -> None:
+    from policyops.telemetry import CanaryStopRequest, TelemetryRuntime
+
+    report = TelemetryRuntime(_telemetry_runtime_root()).stop_canary(
+        canary_id,
+        CanaryStopRequest(reason=reason),
+    )
+    console.print_json(json.dumps(report.model_dump(mode="json")))
 
 
 @app.command("verify")

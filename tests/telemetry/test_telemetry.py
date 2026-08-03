@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from policyops.telemetry import (
+    AdjudicationRequest,
     ALLOWED_ATTRS,
     ArtifactRegistry,
+    CanaryStopRequest,
     ExperimentDecision,
+    ExperimentRunRequest,
     FailureClass,
     SamplingDecision,
     SpanKind,
+    TelemetryRuntime,
     TelemetryPolicy,
     TraceImprovementPipeline,
     clear_spans,
@@ -160,3 +164,29 @@ def test_chapter_12_fault_drills_cover_required_scenarios(tmp_path) -> None:
 def test_artifact_registry_uses_sha256_digests() -> None:
     artifacts = ArtifactRegistry().fixture_artifacts()
     assert all(artifact.digest.startswith("sha256:") for artifact in artifacts.artifacts)
+
+
+def test_telemetry_runtime_persists_operation_adjudication_experiment_and_canary(tmp_path) -> None:
+    runtime = TelemetryRuntime(tmp_path / "runtime")
+    operation = runtime.inspect_operation("corr-policyops-1201")
+    assert operation.spans
+
+    adjudication = runtime.adjudicate(
+        AdjudicationRequest(
+            correlation_id="corr-policyops-1201",
+            failure_class=FailureClass.PRODUCT_FAILURE,
+            expert_role="policy operations lead",
+            expected_behavior="Answer should cite the current reimbursement policy and ask for approval before creating a ticket.",
+        )
+    )
+    assert adjudication.evaluation_case is not None
+
+    experiment = runtime.run_experiment(ExperimentRunRequest(candidate_profile="accepted"))
+    assert experiment.active_canary_id == "canary-ch12-active"
+
+    stopped = runtime.stop_canary(
+        "canary-ch12-active",
+        CanaryStopRequest(reason="operator stopped canary"),
+    )
+    assert stopped.decision.value == "rollback"
+    assert stopped.rollback_reason == "operator stopped canary"

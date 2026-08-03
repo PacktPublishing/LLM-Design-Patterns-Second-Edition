@@ -14,6 +14,7 @@ from policyops.composition import AppContainer
 from policyops.config import Settings
 from policyops.harness import SessionRuntime
 from policyops.orchestration import TriageRuntime
+from policyops.telemetry import TelemetryRuntime
 from policyops.services import AnswerService
 
 FIXTURES = Path("labs/ch01/fixtures")
@@ -58,6 +59,7 @@ def client(tmp_path: Path) -> TestClient:
     app = create_app(_container())
     app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
     app.state.triage_runtime = TriageRuntime(tmp_path / "triage-runtime")
+    app.state.telemetry_runtime = TelemetryRuntime(tmp_path / "telemetry-runtime")
     return TestClient(app)
 
 
@@ -199,6 +201,7 @@ def test_answer_success_with_local_adapter(tmp_path: Path) -> None:
     app = create_app(_local_container())
     app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
     app.state.triage_runtime = TriageRuntime(tmp_path / "triage-runtime")
+    app.state.telemetry_runtime = TelemetryRuntime(tmp_path / "telemetry-runtime")
     client = TestClient(app)
     r = client.post(
         "/v1/answer",
@@ -297,6 +300,64 @@ def test_triage_state_version_conflict_returns_409(client: TestClient) -> None:
     )
     assert conflict.status_code == 409
     assert conflict.json()["code"] == "CONFLICT"
+
+
+def test_operation_inspect_and_adjudication_routes(client: TestClient) -> None:
+    operation = client.get(
+        "/operations/corr-policyops-1201",
+        headers=_headers(),
+    )
+    assert operation.status_code == 200
+    payload = operation.json()
+    assert payload["correlation_id"] == "corr-policyops-1201"
+    assert payload["spans"]
+    assert payload["artifacts"]["artifacts"]
+
+    adjudication = client.post(
+        "/adjudications",
+        headers=_headers(),
+        json={
+            "correlation_id": "corr-policyops-1201",
+            "failure_class": "product_failure",
+            "expert_role": "policy operations lead",
+            "expected_behavior": "Answer should cite the current reimbursement policy and ask for approval before creating a ticket.",
+        },
+    )
+    assert adjudication.status_code == 200
+    body = adjudication.json()
+    assert body["adjudication"]["may_graduate"] is True
+    assert body["evaluation_case"]["source_correlation_id"] == "corr-policyops-1201"
+
+
+def test_operation_tenant_mismatch_forbidden(client: TestClient) -> None:
+    mismatch = client.get(
+        "/operations/corr-policyops-1201",
+        headers=_headers(**{"X-Tenant-Id": "tenant_beta"}),
+    )
+    assert mismatch.status_code == 403
+    assert mismatch.json()["code"] == "FORBIDDEN"
+
+
+def test_experiment_and_canary_stop_routes(client: TestClient) -> None:
+    experiment = client.post(
+        "/experiments",
+        headers=_headers(),
+        json={"candidate_profile": "accepted"},
+    )
+    assert experiment.status_code == 200
+    body = experiment.json()
+    assert body["ledger"]["decision"] == "keep"
+    assert body["active_canary_id"] == "canary-ch12-active"
+
+    stopped = client.post(
+        "/canaries/canary-ch12-active/stop",
+        headers=_headers(),
+        json={"reason": "operator stopped canary"},
+    )
+    assert stopped.status_code == 200
+    report = stopped.json()
+    assert report["decision"] == "rollback"
+    assert report["rollback_reason"] == "operator stopped canary"
 
 
 def test_session_run_inspect_and_checkpoint_routes(client: TestClient) -> None:

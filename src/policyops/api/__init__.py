@@ -42,6 +42,18 @@ from policyops.orchestration import (
     TriageRunRequest,
     TriageRuntime,
 )
+from policyops.telemetry import (
+    AdjudicationEnvelope,
+    AdjudicationRequest,
+    CanaryReport,
+    CanaryStopRequest,
+    ExperimentEnvelope,
+    ExperimentRunRequest,
+    OperationEnvelope,
+    TelemetryNotFoundError,
+    TelemetryRuntime,
+    hash_tenant,
+)
 from policyops.telemetry import setup_telemetry, span
 from policyops.util import fake_now
 
@@ -55,6 +67,9 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     )
     application.state.triage_runtime = TriageRuntime(
         Path(__file__).resolve().parents[3] / "build" / "ch10" / "runtime"
+    )
+    application.state.telemetry_runtime = TelemetryRuntime(
+        Path(__file__).resolve().parents[3] / "build" / "ch12" / "runtime"
     )
 
     @application.exception_handler(DomainError)
@@ -98,6 +113,12 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
                 http_status=401,
             )
         return x_tenant_id, x_actor_id
+
+    def _require_operation_access(tenant_id: str, envelope: OperationEnvelope) -> None:
+        if not envelope.spans:
+            raise _problem(ErrorCode.NOT_FOUND, "operation has no spans", http_status=404)
+        if envelope.spans[0].context.tenant_hash != hash_tenant(tenant_id):
+            raise _problem(ErrorCode.FORBIDDEN, "operation tenant mismatch", http_status=403)
 
     def _run_context(
         *,
@@ -326,6 +347,61 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
             return runtime.cancel(run_id, body)
         except TriageConflictError as exc:
             raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
+
+    @application.get("/operations/{correlation_id}", response_model=OperationEnvelope)
+    async def operation_inspect(
+        correlation_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> OperationEnvelope:
+        tenant_id, _actor_id = _require_identity(x_tenant_id, x_actor_id)
+        runtime: TelemetryRuntime = request.app.state.telemetry_runtime
+        try:
+            envelope = runtime.inspect_operation(correlation_id)
+        except TelemetryNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
+        _require_operation_access(tenant_id, envelope)
+        return envelope
+
+    @application.post("/adjudications", response_model=AdjudicationEnvelope)
+    async def adjudicate_operation(
+        body: AdjudicationRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> AdjudicationEnvelope:
+        tenant_id, _actor_id = _require_identity(x_tenant_id, x_actor_id)
+        runtime: TelemetryRuntime = request.app.state.telemetry_runtime
+        operation = runtime.inspect_operation(body.correlation_id)
+        _require_operation_access(tenant_id, operation)
+        return runtime.adjudicate(body)
+
+    @application.post("/experiments", response_model=ExperimentEnvelope)
+    async def run_experiment(
+        body: ExperimentRunRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> ExperimentEnvelope:
+        _require_identity(x_tenant_id, x_actor_id)
+        runtime: TelemetryRuntime = request.app.state.telemetry_runtime
+        return runtime.run_experiment(body)
+
+    @application.post("/canaries/{canary_id}/stop", response_model=CanaryReport)
+    async def stop_canary(
+        canary_id: str,
+        body: CanaryStopRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> CanaryReport:
+        _require_identity(x_tenant_id, x_actor_id)
+        runtime: TelemetryRuntime = request.app.state.telemetry_runtime
+        try:
+            return runtime.stop_canary(canary_id, body)
+        except TelemetryNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
 
     @application.get("/v1/sessions/{session_id}", response_model=SessionEnvelope)
     async def session_inspect(

@@ -16,17 +16,23 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, Sp
 
 from policyops.harness import EventStore, ResumableLoop
 from policyops.telemetry.schemas import (
+    AdjudicationEnvelope,
+    AdjudicationRequest,
     ArtifactRecord,
     ArtifactSet,
     CanaryDecision,
     CanaryMetric,
     CanaryReport,
+    CanaryStopRequest,
     EvaluationCase,
+    ExperimentEnvelope,
     ExperimentDecision,
     ExperimentLedger,
     ExperimentManifest,
+    ExperimentRunRequest,
     FailureClass,
     HarnessRetirementAdr,
+    OperationEnvelope,
     ObservabilityScorecard,
     RawEvent,
     ReconstructionReport,
@@ -133,7 +139,8 @@ def sha_json(payload: Any) -> str:
 
 
 def hash_tenant(tenant_id: str) -> str:
-    return "tenant_" + hashlib.sha256(f"policyops:{tenant_id}".encode()).hexdigest()[:16]
+    normalized = tenant_id.strip().replace("_", "-").lower()
+    return "tenant_" + hashlib.sha256(f"policyops:{normalized}".encode()).hexdigest()[:16]
 
 
 class ArtifactRegistry:
@@ -536,6 +543,114 @@ class TraceImprovementPipeline:
             decision="retire",
             rollback_path="restore spreadsheet export from archived ch11 event stream",
         )
+
+
+class TelemetryNotFoundError(RuntimeError):
+    pass
+
+
+class TelemetryRuntime:
+    def __init__(self, root: Path) -> None:
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.pipeline = TraceImprovementPipeline()
+
+    def _operations_dir(self) -> Path:
+        path = self.root / "operations"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _adjudications_dir(self) -> Path:
+        path = self.root / "adjudications"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _experiments_dir(self) -> Path:
+        path = self.root / "experiments"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _canaries_dir(self) -> Path:
+        path = self.root / "canaries"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def inspect_operation(self, correlation_id: str) -> OperationEnvelope:
+        artifacts, spans = self.pipeline.correlated_trace()
+        if not spans or spans[0].context.correlation_id != correlation_id:
+            raise TelemetryNotFoundError(f"operation not found: {correlation_id}")
+        envelope = OperationEnvelope(
+            correlation_id=correlation_id,
+            artifacts=artifacts,
+            spans=spans,
+            slos=self.pipeline.slo_records(),
+        )
+        path = self._operations_dir() / f"{correlation_id}.json"
+        path.write_text(json.dumps(envelope.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
+        return envelope
+
+    def adjudicate(self, request: AdjudicationRequest) -> AdjudicationEnvelope:
+        operation = self.inspect_operation(request.correlation_id)
+        adjudication = self.pipeline.adjudicate(
+            operation.spans,
+            failure_class=request.failure_class,
+        ).model_copy(
+            update={
+                "expert_role": request.expert_role,
+                "expected_behavior": request.expected_behavior,
+                "may_graduate": request.failure_class == FailureClass.PRODUCT_FAILURE
+                and bool(request.expected_behavior),
+            }
+        )
+        evaluation_case = None
+        if adjudication.may_graduate:
+            evaluation_case = self.pipeline.graduate_case(operation.spans, adjudication)
+        envelope = AdjudicationEnvelope(adjudication=adjudication, evaluation_case=evaluation_case)
+        path = self._adjudications_dir() / f"{adjudication.adjudication_id}.json"
+        path.write_text(json.dumps(envelope.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
+        return envelope
+
+    def run_experiment(self, request: ExperimentRunRequest) -> ExperimentEnvelope:
+        overfit = request.candidate_profile == "overfit"
+        ledger = self.pipeline.run_experiment(overfit=overfit)
+        active_canary_id: str | None = None
+        if ledger.decision == ExperimentDecision.KEEP:
+            active = self.pipeline.simulate_canary(bad_release=False).model_copy(
+                update={
+                    "canary_id": "canary-ch12-active",
+                    "decision": CanaryDecision.HOLD,
+                    "accepted_alias_after": "accepted:baseline",
+                    "rollback_reason": None,
+                }
+            )
+            active_canary_id = active.canary_id
+            path = self._canaries_dir() / f"{active.canary_id}.json"
+            path.write_text(json.dumps(active.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
+        envelope = ExperimentEnvelope(ledger=ledger, active_canary_id=active_canary_id)
+        path = self._experiments_dir() / f"{ledger.manifest.experiment_id}.json"
+        path.write_text(json.dumps(envelope.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
+        return envelope
+
+    def simulate_canary(self, *, bad_release: bool) -> CanaryReport:
+        report = self.pipeline.simulate_canary(bad_release=bad_release)
+        path = self._canaries_dir() / f"{report.canary_id}.json"
+        path.write_text(json.dumps(report.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
+        return report
+
+    def stop_canary(self, canary_id: str, request: CanaryStopRequest) -> CanaryReport:
+        path = self._canaries_dir() / f"{canary_id}.json"
+        if not path.exists():
+            raise TelemetryNotFoundError(f"canary not found: {canary_id}")
+        report = CanaryReport.model_validate(json.loads(path.read_text(encoding="utf-8")))
+        stopped = report.model_copy(
+            update={
+                "decision": CanaryDecision.ROLLBACK,
+                "accepted_alias_after": report.baseline_alias_before,
+                "rollback_reason": request.reason,
+            }
+        )
+        path.write_text(json.dumps(stopped.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
+        return stopped
 
 
 def write_json(path: Path, payload: Any) -> None:

@@ -280,3 +280,35 @@ class ObservabilityScorecard(StrictModel):
         ):
             raise ValueError("observability scorecard cannot pass with unsafe evidence")
         return self
+
+
+class OperationEnvelope(StrictModel):
+    correlation_id: str
+    artifacts: ArtifactSet
+    spans: list[RedactedSpan]
+    slos: list[SloRecord]
+
+
+class AdjudicationRequest(StrictModel):
+    correlation_id: str
+    failure_class: FailureClass
+    expert_role: str
+    expected_behavior: str | None = None
+
+
+class AdjudicationEnvelope(StrictModel):
+    adjudication: TraceAdjudication
+    evaluation_case: EvaluationCase | None = None
+
+
+class ExperimentRunRequest(StrictModel):
+    candidate_profile: Literal["overfit", "accepted"] = "overfit"
+
+
+class ExperimentEnvelope(StrictModel):
+    ledger: ExperimentLedger
+    active_canary_id: str | None = None
+
+
+class CanaryStopRequest(StrictModel):
+    reason: str = "operator stopped canary"
