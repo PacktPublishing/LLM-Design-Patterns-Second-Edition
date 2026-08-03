@@ -292,6 +292,23 @@ def test_fixture_verification_writes_memory_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "memory_scorecard.json").exists()
 
 
+def test_sqlite_backed_memory_ledger_persists_records_events_and_receipts(tmp_path: Path) -> None:
+    clock = FakeClock()
+    db_path = tmp_path / "memory.sqlite3"
+    ledger = MemoryLedger(clock, db_path=db_path)
+    authorizer = MemoryAuthorizer()
+    principal = _principal()
+    created = ledger.apply(_proposal(proposal_id="persist"), authorizer.evaluate(_proposal(proposal_id="persist"), principal, clock.now()))
+    assert created is not None
+    receipt = ledger.delete(created.record_id, principal, expected_version=created.version)
+
+    reloaded = MemoryLedger(clock, db_path=db_path)
+
+    assert created.record_id in reloaded.records
+    assert any(event.proposal_id == "persist" for event in reloaded.events)
+    assert receipt.receipt_id in reloaded.deleted_receipts
+
+
 def test_policy_allows_fixture_scopes_without_global_by_default() -> None:
     policy = MemoryPolicy()
     assert MemoryScope.PERSONAL in policy.allowed_scopes

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sqlite3
 from pathlib import Path
 
 from policyops.context import (
@@ -182,11 +183,226 @@ class VersionConflict(RuntimeError):
 
 
 class MemoryLedger:
-    def __init__(self, clock: FakeClock | None = None) -> None:
+    def __init__(self, clock: FakeClock | None = None, db_path: str | Path | None = None) -> None:
         self.clock = clock or FakeClock()
-        self.records: dict[str, MemoryRecord] = {}
-        self.events: list[MemoryEvent] = []
-        self.deleted_receipts: dict[str, DeletionReceipt] = {}
+        self.db_path = ":memory:" if db_path is None else str(Path(db_path))
+        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._init_schema()
+
+    def _init_schema(self) -> None:
+        with self._conn:
+            self._conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS memory_records (
+                    record_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    subject_id TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    scope TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    version INTEGER NOT NULL,
+                    record_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS memory_events (
+                    event_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id TEXT NOT NULL,
+                    proposal_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    record_id TEXT,
+                    tenant_id TEXT NOT NULL,
+                    subject_id TEXT NOT NULL,
+                    event_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS deletion_receipts (
+                    receipt_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    subject_id TEXT NOT NULL,
+                    deleted_at INTEGER NOT NULL,
+                    receipt_json TEXT NOT NULL
+                );
+                """
+            )
+
+    def _dump(self, payload: object) -> str:
+        return json.dumps(payload, sort_keys=True)
+
+    def _load(self, payload: str) -> object:
+        return json.loads(payload)
+
+    @property
+    def records(self) -> dict[str, MemoryRecord]:
+        rows = self._conn.execute(
+            "SELECT record_id, record_json FROM memory_records ORDER BY record_id"
+        ).fetchall()
+        return {
+            row["record_id"]: MemoryRecord.model_validate(self._load(row["record_json"]))
+            for row in rows
+        }
+
+    @records.setter
+    def records(self, payload: dict[str, MemoryRecord]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM memory_records")
+            self._conn.executemany(
+                """
+                INSERT INTO memory_records(record_id, tenant_id, subject_id, kind, scope, status, version, record_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        record_id,
+                        record.tenant_id,
+                        record.subject_id,
+                        record.kind.value,
+                        record.scope.value,
+                        record.status.value,
+                        record.version,
+                        self._dump(record.model_dump(mode="json")),
+                    )
+                    for record_id, record in payload.items()
+                ],
+            )
+
+    @property
+    def events(self) -> list[MemoryEvent]:
+        rows = self._conn.execute(
+            "SELECT event_json FROM memory_events ORDER BY event_sequence"
+        ).fetchall()
+        return [MemoryEvent.model_validate(self._load(row["event_json"])) for row in rows]
+
+    @events.setter
+    def events(self, payload: list[MemoryEvent]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM memory_events")
+            self._conn.executemany(
+                """
+                INSERT INTO memory_events(event_id, proposal_id, action, record_id, tenant_id, subject_id, event_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        event.event_id,
+                        event.proposal_id,
+                        event.action.value,
+                        event.record_id,
+                        event.tenant_id,
+                        event.subject_id,
+                        self._dump(event.model_dump(mode="json")),
+                    )
+                    for event in payload
+                ],
+            )
+
+    @property
+    def deleted_receipts(self) -> dict[str, DeletionReceipt]:
+        rows = self._conn.execute(
+            "SELECT receipt_id, receipt_json FROM deletion_receipts ORDER BY receipt_id"
+        ).fetchall()
+        return {
+            row["receipt_id"]: DeletionReceipt.model_validate(self._load(row["receipt_json"]))
+            for row in rows
+        }
+
+    @deleted_receipts.setter
+    def deleted_receipts(self, payload: dict[str, DeletionReceipt]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM deletion_receipts")
+            self._conn.executemany(
+                """
+                INSERT INTO deletion_receipts(receipt_id, tenant_id, subject_id, deleted_at, receipt_json)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        receipt_id,
+                        receipt.tenant_id,
+                        receipt.subject_id,
+                        receipt.deleted_at,
+                        self._dump(receipt.model_dump(mode="json")),
+                    )
+                    for receipt_id, receipt in payload.items()
+                ],
+            )
+
+    def _save_record(self, record: MemoryRecord) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO memory_records(record_id, tenant_id, subject_id, kind, scope, status, version, record_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(record_id) DO UPDATE SET
+                    tenant_id = excluded.tenant_id,
+                    subject_id = excluded.subject_id,
+                    kind = excluded.kind,
+                    scope = excluded.scope,
+                    status = excluded.status,
+                    version = excluded.version,
+                    record_json = excluded.record_json
+                """,
+                (
+                    record.record_id,
+                    record.tenant_id,
+                    record.subject_id,
+                    record.kind.value,
+                    record.scope.value,
+                    record.status.value,
+                    record.version,
+                    self._dump(record.model_dump(mode="json")),
+                ),
+            )
+
+    def _append_event(self, event: MemoryEvent) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO memory_events(event_id, proposal_id, action, record_id, tenant_id, subject_id, event_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event.event_id,
+                    event.proposal_id,
+                    event.action.value,
+                    event.record_id,
+                    event.tenant_id,
+                    event.subject_id,
+                    self._dump(event.model_dump(mode="json")),
+                ),
+            )
+
+    def _save_receipt(self, receipt: DeletionReceipt) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO deletion_receipts(receipt_id, tenant_id, subject_id, deleted_at, receipt_json)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(receipt_id) DO UPDATE SET
+                    tenant_id = excluded.tenant_id,
+                    subject_id = excluded.subject_id,
+                    deleted_at = excluded.deleted_at,
+                    receipt_json = excluded.receipt_json
+                """,
+                (
+                    receipt.receipt_id,
+                    receipt.tenant_id,
+                    receipt.subject_id,
+                    receipt.deleted_at,
+                    self._dump(receipt.model_dump(mode="json")),
+                ),
+            )
+
+    def get_record(self, record_id: str) -> MemoryRecord:
+        row = self._conn.execute(
+            "SELECT record_json FROM memory_records WHERE record_id = ?",
+            (record_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(record_id)
+        return MemoryRecord.model_validate(self._load(row["record_json"]))
 
     def apply(self, proposal: MemoryProposal, decision: MutationDecision) -> MemoryRecord | None:
         now = self.clock.now()
@@ -196,11 +412,12 @@ class MemoryLedger:
         if decision.action == MutationAction.DELETE:
             raise ValueError("use delete() for delete decisions")
         if proposal.target_record_id:
-            current = self.records[proposal.target_record_id]
+            current = self.get_record(proposal.target_record_id)
             if proposal.expected_version != current.version or current.status != MemoryStatus.ACTIVE:
                 raise VersionConflict("MEMORY_VERSION_CONFLICT")
             current.status = MemoryStatus.SUPERSEDED
             current.updated_at = now
+            self._save_record(current)
             version = current.version + 1
             record_id = _record_id(proposal, version)
             supersedes = current.record_id
@@ -233,7 +450,7 @@ class MemoryLedger:
             supersedes=supersedes,
             reason_codes=decision.reason_codes,
         )
-        self.records[record_id] = record
+        self._save_record(record)
         self._event(proposal, decision, record_id, version=version, content_hash=record.source_hash)
         return record
 
@@ -246,7 +463,7 @@ class MemoryLedger:
         proposal_id: str = "delete",
     ) -> DeletionReceipt:
         now = self.clock.now()
-        record = self.records[record_id]
+        record = self.get_record(record_id)
         if record.tenant_id != principal.tenant_id or record.subject_id != principal.subject_id:
             raise PermissionError("identity_scope_mismatch")
         if record.version != expected_version:
@@ -261,6 +478,7 @@ class MemoryLedger:
             item.text = "[deleted]"
             item.normalized_text = "[deleted]"
             item.updated_at = now
+            self._save_record(item)
         receipt = DeletionReceipt(
             receipt_id="del_" + hashlib.sha256(f"{record_id}:{now}".encode()).hexdigest()[:12],
             tenant_id=principal.tenant_id,
@@ -269,8 +487,8 @@ class MemoryLedger:
             redacted_hashes=sorted(item.source_hash for item in impacted),
             deleted_at=now,
         )
-        self.deleted_receipts[receipt.receipt_id] = receipt
-        self.events.append(
+        self._save_receipt(receipt)
+        self._append_event(
             MemoryEvent(
                 event_id=f"evt_{len(self.events) + 1:04d}",
                 proposal_id=proposal_id,
@@ -325,6 +543,7 @@ class MemoryLedger:
         if record is None:
             raise RuntimeError("consolidation failed")
         record.parent_record_ids = sorted(record_ids)
+        self._save_record(record)
         return record
 
     def _event(
@@ -336,7 +555,7 @@ class MemoryLedger:
         version: int,
         content_hash: str | None,
     ) -> None:
-        self.events.append(
+        self._append_event(
             MemoryEvent(
                 event_id=f"evt_{len(self.events) + 1:04d}",
                 proposal_id=proposal.proposal_id,
