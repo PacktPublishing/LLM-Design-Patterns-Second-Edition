@@ -5,8 +5,10 @@ This lab builds the LLMOps loop for PolicyOps. It starts with a correlated, reda
 ## GitHub evidence
 
 - Source implementation: [src/policyops/telemetry](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/telemetry)
-- Primary tests: [tests/telemetry](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/telemetry)
+- Primary tests: [tests/telemetry/test_telemetry.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/telemetry/test_telemetry.py)
 - Recorded verification evidence: [build/ch12](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch12) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch12/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch12/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch12/scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/design.md)
 
 ## What you build
 

@@ -20,6 +20,7 @@ claims.
 ## GitHub evidence
 
 - Source implementation: [src/policyops/inference](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/inference)
-- Primary tests: [tests/inference](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/inference)
+- Primary tests: [tests/inference/test_inference_gateway.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/inference/test_inference_gateway.py)
 - Recorded verification evidence: [build/ch04](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch04) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch04/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch04/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch04/scorecard.json)
 
+Specs: [PRD](../../docs/implementation-plans/chapters/ch04-adaptive-inference-gateway/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch04-adaptive-inference-gateway/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch04-adaptive-inference-gateway/design.md)

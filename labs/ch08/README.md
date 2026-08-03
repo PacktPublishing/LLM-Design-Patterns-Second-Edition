@@ -5,8 +5,10 @@ This lab adds governed memory to PolicyOps without turning remembered text into 
 ## GitHub evidence
 
 - Source implementation: [src/policyops/memory](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/memory)
-- Primary tests: [tests/memory](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/memory)
+- Primary tests: [tests/memory/test_governed_memory.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/memory/test_governed_memory.py)
 - Recorded verification evidence: [build/ch08](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch08) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch08/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch08/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch08/scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch08-governed-long-term-memory/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch08-governed-long-term-memory/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch08-governed-long-term-memory/design.md)
 
 ## What you build
 

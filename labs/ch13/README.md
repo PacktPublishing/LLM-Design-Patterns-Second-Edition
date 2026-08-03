@@ -5,8 +5,10 @@ This lab attacks the composed PolicyOps system with malicious documents, malicio
 ## GitHub evidence
 
 - Source implementation: [src/policyops/security](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/security)
-- Primary tests: [tests/security](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/security)
+- Primary tests: [tests/security/test_security.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/security/test_security.py)
 - Recorded verification evidence: [build/ch13](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch13) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch13/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch13/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch13/scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch13-prompt-injection-defense/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch13-prompt-injection-defense/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch13-prompt-injection-defense/design.md)
 
 ## What you build
 

@@ -5,8 +5,10 @@ This lab turns the cumulative PolicyOps implementation into an operable producti
 ## GitHub evidence
 
 - Source implementation: [src/policyops/deployment](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/deployment)
-- Primary tests: [tests/deployment](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/deployment)
+- Primary tests: [tests/deployment/test_deployment.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/deployment/test_deployment.py)
 - Recorded verification evidence: [build/ch14](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch14) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch14/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch14/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch14/scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch14-policyops-deployment-recovery/design.md)
 
 ## What you build
 

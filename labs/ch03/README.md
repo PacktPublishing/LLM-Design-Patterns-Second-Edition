@@ -5,7 +5,7 @@ Manifest-driven adaptation experiment: provenance-aware data, contamination chec
 ## GitHub evidence
 
 - Source implementation: [src/policyops/adaptation](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/adaptation)
-- Primary tests: [tests/adaptation](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/adaptation)
+- Primary tests: [tests/adaptation/test_adaptation.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/adaptation/test_adaptation.py)
 - Recorded verification evidence: [build/ch03](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch03) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch03/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch03/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch03/scorecard.json)
 
 Specs: [PRD](../../docs/implementation-plans/chapters/ch03-adaptation-strategy/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch03-adaptation-strategy/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch03-adaptation-strategy/design.md)

@@ -5,8 +5,10 @@ This lab builds the executable governance package for PolicyOps. The release gat
 ## GitHub evidence
 
 - Source implementation: [src/policyops/governance](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/governance)
-- Primary tests: [tests/governance](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/governance)
+- Primary tests: [tests/governance/test_governance.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/governance/test_governance.py)
 - Recorded verification evidence: [build/ch15](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch15) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch15/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch15/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch15/scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch15-governance-release-review/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch15-governance-release-review/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch15-governance-release-review/design.md)
 
 ## What you build
 

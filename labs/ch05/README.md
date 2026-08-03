@@ -19,6 +19,7 @@ hosted model, vector database, memory store, or capability protocol.
 ## GitHub evidence
 
 - Source implementation: [src/policyops/context](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/context)
-- Primary tests: [tests/context](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/context)
+- Primary tests: [tests/context/test_context_planner.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/context/test_context_planner.py)
 - Recorded verification evidence: [build/ch05](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch05) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch05/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch05/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch05/scorecard.json)
 
+Specs: [PRD](../../docs/implementation-plans/chapters/ch05-context-planner/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch05-context-planner/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch05-context-planner/design.md)

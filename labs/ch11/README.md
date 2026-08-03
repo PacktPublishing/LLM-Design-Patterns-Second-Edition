@@ -5,8 +5,10 @@ This lab makes the selected PolicyOps loop resumable. It uses append-only events
 ## GitHub evidence
 
 - Source implementation: [src/policyops/harness](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/harness)
-- Primary tests: [tests/harness](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/harness)
+- Primary tests: [tests/harness/test_resumable_loop.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/harness/test_resumable_loop.py), [tests/harness/test_worker_runtime.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/harness/test_worker_runtime.py)
 - Recorded verification evidence: [build/ch11](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch11) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch11/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch11/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch11/scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch11-resumable-agent-loop/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch11-resumable-agent-loop/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch11-resumable-agent-loop/design.md)
 
 ## What you build
 

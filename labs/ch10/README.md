@@ -5,8 +5,10 @@ This lab compares four ways to run the same PolicyOps triage task: deterministic
 ## GitHub evidence
 
 - Source implementation: [src/policyops/orchestration](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/orchestration)
-- Primary tests: [tests/orchestration](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/orchestration)
+- Primary tests: [tests/orchestration/test_bounded_orchestration.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/orchestration/test_bounded_orchestration.py)
 - Recorded verification evidence: [build/ch10](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch10) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch10/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch10/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch10/scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/design.md)
 
 ## What you build
 

@@ -18,6 +18,7 @@ an external graph database or hosted extraction model.
 ## GitHub evidence
 
 - Source implementation: [src/policyops/graph](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/graph)
-- Primary tests: [tests/graph](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/graph)
+- Primary tests: [tests/graph/test_graph_retrieval.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/graph/test_graph_retrieval.py)
 - Recorded verification evidence: [build/ch07](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch07) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch07/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch07/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch07/scorecard.json)
 
+Specs: [PRD](../../docs/implementation-plans/chapters/ch07-graph-retrieval/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch07-graph-retrieval/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch07-graph-retrieval/design.md)

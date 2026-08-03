@@ -20,6 +20,7 @@ contracts that a production-backed implementation would need to preserve.
 ## GitHub evidence
 
 - Source implementation: [src/policyops/retrieval](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/retrieval)
-- Primary tests: [tests/retrieval](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/retrieval)
+- Primary tests: [tests/retrieval/test_hybrid_retrieval.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/retrieval/test_hybrid_retrieval.py)
 - Recorded verification evidence: [build/ch06](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch06) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch06/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch06/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch06/scorecard.json)
 
+Specs: [PRD](../../docs/implementation-plans/chapters/ch06-citation-first-hybrid-rag/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch06-citation-first-hybrid-rag/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch06-citation-first-hybrid-rag/design.md)

@@ -5,8 +5,10 @@ This lab runs the capstone release verifier. It validates the accepted Chapter 1
 ## GitHub evidence
 
 - Source implementation: [src/policyops/capstone](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/capstone)
-- Primary tests: [tests/capstone](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/capstone)
+- Primary tests: [tests/capstone/test_capstone.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/capstone/test_capstone.py)
 - Recorded verification evidence: [build/ch16](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch16) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch16/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch16/result.json) | [capstone_scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch16/capstone_scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch16-policyops-capstone/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch16-policyops-capstone/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch16-policyops-capstone/design.md)
 
 ## What you build
 

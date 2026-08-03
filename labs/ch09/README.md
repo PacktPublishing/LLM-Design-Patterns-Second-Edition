@@ -5,8 +5,10 @@ This lab turns PolicyOps ticket creation into a governed capability pack. The ty
 ## GitHub evidence
 
 - Source implementation: [src/policyops/extensions](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/src/policyops/extensions)
-- Primary tests: [tests/extensions](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/tests/extensions)
+- Primary tests: [tests/extensions/test_secure_extension_pack.py](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/tests/extensions/test_secure_extension_pack.py)
 - Recorded verification evidence: [build/ch09](https://github.com/kenhuangus/llm-design-patterns-hands-on/tree/main/build/ch09) | [junit.xml](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch09/junit.xml) | [result.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch09/result.json) | [scorecard.json](https://github.com/kenhuangus/llm-design-patterns-hands-on/blob/main/build/ch09/scorecard.json)
+
+Specs: [PRD](../../docs/implementation-plans/chapters/ch09-secure-extension-pack/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch09-secure-extension-pack/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch09-secure-extension-pack/design.md)
 
 ## What you build
 
