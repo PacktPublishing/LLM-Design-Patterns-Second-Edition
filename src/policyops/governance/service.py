@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from policyops.governance.schemas import (
     ApprovalPolicy,
     ChangeSet,
@@ -28,6 +30,7 @@ from policyops.governance.schemas import (
 from policyops.telemetry import sha_json
 
 NOW = 1_735_689_600
+DEFAULT_RELEASE_POLICY_PATH = Path(__file__).resolve().parents[3] / "config" / "release_policy.yaml"
 
 
 def sign_payload(payload: dict[str, Any], issuer: str, role: str, *, expires_at: int = NOW + 86_400) -> SignatureEnvelope:
@@ -110,6 +113,8 @@ class GovernanceFixture:
                 separation_of_duties=True,
                 evidence_expiry_seconds=86_400,
                 escalation_path="system owner",
+                required_evidence_ids=["ev-ch11-approval", "ev-ch14-deploy"],
+                high_impact_required=True,
             ),
             ApprovalPolicy(
                 policy_id="approval-deployment",
@@ -118,6 +123,8 @@ class GovernanceFixture:
                 separation_of_duties=True,
                 evidence_expiry_seconds=86_400,
                 escalation_path="platform owner",
+                required_evidence_ids=["ev-ch14-deploy", "ev-ch13-security", "ev-ch12-observability"],
+                high_impact_required=False,
             ),
         ]
 
@@ -184,6 +191,15 @@ class EvidenceResolver:
             reasons.append(ReasonCode.TEST_FAILED)
         if evidence.signature.issuer not in self.owners or not self.owners[evidence.signature.issuer].current:
             reasons.append(ReasonCode.OWNER_MISSING)
+        else:
+            signer = self.owners[evidence.signature.issuer]
+            if signer.role != evidence.signature.issuer_role:
+                reasons.append(ReasonCode.SIGNATURE_INVALID)
+        reviewer = self.owners.get(evidence.reviewed_by)
+        if reviewer is None or not reviewer.current:
+            reasons.append(ReasonCode.OWNER_MISSING)
+        if evidence.signature.purpose != "release_evidence":
+            reasons.append(ReasonCode.SIGNATURE_INVALID)
         return reasons
 
 
@@ -236,6 +252,8 @@ class NoticeGenerator:
 class ReleaseGate:
     def __init__(self, fixture: GovernanceFixture | None = None) -> None:
         self.fixture = fixture or GovernanceFixture()
+        self.policy_path = DEFAULT_RELEASE_POLICY_PATH
+        self.policy_hash = self._policy_hash()
 
     def review(
         self,
@@ -279,6 +297,29 @@ class ReleaseGate:
         if approver_id == producer_id:
             reasons.append(DecisionReason(priority=priority, record_id=approver_id, reason_code=ReasonCode.APPROVER_NOT_INDEPENDENT, remediation="use independent human approver"))
             priority += 1
+        applicable_policies = self._applicable_policies(change_set or ChangeSet(change_set_id="changes-ch15", autonomy_changed=True, deployment_changed=True))
+        for policy in applicable_policies:
+            if approver is None or approver.role != policy.required_role:
+                reasons.append(
+                    DecisionReason(
+                        priority=priority,
+                        record_id=policy.policy_id,
+                        reason_code=ReasonCode.APPROVAL_MISSING,
+                        remediation=f"obtain approver with role {policy.required_role}",
+                    )
+                )
+                priority += 1
+            for evidence_id in policy.required_evidence_ids:
+                if evidence_id not in evidence_map:
+                    reasons.append(
+                        DecisionReason(
+                            priority=priority,
+                            record_id=evidence_id,
+                            reason_code=ReasonCode.APPROVAL_MISSING,
+                            remediation="provide current required approval evidence",
+                        )
+                    )
+                    priority += 1
         if rights_receipt is not None and not rights_receipt.complete:
             reasons.append(DecisionReason(priority=priority, record_id=rights_receipt.receipt_id, reason_code=ReasonCode.RIGHTS_INCOMPLETE, remediation="complete all derived-store verifiers"))
             priority += 1
@@ -295,7 +336,7 @@ class ReleaseGate:
         return ReleaseDecision(
             decision_id="decision-ch15",
             decision=decision,
-            policy_hash=sha_json([policy.model_dump(mode="json") for policy in self.fixture.approval_policies()]),
+            policy_hash=self.policy_hash,
             manifest_hash=sha_json(self.fixture.inventory().model_dump(mode="json")),
             change_set_hash=sha_json(change_set.model_dump(mode="json")),
             evidence_graph_hash=sha_json([control.model_dump(mode="json") for control in controls]),
@@ -304,6 +345,15 @@ class ReleaseGate:
             decided_at=NOW,
             decision_digest=digest,
         )
+
+    def _applicable_policies(self, change_set: ChangeSet) -> list[ApprovalPolicy]:
+        policies = {policy.change_class: policy for policy in self.fixture.approval_policies()}
+        return [policies[name] for name in change_set.classes() if name in policies]
+
+    def _policy_hash(self) -> str:
+        if self.policy_path.exists():
+            return sha_json(yaml.safe_load(self.policy_path.read_text(encoding="utf-8")))
+        return sha_json([policy.model_dump(mode="json") for policy in self.fixture.approval_policies()])
 
 
 class GovernanceVerification:

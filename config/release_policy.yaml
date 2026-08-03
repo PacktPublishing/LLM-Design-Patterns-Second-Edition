@@ -1,0 +1,23 @@
+policy_version: "ch15-fixture-v1"
+approvals:
+  - policy_id: approval-high-impact
+    change_class: autonomy
+    required_role: release_approver
+    separation_of_duties: true
+    evidence_expiry_seconds: 86400
+    escalation_path: system owner
+    required_evidence_ids:
+      - ev-ch11-approval
+      - ev-ch14-deploy
+    high_impact_required: true
+  - policy_id: approval-deployment
+    change_class: deployment
+    required_role: release_approver
+    separation_of_duties: true
+    evidence_expiry_seconds: 86400
+    escalation_path: platform owner
+    required_evidence_ids:
+      - ev-ch14-deploy
+      - ev-ch13-security
+      - ev-ch12-observability
+    high_impact_required: false

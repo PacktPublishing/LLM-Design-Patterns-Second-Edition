@@ -72,6 +72,8 @@ class ApprovalPolicy(StrictModel):
     separation_of_duties: bool
     evidence_expiry_seconds: int
     escalation_path: str
+    required_evidence_ids: list[str] = Field(default_factory=list)
+    high_impact_required: bool = False
 
 
 class SignatureEnvelope(StrictModel):

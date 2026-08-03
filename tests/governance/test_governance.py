@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from policyops.governance import (
     Decision,
+    EvidenceResolver,
     GovernanceFixture,
     GovernanceVerification,
     NoticeGenerator,
@@ -59,9 +60,23 @@ def test_rights_receipt_covers_all_inventory_stores_and_blocks_partial_coverage(
     )
     complete = orchestrator.process(request)
     partial = orchestrator.process(request, miss_store="memory_ledger")
+    unauthenticated = orchestrator.process(request.model_copy(update={"authenticated": False}))
     assert complete.complete is True
     assert {store.store for store in complete.stores} == set(inventory.stores)
     assert partial.complete is False
+    assert unauthenticated.complete is False
+
+
+def test_signature_role_mismatch_is_rejected() -> None:
+    fixture = GovernanceFixture()
+    evidence = fixture.evidence()[0]
+    forged = evidence.model_copy(
+        update={
+            "signature": evidence.signature.model_copy(update={"issuer_role": "release_approver"}),
+        }
+    )
+    reasons = EvidenceResolver(fixture.owners()).validate(forged)
+    assert ReasonCode.SIGNATURE_INVALID in reasons
 
 
 def test_transparency_notice_is_generated_from_inventory() -> None:
