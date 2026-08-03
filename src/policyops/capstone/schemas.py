@@ -45,6 +45,8 @@ class GameDayStepResult(StrictModel):
     expected_result: str
     actual_result: str
     evidence_ref: str
+    operator_id: str
+    mandatory_gate_decision: Literal["pass", "fail"]
     cleanup_status: Literal["complete", "not_required"]
     mandatory: bool = True
     status: GameDayStatus

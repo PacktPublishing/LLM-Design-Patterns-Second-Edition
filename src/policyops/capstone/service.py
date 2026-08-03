@@ -97,6 +97,7 @@ class TraceabilityValidator:
 
 
 class GameDayRunner:
+    operator_id = "operator-release"
     scenarios = [
         ("Baseline release candidate loaded", "Reject unsafe adaptation candidate"),
         ("Current, scanned, contradictory policies indexed", "Answer with exact citations or abstain"),
@@ -131,6 +132,8 @@ class GameDayRunner:
                     expected_result=expected,
                     actual_result=actual,
                     evidence_ref=sha_json({"step": index, "actual": actual}),
+                    operator_id=self.operator_id,
+                    mandatory_gate_decision="fail" if failed else "pass",
                     cleanup_status="complete",
                     status=status,
                 )
@@ -452,6 +455,8 @@ class CapstoneVerifier:
         failed = [step for step in steps if step.status == GameDayStatus.FAILED and step.mandatory]
         if failed:
             reasons.extend([f"GAME_DAY_STEP_{step.step}_FAILED" for step in failed])
+        if not seeded_failure_proven:
+            reasons.append("SEEDED_FAILURE_PROOF_MISSING")
         decision = CapstoneDecision.NO_GO if reasons else CapstoneDecision.GO
         return CapstoneReleaseDecision(
             decision_id="release-ch16",

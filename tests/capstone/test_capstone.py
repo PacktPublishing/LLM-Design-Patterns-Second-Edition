@@ -34,6 +34,8 @@ def test_game_day_runs_sixteen_ordered_mandatory_steps() -> None:
     assert len(steps) == 16
     assert [step.step for step in steps] == list(range(1, 17))
     assert all(step.status == GameDayStatus.PASSED for step in steps)
+    assert all(step.operator_id == "operator-release" for step in steps)
+    assert all(step.mandatory_gate_decision == "pass" for step in steps)
     assert all(step.cleanup_status == "complete" for step in steps)
 
 
@@ -44,6 +46,16 @@ def test_seeded_mandatory_failure_returns_no_go() -> None:
     decision = verifier.decide(closure, steps, verifier.bundle(closure, steps), seeded_failure_proven=True)
     assert decision.decision == CapstoneDecision.NO_GO
     assert "GAME_DAY_STEP_4_FAILED" in decision.reasons
+    assert steps[3].mandatory_gate_decision == "fail"
+
+
+def test_missing_seeded_failure_proof_forces_no_go() -> None:
+    verifier = CapstoneVerifier()
+    closure = verifier.traceability.validate()
+    steps = verifier.game_day.run()
+    decision = verifier.decide(closure, steps, verifier.bundle(closure, steps), seeded_failure_proven=False)
+    assert decision.decision == CapstoneDecision.NO_GO
+    assert "SEEDED_FAILURE_PROOF_MISSING" in decision.reasons
 
 
 def test_clean_capstone_release_returns_go_with_signed_bundle() -> None:

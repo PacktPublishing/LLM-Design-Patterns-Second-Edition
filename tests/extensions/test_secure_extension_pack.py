@@ -118,6 +118,27 @@ def test_sqlite_backed_ticket_and_audit_state_persist_across_instances(tmp_path:
     assert duplicate.ticket_id == created.ticket_id
     assert len(second.repository.tickets) == 1
     assert len(second.audit_store.events) == 1
+    assert second.state_store.workflow_state["req-ch09:workflow"]["last_operation"] == "create_policy_ticket"
+    assert second.state_store.resumable_results["req-ch09:idem-persist"]["ticket_id"] == created.ticket_id
+
+
+def test_mcp_transport_persists_subscription_and_resumable_result_state(tmp_path: Path) -> None:
+    db_path = tmp_path / "extensions.sqlite"
+    port = SecuredToolPort(db_path=db_path)
+    context = fixture_context()
+    adapter = McpAdapter(port)
+    preview = adapter.preview(fixture_ticket(), context)
+    approval = port.approval_store.issuer.issue(
+        preview,
+        context,
+        nonce="mcp-state",
+        expires_at=port.approval_store.now + 60,
+    )
+    created = adapter.create(preview, approval, "idem-mcp-state", context)
+    reopened = SecuredToolPort(db_path=db_path)
+    assert reopened.state_store.subscriptions["tenant_alpha:2025-11-25:schema-help"]["status"] == "active"
+    assert reopened.state_store.workflow_state["req-ch09:workflow"]["transport"] == "mcp"
+    assert reopened.state_store.resumable_results["mcp:req-ch09:idem-mcp-state"]["ticket_id"] == created.ticket_id
 
 
 def test_pre_hook_timeout_and_revocation_fail_closed() -> None:
@@ -277,4 +298,5 @@ def test_fixture_verification_writes_extension_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "package_verification.json").exists()
     assert (tmp_path / "compatibility_report.json").exists()
     assert (tmp_path / "lifecycle_controls.json").exists()
+    assert (tmp_path / "explicit_state_store.json").exists()
     assert (tmp_path / "extension_scorecard.json").exists()

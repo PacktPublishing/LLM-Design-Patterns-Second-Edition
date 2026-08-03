@@ -188,6 +188,46 @@ def _init_schema(conn: sqlite3.Connection) -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS workflow_state (
+                workflow_id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                transport TEXT NOT NULL,
+                last_operation TEXT NOT NULL,
+                effect_hash TEXT,
+                updated_at INTEGER NOT NULL,
+                state_json TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mcp_subscriptions (
+                subscription_id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                transport TEXT NOT NULL,
+                profile TEXT NOT NULL,
+                resource_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                updated_at INTEGER NOT NULL,
+                subscription_json TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS resumable_results (
+                result_id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                effect_hash TEXT NOT NULL,
+                idempotency_key TEXT NOT NULL,
+                transport TEXT NOT NULL,
+                updated_at INTEGER NOT NULL,
+                result_json TEXT NOT NULL
+            )
+            """
+        )
 
 
 def _seed_defaults(conn: sqlite3.Connection) -> None:
@@ -764,6 +804,153 @@ class PostActionHook:
         return self.audit_store.append(event)
 
 
+class ExplicitStateStore:
+    def __init__(self, conn: sqlite3.Connection, now: int = FIXTURE_NOW) -> None:
+        self.conn = conn
+        self.now = now
+
+    @property
+    def workflow_state(self) -> dict[str, dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT workflow_id, state_json FROM workflow_state ORDER BY workflow_id"
+        ).fetchall()
+        return {row["workflow_id"]: json.loads(row["state_json"]) for row in rows}
+
+    @property
+    def subscriptions(self) -> dict[str, dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT subscription_id, subscription_json FROM mcp_subscriptions ORDER BY subscription_id"
+        ).fetchall()
+        return {row["subscription_id"]: json.loads(row["subscription_json"]) for row in rows}
+
+    @property
+    def resumable_results(self) -> dict[str, dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT result_id, result_json FROM resumable_results ORDER BY result_id"
+        ).fetchall()
+        return {row["result_id"]: json.loads(row["result_json"]) for row in rows}
+
+    def record_workflow(
+        self,
+        *,
+        workflow_id: str,
+        tenant_id: str,
+        transport: str,
+        last_operation: str,
+        effect_hash_value: str | None,
+    ) -> None:
+        payload = {
+            "workflow_id": workflow_id,
+            "tenant_id": tenant_id,
+            "transport": transport,
+            "last_operation": last_operation,
+            "effect_hash": effect_hash_value,
+            "updated_at": self.now,
+        }
+        with self.conn:
+            self.conn.execute(
+                """
+                INSERT INTO workflow_state(workflow_id, tenant_id, transport, last_operation, effect_hash, updated_at, state_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(workflow_id) DO UPDATE SET
+                    tenant_id = excluded.tenant_id,
+                    transport = excluded.transport,
+                    last_operation = excluded.last_operation,
+                    effect_hash = excluded.effect_hash,
+                    updated_at = excluded.updated_at,
+                    state_json = excluded.state_json
+                """,
+                (
+                    workflow_id,
+                    tenant_id,
+                    transport,
+                    last_operation,
+                    effect_hash_value,
+                    self.now,
+                    json.dumps(payload, sort_keys=True),
+                ),
+            )
+
+    def ensure_subscription(
+        self,
+        *,
+        subscription_id: str,
+        tenant_id: str,
+        transport: str,
+        profile: str,
+        resource_id: str,
+        status: str = "active",
+    ) -> None:
+        payload = {
+            "subscription_id": subscription_id,
+            "tenant_id": tenant_id,
+            "transport": transport,
+            "profile": profile,
+            "resource_id": resource_id,
+            "status": status,
+            "updated_at": self.now,
+        }
+        with self.conn:
+            self.conn.execute(
+                """
+                INSERT INTO mcp_subscriptions(subscription_id, tenant_id, transport, profile, resource_id, status, updated_at, subscription_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(subscription_id) DO UPDATE SET
+                    tenant_id = excluded.tenant_id,
+                    transport = excluded.transport,
+                    profile = excluded.profile,
+                    resource_id = excluded.resource_id,
+                    status = excluded.status,
+                    updated_at = excluded.updated_at,
+                    subscription_json = excluded.subscription_json
+                """,
+                (
+                    subscription_id,
+                    tenant_id,
+                    transport,
+                    profile,
+                    resource_id,
+                    status,
+                    self.now,
+                    json.dumps(payload, sort_keys=True),
+                ),
+            )
+
+    def record_resumable_result(
+        self,
+        *,
+        result_id: str,
+        tenant_id: str,
+        effect_hash_value: str,
+        idempotency_key: str,
+        transport: str,
+        result: TicketResult,
+    ) -> None:
+        with self.conn:
+            self.conn.execute(
+                """
+                INSERT INTO resumable_results(result_id, tenant_id, effect_hash, idempotency_key, transport, updated_at, result_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(result_id) DO UPDATE SET
+                    tenant_id = excluded.tenant_id,
+                    effect_hash = excluded.effect_hash,
+                    idempotency_key = excluded.idempotency_key,
+                    transport = excluded.transport,
+                    updated_at = excluded.updated_at,
+                    result_json = excluded.result_json
+                """,
+                (
+                    result_id,
+                    tenant_id,
+                    effect_hash_value,
+                    idempotency_key,
+                    transport,
+                    self.now,
+                    json.dumps(result.model_dump(mode="json"), sort_keys=True),
+                ),
+            )
+
+
 class SecuredToolPort:
     def __init__(
         self,
@@ -781,6 +968,7 @@ class SecuredToolPort:
         self.approval_store = approval_store or ApprovalStore(self._conn)
         self.repository = repository or TicketRepository(self._conn)
         self.audit_store = audit_store or AuditStore(self._conn)
+        self.state_store = ExplicitStateStore(self._conn)
         self.pre_hook = PreActionHook(self.registry, self.approval_store)
         self.post_hook = PostActionHook(self.audit_store)
         self.extension_id = extension_id
@@ -799,7 +987,15 @@ class SecuredToolPort:
                 source_refs=ticket.source_refs,
             )
         )
-        return EffectPreview(canonical_effect=effect, effect_hash=effect_hash(effect))
+        preview = EffectPreview(canonical_effect=effect, effect_hash=effect_hash(effect))
+        self.state_store.record_workflow(
+            workflow_id=f"{context.request_id}:workflow",
+            tenant_id=context.tenant_id,
+            transport="direct",
+            last_operation="preview_policy_ticket",
+            effect_hash_value=preview.effect_hash,
+        )
+        return preview
 
     def create_policy_ticket(
         self,
@@ -815,13 +1011,29 @@ class SecuredToolPort:
             context=context,
         )
         if not hook.allow:
-            return TicketResult(
+            result = TicketResult(
                 status=TicketStatus.DENIED,
                 effect_hash=preview.effect_hash,
                 reason_code=DomainErrorCode(hook.reason_code),
                 evidence_status="not_applicable",
                 idempotency_key=idempotency_key,
             )
+            self.state_store.record_workflow(
+                workflow_id=f"{context.request_id}:workflow",
+                tenant_id=context.tenant_id,
+                transport="direct",
+                last_operation="create_policy_ticket_denied",
+                effect_hash_value=preview.effect_hash,
+            )
+            self.state_store.record_resumable_result(
+                result_id=f"{context.request_id}:{idempotency_key}",
+                tenant_id=context.tenant_id,
+                effect_hash_value=preview.effect_hash,
+                idempotency_key=idempotency_key,
+                transport="direct",
+                result=result,
+            )
+            return result
         result = self.repository.create_once(preview, context, idempotency_key)
         evidence_ok = self.post_hook.run(
             extension_id=self.extension_id,
@@ -831,6 +1043,21 @@ class SecuredToolPort:
         )
         if result.status == TicketStatus.CREATED:
             result.evidence_status = "recorded" if evidence_ok else "degraded"
+        self.state_store.record_workflow(
+            workflow_id=f"{context.request_id}:workflow",
+            tenant_id=context.tenant_id,
+            transport="direct",
+            last_operation="create_policy_ticket",
+            effect_hash_value=preview.effect_hash,
+        )
+        self.state_store.record_resumable_result(
+            result_id=f"{context.request_id}:{idempotency_key}",
+            tenant_id=context.tenant_id,
+            effect_hash_value=preview.effect_hash,
+            idempotency_key=idempotency_key,
+            transport="direct",
+            result=result,
+        )
         return result
 
 
@@ -838,14 +1065,36 @@ class McpAdapter:
     def __init__(self, port: SecuredToolPort, profile: McpProfile = McpProfile.STABLE_2025_11_25) -> None:
         self.port = port
         self.profile = profile
+        self.state_store = port.state_store
 
     def negotiate(self, requested: McpProfile) -> bool:
         return requested == McpProfile.STABLE_2025_11_25
 
+    def _subscription_id(self, context: RunContext) -> str:
+        return f"{context.tenant_id}:{self.profile.value}:schema-help"
+
+    def _record_transport_state(self, context: RunContext, operation: str, effect_hash_value: str | None = None) -> None:
+        self.state_store.ensure_subscription(
+            subscription_id=self._subscription_id(context),
+            tenant_id=context.tenant_id,
+            transport="mcp",
+            profile=self.profile.value,
+            resource_id="schema/help",
+        )
+        self.state_store.record_workflow(
+            workflow_id=f"{context.request_id}:workflow",
+            tenant_id=context.tenant_id,
+            transport="mcp",
+            last_operation=operation,
+            effect_hash_value=effect_hash_value,
+        )
+
     def preview(self, ticket: TicketInput, context: RunContext) -> EffectPreview:
         if not self.negotiate(self.profile):
             raise RuntimeError("unsupported_mcp_profile")
-        return self.port.preview_policy_ticket(ticket, context)
+        preview = self.port.preview_policy_ticket(ticket, context)
+        self._record_transport_state(context, "mcp_preview_policy_ticket", preview.effect_hash)
+        return preview
 
     def create(
         self,
@@ -856,7 +1105,17 @@ class McpAdapter:
     ) -> TicketResult:
         if not self.negotiate(self.profile):
             raise RuntimeError("unsupported_mcp_profile")
-        return self.port.create_policy_ticket(preview, approval, idempotency_key, context)
+        result = self.port.create_policy_ticket(preview, approval, idempotency_key, context)
+        self._record_transport_state(context, "mcp_create_policy_ticket", preview.effect_hash)
+        self.state_store.record_resumable_result(
+            result_id=f"mcp:{context.request_id}:{idempotency_key}",
+            tenant_id=context.tenant_id,
+            effect_hash_value=preview.effect_hash,
+            idempotency_key=idempotency_key,
+            transport="mcp",
+            result=result,
+        )
+        return result
 
 
 class SkillActivator:
@@ -1235,7 +1494,14 @@ def run_extension_verification(evidence_dir: Path) -> dict[str, Any]:
         rc_profile=McpProfile.RC_2026_07_28,
         rc_opt_in=True,
         unsupported_features_fail_closed=True,
-        explicit_state_stores=["approval_nonces", "idempotency_results", "audit_events"],
+        explicit_state_stores=[
+            "workflow_state",
+            "approval_nonces",
+            "idempotency_results",
+            "mcp_subscriptions",
+            "resumable_results",
+            "audit_events",
+        ],
         second_host_gaps=["activation metadata", "hook contract", "permission labels"],
     )
     scorecard = ExtensionScorecard(
@@ -1266,6 +1532,11 @@ def run_extension_verification(evidence_dir: Path) -> dict[str, Any]:
             "activated": activated.model_dump(mode="json"),
             "rollback_success": rolled_back,
             "versions": [item.model_dump(mode="json") for item in loader.list_extensions()],
+        },
+        "explicit_state_store.json": {
+            "workflow_state": port.state_store.workflow_state,
+            "mcp_subscriptions": mcp.state_store.subscriptions,
+            "resumable_results": mcp.state_store.resumable_results,
         },
         "audit_events.jsonl": [event.model_dump(mode="json") for event in port.audit_store.events],
     }
