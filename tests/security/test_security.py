@@ -52,6 +52,31 @@ def test_cross_tenant_and_preview_attacks_fail_before_effect() -> None:
     assert all(results[name].unauthorized_effects == 0 for name in ["atk-cross-tenant", "atk-preview-swap", "atk-replay"])
 
 
+def test_destination_scope_and_expired_grant_fail_closed() -> None:
+    harness = AttackHarness()
+    principal = fixture_principal(scopes=["policy:read", "ticket:create"])
+    query = harness._query(principal, None, approval_hash="sha256:preview")
+    assert harness.pdp.decide(query).reason_code == ReasonCode.CAPABILITY_SCOPE_DENIED
+
+    full_principal = fixture_principal()
+    preview = harness._preview(full_principal)
+    decision = harness.pdp.decide(harness._query(full_principal, None, approval_hash=preview.effect_hash))
+    grant = harness.broker.issue(decision, preview, full_principal).model_copy(update={"expires_at": 0})
+    expired = harness.egress.authorize(
+        grant,
+        OutboundRequest(
+            scheme="https",
+            host="ticket.internal",
+            port=443,
+            method="POST",
+            data_class=DataClass.CASE_SUMMARY,
+            resolved_address="192.0.2.10",
+            bytes_out=64,
+        ),
+    )
+    assert expired.reason_code == ReasonCode.REVOKED
+
+
 def test_egress_policy_blocks_undeclared_destination_and_redirect_escape() -> None:
     harness = AttackHarness()
     principal = fixture_principal()
@@ -171,6 +196,7 @@ def test_security_verifier_writes_required_evidence(tmp_path) -> None:
         "threat_model.json",
         "attack_corpus.json",
         "authorization_policy.json",
+        "security_policy_bundle.json",
         "sandbox_profile.json",
         "sbom.json",
         "integrity_allowlist.json",

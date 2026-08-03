@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from policyops.security.schemas import (
     ApprovalRecord,
     AttackCase,
@@ -36,6 +38,7 @@ from policyops.telemetry import sha_json
 
 SECRET_RE = re.compile(r"\b(?:sk|secret|token)_[A-Za-z0-9_\-]{6,}\b|\bsk-[A-Za-z0-9_\-]{8,}\b")
 NOW = 1_735_689_600
+DEFAULT_SECURITY_POLICY_PATH = Path(__file__).resolve().parents[3] / "config" / "security_policy.yaml"
 
 
 def sha_text(text: str) -> str:
@@ -55,7 +58,7 @@ def fixture_principal(*, tenant_id: str = "tenant-alpha", scopes: list[str] | No
         actor_id="user-42",
         tenant_id=tenant_id,
         roles=["policy-reader", "ticket-approver"],
-        scopes=scopes or ["policy:read", "ticket:create", "egress:ticket.internal"],
+        scopes=scopes or ["policy:read", "ticket:create", "egress:ticket.internal:443"],
         authenticated=True,
     )
 
@@ -135,16 +138,36 @@ class ThreatModel:
 
 
 class PolicyDecisionPoint:
-    def __init__(self, revoked_artifacts: set[str] | None = None) -> None:
+    def __init__(
+        self,
+        revoked_artifacts: set[str] | None = None,
+        *,
+        policy_path: Path | None = None,
+    ) -> None:
         self.revoked_artifacts = revoked_artifacts or set()
+        self.policy_path = policy_path or DEFAULT_SECURITY_POLICY_PATH
+        self.policy = self._load_policy()
 
     def decide(self, query: AuthorizationQuery) -> AuthorizationDecision:
         if not query.principal.authenticated:
             return AuthorizationDecision(decision=Decision.DENY, reason_code=ReasonCode.UNAUTHENTICATED)
         if query.extension_id in self.revoked_artifacts:
             return AuthorizationDecision(decision=Decision.DENY, reason_code=ReasonCode.REVOKED)
+        if not query.extension_allowlisted or query.extension_id not in self.policy["allowlisted_extensions"]:
+            return AuthorizationDecision(decision=Decision.DENY, reason_code=ReasonCode.INTEGRITY_DENIED)
+        if not query.extension_digest.startswith("sha256:"):
+            return AuthorizationDecision(decision=Decision.DENY, reason_code=ReasonCode.INTEGRITY_DENIED)
         if query.budget_effects_remaining <= 0:
             return AuthorizationDecision(decision=Decision.DENY, reason_code=ReasonCode.RESOURCE_LIMIT)
+        if any(tenant_id != query.principal.tenant_id for tenant_id in query.content_tenant_ids):
+            return AuthorizationDecision(decision=Decision.DENY, reason_code=ReasonCode.TENANT_MISMATCH)
+        if query.destination:
+            expected_scope = f"egress:{query.destination}"
+            if expected_scope not in query.principal.scopes:
+                return AuthorizationDecision(
+                    decision=Decision.DENY,
+                    reason_code=ReasonCode.CAPABILITY_SCOPE_DENIED,
+                )
         if any(trust != TrustClass.TRUSTED_CONTROL for trust in query.content_trust):
             if query.risk_tier == "high" and query.approval_effect_hash is None:
                 return AuthorizationDecision(
@@ -156,11 +179,6 @@ class PolicyDecisionPoint:
                         "egress_destination": query.destination or "",
                     },
                 )
-        if query.destination and "egress:ticket.internal" not in query.principal.scopes:
-            return AuthorizationDecision(
-                decision=Decision.DENY,
-                reason_code=ReasonCode.CAPABILITY_SCOPE_DENIED,
-            )
         if DataClass.SECRET in query.data_classes and query.destination:
             return AuthorizationDecision(decision=Decision.DENY, reason_code=ReasonCode.SECRET_DENIED)
         return AuthorizationDecision(
@@ -168,6 +186,20 @@ class PolicyDecisionPoint:
             reason_code=ReasonCode.ALLOWED,
             obligations={"max_effects": 1, "evidence_level": "redacted"},
         )
+
+    def _load_policy(self) -> dict[str, Any]:
+        if self.policy_path.exists():
+            loaded = yaml.safe_load(self.policy_path.read_text(encoding="utf-8"))
+            return dict(loaded)
+        return {
+            "allowlisted_extensions": ["policyops-ticket-pack"],
+            "egress": {
+                "host": "ticket.internal",
+                "port": 443,
+                "method": "POST",
+                "resolved_addresses": ["192.0.2.10"],
+            },
+        }
 
 
 class ApprovalVerifier:
@@ -221,8 +253,14 @@ class CapabilityBroker:
 
 
 class EgressPolicy:
-    allowed_host = "ticket.internal"
-    allowed_port = 443
+    def __init__(self, *, policy_path: Path | None = None) -> None:
+        self.policy_path = policy_path or DEFAULT_SECURITY_POLICY_PATH
+        policy = self._load_policy()
+        egress = policy["egress"]
+        self.allowed_host = egress["host"]
+        self.allowed_port = egress["port"]
+        self.allowed_method = egress["method"]
+        self.allowed_addresses = set(egress["resolved_addresses"])
 
     def authorize(self, grant: CapabilityGrant, request: OutboundRequest) -> EgressDecision:
         destination = f"{request.host}:{request.port}"
@@ -232,13 +270,30 @@ class EgressPolicy:
                 reason_code=ReasonCode.REVOKED,
                 normalized_destination=destination,
             )
-        if request.scheme != "https" or request.host != self.allowed_host or request.port != self.allowed_port:
+        if grant.expires_at <= NOW:
+            return EgressDecision(
+                allow=False,
+                reason_code=ReasonCode.REVOKED,
+                normalized_destination=destination,
+            )
+        if destination != grant.destination:
             return EgressDecision(
                 allow=False,
                 reason_code=ReasonCode.EGRESS_DENIED,
                 normalized_destination=destination,
             )
-        if request.follows_redirect or request.resolved_address.startswith(("127.", "169.254.", "10.")):
+        if (
+            request.scheme != "https"
+            or request.host != self.allowed_host
+            or request.port != self.allowed_port
+            or request.method != self.allowed_method
+        ):
+            return EgressDecision(
+                allow=False,
+                reason_code=ReasonCode.EGRESS_DENIED,
+                normalized_destination=destination,
+            )
+        if request.follows_redirect or request.resolved_address not in self.allowed_addresses:
             return EgressDecision(
                 allow=False,
                 reason_code=ReasonCode.EGRESS_DENIED,
@@ -252,10 +307,28 @@ class EgressPolicy:
             )
         return EgressDecision(allow=True, reason_code=ReasonCode.ALLOWED, normalized_destination=destination)
 
+    def _load_policy(self) -> dict[str, Any]:
+        if self.policy_path.exists():
+            loaded = yaml.safe_load(self.policy_path.read_text(encoding="utf-8"))
+            return dict(loaded)
+        return {
+            "egress": {
+                "host": "ticket.internal",
+                "port": 443,
+                "method": "POST",
+                "resolved_addresses": ["192.0.2.10"],
+            }
+        }
+
 
 class SecretBroker:
     def issue(self, grant: CapabilityGrant, principal: Principal) -> SecretLease:
-        if grant.actor_id != principal.actor_id or grant.tenant_id != principal.tenant_id or grant.revoked:
+        if (
+            grant.actor_id != principal.actor_id
+            or grant.tenant_id != principal.tenant_id
+            or grant.revoked
+            or grant.expires_at <= NOW
+        ):
             raise PermissionError(ReasonCode.SECRET_DENIED.value)
         secret_value = f"secret_fixture_{grant.grant_id}"
         return SecretLease(
@@ -443,6 +516,7 @@ class AttackHarness:
             destination="ticket.internal:443",
             data_classes=data,
             content_trust=trust,
+            content_tenant_ids=[content.tenant_id] if content else [principal.tenant_id],
             risk_tier="high",
             approval_effect_hash=approval_hash,
             extension_id="policyops-ticket-pack",
@@ -455,7 +529,8 @@ class AttackHarness:
         reason = ReasonCode.ALLOWED
         decision = Decision.DENY
         if case.attack_id == "atk-cross-tenant":
-            reason = ReasonCode.TENANT_MISMATCH
+            authz = self.pdp.decide(self._query(principal, case.content))
+            reason = authz.reason_code
         elif case.attack_id == "atk-preview-swap":
             approval = self.approvals.sign(preview, principal, nonce="swap")
             changed = self._preview(principal, destination="evil.example:443")
@@ -651,6 +726,12 @@ def run_security_verification(evidence_dir: Path) -> dict[str, Any]:
     write_json(
         evidence_dir / "authorization_policy.json",
         {"reason_codes": [code.value for code in ReasonCode], "default": "fail_closed"},
+    )
+    write_json(
+        evidence_dir / "security_policy_bundle.json",
+        yaml.safe_load(DEFAULT_SECURITY_POLICY_PATH.read_text(encoding="utf-8"))
+        if DEFAULT_SECURITY_POLICY_PATH.exists()
+        else {"generated": "fallback"},
     )
     write_json(evidence_dir / "sandbox_profile.json", sandbox.model_dump(mode="json"))
     write_json(evidence_dir / "sbom.json", sbom_inventory())

@@ -97,10 +97,12 @@ class AuthorizationQuery(StrictModel):
     destination: str | None
     data_classes: list[DataClass]
     content_trust: list[TrustClass]
+    content_tenant_ids: list[str] = Field(default_factory=list)
     risk_tier: Literal["low", "medium", "high"]
     approval_effect_hash: str | None = None
     extension_id: str
     extension_digest: str
+    extension_allowlisted: bool = True
     budget_effects_remaining: int = 1
 
 
