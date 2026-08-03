@@ -57,7 +57,7 @@ The [implementation-plan index](docs/implementation-plans/README.md) explains sh
 
 ## Engineering principles
 
-The future implementation is designed around these constraints:
+The implementation is designed around these constraints:
 
 1. **Runnable without paid credentials.** Every mandatory chapter path uses deterministic fixtures and replay adapters. Hosted models and cloud profiles are optional extensions.
 2. **One canonical contract set.** Later chapters import the model, context, retrieval, memory, capability, orchestration, and durable-execution types established earlier.
@@ -66,11 +66,11 @@ The future implementation is designed around these constraints:
 5. **Failure is part of the lab.** Each project includes adversarial or degraded scenarios, verification commands, cleanup, and rollback or recovery evidence.
 6. **Security and privacy are system properties.** Tenant isolation, instruction/data separation, exact-effect approval, revocation, sandboxing, browser/profile isolation, egress control, provenance, correction, export, and deletion cross component boundaries.
 
-## Planned implementation profile
+## Implementation profile
 
 The specifications assume Python 3.12+, `uv`, FastAPI, Pydantic, pytest, OpenTelemetry-compatible instrumentation, PostgreSQL/pgvector where durable data or retrieval requires them, and Docker Compose for the mandatory local system profile. Exact dependency and image versions will be selected, pinned, hashed, and recorded when implementation begins.
 
-Every chapter will expose one verification entry point:
+Each chapter exposes one verification entry point:
 
 ```text
 uv run policyops verify chNN --profile fixture

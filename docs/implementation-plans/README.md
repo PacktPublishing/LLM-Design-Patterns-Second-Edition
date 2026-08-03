@@ -1,6 +1,6 @@
 # LLM Design Patterns, Second Edition: Hands-On Implementation Plans
 
-This package turns the approved book outline into build-ready specifications for the cumulative **PolicyOps** knowledge-and-action agent. It is intentionally separate from the publisher-facing outline. The files define what a future implementation must deliver, how its components fit together, and how each chapter proves its result.
+This package turns the approved book outline into build-ready specifications for the cumulative **PolicyOps** knowledge-and-action agent. It is intentionally separate from the publisher-facing outline. The files define what the implementation must deliver, how its components fit together, and how each chapter proves its result.
 
 The sequence is cumulative. Chapters 1-15 add or validate one bounded capability. Chapter 16 is represented once, in [`chapters/ch16-policyops-capstone/`](./chapters/ch16-policyops-capstone/), and integrates the accepted checkpoints. It does not introduce a new pattern.
 
@@ -44,7 +44,7 @@ The specifications assume a Python 3.12+ repository managed with `uv`, a FastAPI
 
 All model, embedding, reranking, and protocol dependencies sit behind typed ports. Deterministic replay fixtures provide the mandatory path. A local or hosted adapter may be enabled by configuration, but credentials must not be necessary for the core checks and provider-specific types must not cross their adapter boundary.
 
-The future repository has one canonical shared-contract registry. Chapter 1 owns `RunContext`, model request/result, answer, error, and health contracts; Chapter 5 owns `ContextSource`/`ContextItem`; Chapter 6 owns `Citation`/`EvidencePack` plus separate embedding and reranking ports; Chapter 8 owns memory records and lifecycle decisions; Chapter 9 owns `TicketEffect`, `EffectPreview`, `ApprovalClaims`, `ToolPort`, extension/revocation/approval-store ports; Chapter 10 owns topology-neutral task/delegation state; and Chapter 11 owns session events, checkpoints, outbox intents, and effect receipts. Later chapters import these types. A compatible extension must bump its schema version and pass the originating chapter's contract suite; silent renaming or structurally similar duplicate types is not allowed.
+The repository uses one canonical shared-contract registry. Chapter 1 owns `RunContext`, model request/result, answer, error, and health contracts; Chapter 5 owns `ContextSource`/`ContextItem`; Chapter 6 owns `Citation`/`EvidencePack` plus separate embedding and reranking ports; Chapter 8 owns memory records and lifecycle decisions; Chapter 9 owns `TicketEffect`, `EffectPreview`, `ApprovalClaims`, `ToolPort`, extension/revocation/approval-store ports; Chapter 10 owns topology-neutral task/delegation state; and Chapter 11 owns session events, checkpoints, outbox intents, and effect receipts. Later chapters import these types. A compatible extension must bump its schema version and pass the originating chapter's contract suite; silent renaming or structurally similar duplicate types is not allowed.
 
 Every project follows the same repository contract:
 
@@ -68,6 +68,6 @@ The project advances by composing owned boundaries instead of reimplementing the
 
 ## Definition of done
 
-A project is complete only when a clean checkout can start its fixture profile, run its documented verification command, execute every required fault drill, shut down cleanly, and produce the named evidence. Acceptance criteria must be automated where practical. Any manual judgment must identify the reviewer, rubric, input evidence, and decision. No document in this package is proof that code exists; these files are the contract the future implementation must satisfy.
+A project is complete only when a clean checkout can start its fixture profile, run its documented verification command, execute every required fault drill, shut down cleanly, and produce the named evidence. Acceptance criteria must be automated where practical. Any manual judgment must identify the reviewer, rubric, input evidence, and decision. These files remain the contract the implementation must satisfy, while the linked lab READMEs and recorded build evidence show the current code path that satisfies that contract.
 
 The final capstone is complete only when all 15 chapter rows in the traceability manifest close, the ordered production game day runs, and the release policy produces an explicit **GO** or **NO-GO**. A failed mandatory gate always yields **NO-GO**.
