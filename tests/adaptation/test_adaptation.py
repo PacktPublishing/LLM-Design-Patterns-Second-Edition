@@ -8,10 +8,13 @@ from pathlib import Path
 import pytest
 
 from policyops.adaptation import (
+    artifact_admission_report,
+    build_dataset_manifest,
     admit_adapter,
     contamination_report,
     deterministic_split,
     load_records,
+    plan_training_run,
     run_adaptation_pipeline,
 )
 from policyops.adaptation.schemas import ModelArtifact
@@ -36,6 +39,7 @@ def test_records_have_provenance() -> None:
     records = load_records(RECORDS)
     assert len(records) >= 6
     assert all(r.rights_basis and r.source_ref for r in records)
+    assert all(r.provenance_chain for r in records)
 
 
 def test_pipeline_ships_or_explicit_no_adapt(tmp_path: Path) -> None:
@@ -44,6 +48,10 @@ def test_pipeline_ships_or_explicit_no_adapt(tmp_path: Path) -> None:
     assert payload["decision"]["decision"] in {"ship", "no_ship"}
     assert payload["decision"]["selected_candidate_id"]
     assert (tmp_path / "ok" / "result.json").exists()
+    assert (tmp_path / "ok" / "dataset_card.json").exists()
+    assert (tmp_path / "ok" / "model_card.json").exists()
+    assert (tmp_path / "ok" / "artifact_admission.json").exists()
+    assert payload["artifact_admission"]["admitted"] is True
 
 
 def test_contamination_blocks_release(tmp_path: Path) -> None:
@@ -99,6 +107,7 @@ def test_deterministic_split_is_stable_and_entity_keyed() -> None:
     total = len(a.train) + len(a.validation) + len(a.protected_test)
     assert total == len(records)
     assert a.protected_test  # lab determinism guarantees a non-empty protected split
+    assert a.subgroup_membership
 
 
 def test_load_records_requires_provenance(tmp_path: Path) -> None:
@@ -116,6 +125,16 @@ def test_load_records_requires_provenance(tmp_path: Path) -> None:
 def test_admit_adapter_accepts_valid_artifact() -> None:
     art = _artifact()
     assert admit_adapter(art, art.content_hash) is True
+
+
+def test_artifact_admission_report_explains_rejections() -> None:
+    report = artifact_admission_report(
+        _artifact(format="bad-format", load_policy="unsafe"),
+        _artifact().content_hash,
+    )
+    assert report["admitted"] is False
+    assert "format_unsupported" in report["reasons"]
+    assert "load_policy_unsupported" in report["reasons"]
 
 
 def test_admit_adapter_rejects_hash_mismatch() -> None:
@@ -148,3 +167,24 @@ def test_baseline_can_win_as_explicit_no_adaptation(tmp_path: Path) -> None:
     # The unsafe adapter is blocked; the surviving winner is a non-adapter candidate.
     assert decision["selected_candidate_id"] != "adapter-v1"
     assert decision["decision"] in {"ship", "no_ship"}
+
+
+def test_dataset_manifest_captures_lineage_and_synthetic_breakdown() -> None:
+    records = load_records(RECORDS)
+    manifest = build_dataset_manifest("policyops-adapt-v1", records)
+    assert manifest.record_count == len(records)
+    assert manifest.synthetic_record_ids
+    assert manifest.lineage_hash and manifest.lineage_hash.startswith("sha256:")
+
+
+def test_optional_training_requires_declared_gpu_and_hardware() -> None:
+    records = load_records(RECORDS)
+    manifest = build_dataset_manifest("policyops-adapt-v1", records)
+    with pytest.raises(ValueError):
+        plan_training_run(manifest)
+    plan = plan_training_run(
+        manifest,
+        gpu_profile="l4-fixture",
+        hardware={"gpu": "L4", "count": 1, "driver": "fixture-driver"},
+    )
+    assert plan["artifact_hash"].startswith("sha256:")
