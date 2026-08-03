@@ -92,14 +92,19 @@ class ResponseCache:
     def identity(key: CacheKey) -> str:
         return _sha(canonical_json(key.model_dump(mode="json")))
 
-    def get(self, key: CacheKey, now_ms: int) -> tuple[CandidateResult | None, str]:
+    def get(self, key: CacheKey, now_ms: int) -> tuple[CacheEntry | None, str]:
         entry = self._entries.get(self.identity(key))
         if entry is None:
             return None, "miss"
-        if entry.key != key or entry.expires_ms <= now_ms or not entry.candidate.valid:
+        if (
+            entry.key != key
+            or entry.expires_ms <= now_ms
+            or not entry.candidate.valid
+            or entry.validator_version != "verifier-v1"
+        ):
             self._entries.pop(self.identity(key), None)
             return None, "rejected"
-        return entry.candidate.model_copy(update={"cache_hit": True}), "hit"
+        return entry, "hit"
 
     def put(self, key: CacheKey, candidate: CandidateResult, now_ms: int) -> None:
         if not candidate.valid:
@@ -221,13 +226,27 @@ class AdaptiveInferenceGateway:
         cache_status = "bypass"
         if request.cacheable and request.data_classification != "confidential":
             key = self.cache_key(request, route[0])
-            cached, cache_status = self.cache.get(key, self.clock.now_ms)
-            if cached:
-                return GatewayResult(
-                    request_id=request.request_id,
-                    selected=cached,
-                    candidates=[cached],
-                    route=[route[0], "cache-hit"],
+            cache_entry, cache_status = self.cache.get(key, self.clock.now_ms)
+            if cache_entry:
+                cached = cache_entry.candidate.model_copy(update={"cache_hit": True})
+                cached_verification = self.verify_cached_candidate(cached, request)
+                if not cached_verification.passed:
+                    self.cache._entries.pop(self.cache.identity(key), None)
+                    cache_status = "rejected"
+                else:
+                    cached = cached.model_copy(
+                        update={
+                            "valid": True,
+                            "quality_score": cached_verification.quality_score,
+                            "verifier_reasons": cached_verification.reasons,
+                        }
+                    )
+                if cache_status == "hit":
+                    return GatewayResult(
+                        request_id=request.request_id,
+                        selected=cached,
+                        candidates=[cached],
+                        route=[route[0], "cache-hit"],
                     cache_status="hit",
                     early_exit=True,
                     duration_ms=1,
@@ -365,6 +384,25 @@ class AdaptiveInferenceGateway:
             quality_score=max(0.0, min(1.0, round(quality, 3))),
             reasons=reasons,
         )
+
+    def verify_cached_candidate(
+        self, candidate: CandidateResult, request: InferenceRequest
+    ) -> VerificationResult:
+        profile = self.profiles.get(candidate.profile_id)
+        if profile is None:
+            return VerificationResult(
+                passed=False,
+                quality_score=0.0,
+                reasons=["unknown_cached_profile"],
+            )
+        verification = self.verify(profile, request)
+        if request.require_citations and not candidate.citations:
+            return VerificationResult(
+                passed=False,
+                quality_score=verification.quality_score,
+                reasons=[*verification.reasons, "missing_required_citation"],
+            )
+        return verification
 
     def _citations(self, profile: ModelProfile, request: InferenceRequest) -> list[str]:
         if not request.require_citations:

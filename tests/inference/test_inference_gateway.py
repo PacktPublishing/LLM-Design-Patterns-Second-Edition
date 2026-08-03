@@ -162,6 +162,28 @@ def test_expired_or_corrupt_cache_is_rejected_and_revalidated() -> None:
     assert expired.cache_status in {"miss", "rejected"}
 
 
+def test_schema_or_validator_mismatched_cache_entry_is_rejected() -> None:
+    clock = GatewayClock()
+    cache = ResponseCache(ttl_ms=100)
+    gateway = AdaptiveInferenceGateway(cache=cache, clock=clock)
+    request = _request(request_id="req-cache-validator")
+    first = gateway.run(request)
+    assert first.selected is not None
+    key = gateway.cache_key(request, "small-fast")
+    cache.inject(
+        CacheEntry(
+            key=key,
+            candidate=first.selected,
+            created_ms=0,
+            expires_ms=100,
+            validator_version="verifier-v1",
+        ).model_copy(update={"validator_version": "verifier-v0"})
+    )
+    result = gateway.run(request.model_copy(update={"request_id": "req-cache-validator-2"}))
+    assert result.cache_status == "rejected"
+    assert result.selected is not None
+
+
 def test_confidential_requests_do_not_populate_cache() -> None:
     cache = ResponseCache()
     gateway = AdaptiveInferenceGateway(cache=cache)
