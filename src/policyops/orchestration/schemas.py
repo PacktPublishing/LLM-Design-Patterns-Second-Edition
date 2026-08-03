@@ -105,6 +105,30 @@ class TaskState(StrictModel):
     trace: list[str] = Field(default_factory=list)
 
 
+class TransitionEvent(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    run_id: str
+    sequence: int
+    event_type: str
+    status: RunStatus
+    terminal_reason: TerminalReason | None = None
+    trace_code: str
+    occurred_at: int
+
+
+class BudgetEntry(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    run_id: str
+    sequence: int
+    action: Literal["reserve", "consume", "release", "cancel_release"]
+    reserved_workers: int
+    consumed_workers: int
+    consumed_model_calls: int
+    consumed_tool_calls: int
+    budget_snapshot: BudgetLedger
+    occurred_at: int
+
+
 class DelegatedTask(StrictModel):
     task_id: str
     run_id: str

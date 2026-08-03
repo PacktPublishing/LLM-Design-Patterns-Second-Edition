@@ -60,6 +60,8 @@ def test_delegated_tasks_are_signed_narrow_and_traceable() -> None:
     state = engine.start(TopologyVariant.ORCHESTRATOR_WORKER)
     assert state.status == RunStatus.SUCCEEDED
     assert len(engine.issued_tasks) == 2
+    assert engine.transition_events_for(state.run_id)
+    assert engine.budget_entries_for(state.run_id)
     for task in engine.issued_tasks:
         assert task.principal.tenant_id == "tenant_alpha"
         assert "ticket:create" not in task.tool_allowlist
@@ -182,6 +184,8 @@ def test_fixture_verification_writes_orchestration_evidence(tmp_path: Path) -> N
     assert (tmp_path / "topology_comparison.json").exists()
     assert (tmp_path / "delegation_contract.json").exists()
     assert (tmp_path / "worker_results.json").exists()
+    assert (tmp_path / "transition_events.json").exists()
+    assert (tmp_path / "budget_ledger.json").exists()
     assert (tmp_path / "a2a_no_use_adr.json").exists()
     assert (tmp_path / "orchestration_scorecard.json").exists()
 
@@ -208,6 +212,45 @@ def test_triage_runtime_persists_run_snapshots_and_idempotency(tmp_path: Path) -
     inspected = runtime.inspect(first.run.run_id)
     assert inspected.delegated_tasks
     assert inspected.worker_results
+    assert (tmp_path / "runtime" / "triage-runtime.sqlite3").exists()
+
+
+def test_triage_runtime_rejects_idempotency_key_reuse_with_different_request(tmp_path: Path) -> None:
+    runtime = TriageRuntime(tmp_path / "runtime")
+    runtime.create(
+        TriageRunRequest(
+            scenario_id="policy-triage-default",
+            variant=TopologyVariant.ORCHESTRATOR_WORKER,
+            idempotency_key="same-run",
+        ),
+        context=fixture_context(),
+    )
+
+    with pytest.raises(RuntimeError, match="IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST"):
+        runtime.create(
+            TriageRunRequest(
+                scenario_id="policy-triage-default",
+                variant=TopologyVariant.WORKFLOW,
+                idempotency_key="same-run",
+            ),
+            context=fixture_context(),
+        )
+
+
+def test_triage_runtime_persists_transition_events_and_budget_entries(tmp_path: Path) -> None:
+    runtime = TriageRuntime(tmp_path / "runtime")
+    created = runtime.create(
+        TriageRunRequest(
+            scenario_id="policy-triage-default",
+            variant=TopologyVariant.ORCHESTRATOR_WORKER,
+            idempotency_key="persist-journal",
+        ),
+        context=fixture_context(),
+    )
+    reloaded_engine = runtime._load_engine(created.run.run_id)
+    assert reloaded_engine.transition_events_for(created.run.run_id)
+    assert reloaded_engine.budget_entries_for(created.run.run_id)
+    assert reloaded_engine.transition_events_for(created.run.run_id)[0].trace_code == "start"
 
 
 def test_triage_runtime_controls_update_persisted_state(tmp_path: Path) -> None:

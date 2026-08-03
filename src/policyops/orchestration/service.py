@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -13,6 +14,7 @@ from policyops.extensions import SecuredToolPort, fixture_context, fixture_ticke
 from policyops.orchestration.schemas import (
     BrowserActionTrace,
     BrowserObservation,
+    BudgetEntry,
     BudgetLedger,
     DelegatedTask,
     Finding,
@@ -25,6 +27,7 @@ from policyops.orchestration.schemas import (
     TopologyComparison,
     TopologyMetrics,
     TopologyVariant,
+    TransitionEvent,
     TriageControlRequest,
     TriageRunEnvelope,
     TriageRunRequest,
@@ -241,6 +244,50 @@ class TriageEngine:
         self.runs: dict[str, TaskState] = {}
         self.issued_tasks: list[DelegatedTask] = []
         self.worker_results: list[WorkerResult] = []
+        self.transition_events: list[TransitionEvent] = []
+        self.budget_entries: list[BudgetEntry] = []
+
+    def _record_transition(
+        self,
+        state: TaskState,
+        event_type: str,
+        trace_code: str,
+        *,
+        status: RunStatus | None = None,
+        terminal_reason: TerminalReason | None = None,
+    ) -> None:
+        if status is not None:
+            state.status = status
+        if terminal_reason is not None:
+            state.terminal_reason = terminal_reason
+        state.trace.append(trace_code)
+        state.version += 1
+        self.transition_events.append(
+            TransitionEvent(
+                run_id=state.run_id,
+                sequence=state.version,
+                event_type=event_type,
+                status=state.status,
+                terminal_reason=state.terminal_reason,
+                trace_code=trace_code,
+                occurred_at=NOW + state.version,
+            )
+        )
+
+    def _record_budget_entry(self, state: TaskState, action: str) -> None:
+        self.budget_entries.append(
+            BudgetEntry(
+                run_id=state.run_id,
+                sequence=len([entry for entry in self.budget_entries if entry.run_id == state.run_id]) + 1,
+                action=action,
+                reserved_workers=state.budget.reserved_workers,
+                consumed_workers=state.budget.consumed_workers,
+                consumed_model_calls=state.budget.consumed_model_calls,
+                consumed_tool_calls=state.budget.consumed_tool_calls,
+                budget_snapshot=state.budget.model_copy(deep=True),
+                occurred_at=NOW + state.version,
+            )
+        )
 
     def start(
         self,
@@ -260,8 +307,10 @@ class TriageEngine:
             principal=principal_from_context(context),
             evidence_refs=["policy_remote:v2:span_remote_approval"],
             budget=budget or BudgetLedger(),
-            trace=["start"],
+            version=0,
+            trace=[],
         )
+        self._record_transition(state, "run_created", "start", status=RunStatus.RUNNING)
         if variant == TopologyVariant.WORKFLOW:
             self._deterministic(state, context)
         elif variant == TopologyVariant.SINGLE_AGENT:
@@ -285,34 +334,41 @@ class TriageEngine:
     def worker_results_for(self, run_id: str) -> list[WorkerResult]:
         return [result for result in self.worker_results if result.run_id == run_id]
 
+    def transition_events_for(self, run_id: str) -> list[TransitionEvent]:
+        return [event for event in self.transition_events if event.run_id == run_id]
+
+    def budget_entries_for(self, run_id: str) -> list[BudgetEntry]:
+        return [entry for entry in self.budget_entries if entry.run_id == run_id]
+
     def pause(self, run_id: str, *, expected_version: int) -> TaskState:
         state = self._versioned(run_id, expected_version)
         if state.status not in {RunStatus.RUNNING, RunStatus.AWAITING_REVIEW}:
             return state
-        state.status = RunStatus.PAUSED
-        state.version += 1
-        state.trace.append("paused")
+        self._record_transition(state, "run_paused", "paused", status=RunStatus.PAUSED)
         return state
 
     def resume(self, run_id: str, *, expected_version: int) -> TaskState:
         state = self._versioned(run_id, expected_version)
         if state.status == RunStatus.PAUSED:
-            state.status = (
+            resumed_status = (
                 RunStatus.AWAITING_REVIEW
                 if state.terminal_reason is not None or state.proposed_effect_hash
                 else RunStatus.RUNNING
             )
-            state.version += 1
-            state.trace.append("resumed_revalidated")
+            self._record_transition(state, "run_resumed", "resumed_revalidated", status=resumed_status)
         return state
 
     def cancel(self, run_id: str, *, expected_version: int) -> TaskState:
         state = self._versioned(run_id, expected_version)
-        state.status = RunStatus.CANCELLED
-        state.terminal_reason = TerminalReason.CANCELLED_BY_OPERATOR
-        state.version += 1
         self.budgets.cancel_release(state.budget)
-        state.trace.append("cancelled")
+        self._record_budget_entry(state, "cancel_release")
+        self._record_transition(
+            state,
+            "run_cancelled",
+            "cancelled",
+            status=RunStatus.CANCELLED,
+            terminal_reason=TerminalReason.CANCELLED_BY_OPERATOR,
+        )
         return state
 
     def _versioned(self, run_id: str, expected_version: int) -> TaskState:
@@ -325,7 +381,7 @@ class TriageEngine:
         return state
 
     def _deterministic(self, state: TaskState, context: RunContext) -> None:
-        state.trace.append("deterministic_route")
+        self._record_transition(state, "deterministic_routed", "deterministic_route")
         state.findings.append(
             Finding(
                 finding_id="finding_evidence_remote",
@@ -337,9 +393,10 @@ class TriageEngine:
         self._finalize_with_toolport(state, context, idempotency_key=f"{state.run_id}-ticket")
 
     def _single_agent(self, state: TaskState, context: RunContext) -> None:
-        state.trace.append("single_agent_replay_decision")
+        self._record_transition(state, "single_agent_decision", "single_agent_replay_decision")
         state.model_calls += 1
         state.budget.consumed_model_calls += 1
+        self._record_budget_entry(state, "consume")
         state.findings.append(
             Finding(
                 finding_id="finding_evidence_remote",
@@ -356,20 +413,31 @@ class TriageEngine:
         observation = self.browser.observe(profile_id=profile_id)
         actions, reason = self.browser.fill(observation, effect_hash=preview.effect_hash)
         if reason:
-            state.status = RunStatus.AWAITING_REVIEW
-            state.terminal_reason = reason
-            state.trace.append(reason.value)
+            self._record_transition(
+                state,
+                "browser_review_required",
+                reason.value,
+                status=RunStatus.AWAITING_REVIEW,
+                terminal_reason=reason,
+            )
             return
         state.browser_actions = [action.action_id for action in actions]
-        state.trace.append("browser_actions_untrusted")
+        self._record_transition(state, "browser_actions_recorded", "browser_actions_untrusted")
         self._finalize_with_toolport(state, context, idempotency_key=f"{state.run_id}-ticket", preview=preview)
 
     def _orchestrator_worker(self, state: TaskState, context: RunContext) -> None:
         if not self.budgets.reserve_group(state.budget, workers=2, tool_calls=1):
-            state.status = RunStatus.AWAITING_REVIEW
-            state.terminal_reason = TerminalReason.CAPACITY_UNAVAILABLE
-            state.trace.append("capacity_unavailable")
+            self._record_budget_entry(state, "release")
+            self._record_transition(
+                state,
+                "capacity_rejected",
+                "capacity_unavailable",
+                status=RunStatus.AWAITING_REVIEW,
+                terminal_reason=TerminalReason.CAPACITY_UNAVAILABLE,
+            )
             return
+        self._record_budget_entry(state, "reserve")
+        self._record_transition(state, "fanout_reserved", "fanout_reserved")
         tasks = [
             self.delegations.issue(
                 run_id=state.run_id,
@@ -398,21 +466,32 @@ class TriageEngine:
             if self.delegations.verify(task, expected_run_id=state.run_id, seen_nonces=self.seen_delegation_nonces)
         ]
         if len(valid_tasks) != len(tasks):
-            state.status = RunStatus.AWAITING_REVIEW
-            state.terminal_reason = TerminalReason.INVALID_DELEGATION
-            state.trace.append("invalid_delegation")
+            self.budgets.cancel_release(state.budget)
+            self._record_budget_entry(state, "cancel_release")
+            self._record_transition(
+                state,
+                "delegation_rejected",
+                "invalid_delegation",
+                status=RunStatus.AWAITING_REVIEW,
+                terminal_reason=TerminalReason.INVALID_DELEGATION,
+            )
             return
         results = [self.worker.execute(task) for task in valid_tasks]
         self.worker_results.extend(results)
         findings, reason = self.merger.merge(valid_tasks, results)
         state.findings.extend(findings)
         self.budgets.consume_and_release(state.budget, workers=2, tool_calls=1)
+        self._record_budget_entry(state, "consume")
         if reason:
-            state.status = RunStatus.AWAITING_REVIEW
-            state.terminal_reason = reason
-            state.trace.append(reason.value)
+            self._record_transition(
+                state,
+                "fanin_requires_review",
+                reason.value,
+                status=RunStatus.AWAITING_REVIEW,
+                terminal_reason=reason,
+            )
             return
-        state.trace.append("deterministic_fan_in")
+        self._record_transition(state, "fanin_completed", "deterministic_fan_in")
         self._finalize_with_toolport(state, context, idempotency_key=f"{state.run_id}-ticket")
 
     def _finalize_with_toolport(
@@ -433,56 +512,149 @@ class TriageEngine:
         result = self.tool_port.create_policy_ticket(preview, approval, idempotency_key, context)
         state.proposed_effect_hash = preview.effect_hash
         state.budget.consumed_tool_calls += 1
+        self._record_budget_entry(state, "consume")
         if result.ticket_id:
             state.ticket_id = result.ticket_id
-            state.status = RunStatus.SUCCEEDED
-            state.terminal_reason = TerminalReason.COMPLETED
-            state.trace.append("chapter9_toolport_create")
+            self._record_transition(
+                state,
+                "toolport_ticket_created",
+                "chapter9_toolport_create",
+                status=RunStatus.SUCCEEDED,
+                terminal_reason=TerminalReason.COMPLETED,
+            )
         else:
-            state.status = RunStatus.AWAITING_REVIEW
-            state.terminal_reason = TerminalReason.APPROVAL_DENIED
-            state.trace.append("approval_denied")
+            self._record_transition(
+                state,
+                "toolport_ticket_denied",
+                "approval_denied",
+                status=RunStatus.AWAITING_REVIEW,
+                terminal_reason=TerminalReason.APPROVAL_DENIED,
+            )
 
 
 class TriageRuntime:
     def __init__(self, root: Path, tool_port: SecuredToolPort | None = None) -> None:
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
+        self.db_path = self.root / "triage-runtime.sqlite3"
+        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._init_schema()
         self.tool_port = tool_port
 
-    def _run_path(self, run_id: str) -> Path:
-        return self.root / f"{run_id}.json"
+    def _init_schema(self) -> None:
+        with self._conn:
+            self._conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS triage_runs (
+                    run_id TEXT PRIMARY KEY,
+                    scenario_id TEXT NOT NULL,
+                    idempotency_key TEXT,
+                    request_hash TEXT,
+                    run_json TEXT NOT NULL
+                );
 
-    def _idempotency_path(self) -> Path:
-        return self.root / "_idempotency.json"
+                CREATE TABLE IF NOT EXISTS triage_idempotency (
+                    idempotency_key TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    request_hash TEXT NOT NULL
+                );
 
-    def _load_idempotency(self) -> dict[str, str]:
-        path = self._idempotency_path()
-        if not path.exists():
-            return {}
-        return json.loads(path.read_text(encoding="utf-8"))
+                CREATE TABLE IF NOT EXISTS triage_tasks (
+                    task_id TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    task_json TEXT NOT NULL
+                );
 
-    def _save_idempotency(self, mapping: dict[str, str]) -> None:
-        self._idempotency_path().write_text(
-            json.dumps(mapping, indent=2, sort_keys=True),
-            encoding="utf-8",
+                CREATE TABLE IF NOT EXISTS triage_results (
+                    result_id TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    result_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS triage_transition_events (
+                    run_id TEXT NOT NULL,
+                    sequence INTEGER NOT NULL,
+                    event_json TEXT NOT NULL,
+                    PRIMARY KEY (run_id, sequence)
+                );
+
+                CREATE TABLE IF NOT EXISTS triage_budget_entries (
+                    run_id TEXT NOT NULL,
+                    sequence INTEGER NOT NULL,
+                    entry_json TEXT NOT NULL,
+                    PRIMARY KEY (run_id, sequence)
+                );
+
+                CREATE TABLE IF NOT EXISTS triage_seen_nonces (
+                    run_id TEXT NOT NULL,
+                    nonce TEXT NOT NULL,
+                    PRIMARY KEY (run_id, nonce)
+                );
+                """
+            )
+
+    def _dump(self, payload: Any) -> str:
+        return json.dumps(payload, indent=2, sort_keys=True)
+
+    def _load(self, payload: str) -> Any:
+        return json.loads(payload)
+
+    def _request_hash(self, request: TriageRunRequest, context: RunContext) -> str:
+        return sha_json(
+            {
+                "request": request.model_dump(mode="json"),
+                "context": principal_from_context(context).model_dump(mode="json"),
+            }
         )
 
     def _load_engine(self, run_id: str) -> TriageEngine:
-        path = self._run_path(run_id)
-        if not path.exists():
+        row = self._conn.execute(
+            "SELECT run_json FROM triage_runs WHERE run_id = ?",
+            (run_id,),
+        ).fetchone()
+        if row is None:
             raise TriageNotFoundError(f"run not found: {run_id}")
-        payload = json.loads(path.read_text(encoding="utf-8"))
         engine = TriageEngine(self.tool_port)
-        state = TaskState.model_validate(payload["run"])
+        state = TaskState.model_validate(self._load(row["run_json"]))
         engine.runs[state.run_id] = state
         engine.issued_tasks = [
-            DelegatedTask.model_validate(task) for task in payload.get("delegated_tasks", [])
+            DelegatedTask.model_validate(self._load(task_row["task_json"]))
+            for task_row in self._conn.execute(
+                "SELECT task_json FROM triage_tasks WHERE run_id = ? ORDER BY task_id",
+                (run_id,),
+            ).fetchall()
         ]
         engine.worker_results = [
-            WorkerResult.model_validate(result) for result in payload.get("worker_results", [])
+            WorkerResult.model_validate(self._load(result_row["result_json"]))
+            for result_row in self._conn.execute(
+                "SELECT result_json FROM triage_results WHERE run_id = ? ORDER BY result_id",
+                (run_id,),
+            ).fetchall()
         ]
-        engine.seen_delegation_nonces = set(payload.get("seen_delegation_nonces", []))
+        engine.transition_events = [
+            TransitionEvent.model_validate(self._load(event_row["event_json"]))
+            for event_row in self._conn.execute(
+                "SELECT event_json FROM triage_transition_events WHERE run_id = ? ORDER BY sequence",
+                (run_id,),
+            ).fetchall()
+        ]
+        engine.budget_entries = [
+            BudgetEntry.model_validate(self._load(entry_row["entry_json"]))
+            for entry_row in self._conn.execute(
+                "SELECT entry_json FROM triage_budget_entries WHERE run_id = ? ORDER BY sequence",
+                (run_id,),
+            ).fetchall()
+        ]
+        engine.seen_delegation_nonces = {
+            row["nonce"]
+            for row in self._conn.execute(
+                "SELECT nonce FROM triage_seen_nonces WHERE run_id = ? ORDER BY nonce",
+                (run_id,),
+            ).fetchall()
+        }
         return engine
 
     def _save_engine(
@@ -492,24 +664,65 @@ class TriageRuntime:
         *,
         scenario_id: str,
         idempotency_key: str | None,
+        request_hash: str | None = None,
     ) -> None:
         state = engine.inspect(run_id)
-        payload = {
-            "run": state.model_dump(mode="json"),
-            "delegated_tasks": [
-                task.model_dump(mode="json") for task in engine.delegated_tasks_for(run_id)
-            ],
-            "worker_results": [
-                result.model_dump(mode="json") for result in engine.worker_results_for(run_id)
-            ],
-            "seen_delegation_nonces": sorted(engine.seen_delegation_nonces),
-            "scenario_id": scenario_id,
-            "idempotency_key": idempotency_key,
-        }
-        self._run_path(run_id).write_text(
-            json.dumps(payload, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO triage_runs(run_id, scenario_id, idempotency_key, request_hash, run_json)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    scenario_id = excluded.scenario_id,
+                    idempotency_key = excluded.idempotency_key,
+                    request_hash = COALESCE(excluded.request_hash, triage_runs.request_hash),
+                    run_json = excluded.run_json
+                """,
+                (
+                    run_id,
+                    scenario_id,
+                    idempotency_key,
+                    request_hash,
+                    self._dump(state.model_dump(mode="json")),
+                ),
+            )
+            self._conn.execute("DELETE FROM triage_tasks WHERE run_id = ?", (run_id,))
+            self._conn.executemany(
+                "INSERT INTO triage_tasks(task_id, run_id, task_json) VALUES (?, ?, ?)",
+                [
+                    (task.task_id, run_id, self._dump(task.model_dump(mode="json")))
+                    for task in engine.delegated_tasks_for(run_id)
+                ],
+            )
+            self._conn.execute("DELETE FROM triage_results WHERE run_id = ?", (run_id,))
+            self._conn.executemany(
+                "INSERT INTO triage_results(result_id, run_id, result_json) VALUES (?, ?, ?)",
+                [
+                    (result.result_id, run_id, self._dump(result.model_dump(mode="json")))
+                    for result in engine.worker_results_for(run_id)
+                ],
+            )
+            self._conn.execute("DELETE FROM triage_transition_events WHERE run_id = ?", (run_id,))
+            self._conn.executemany(
+                "INSERT INTO triage_transition_events(run_id, sequence, event_json) VALUES (?, ?, ?)",
+                [
+                    (event.run_id, event.sequence, self._dump(event.model_dump(mode="json")))
+                    for event in engine.transition_events_for(run_id)
+                ],
+            )
+            self._conn.execute("DELETE FROM triage_budget_entries WHERE run_id = ?", (run_id,))
+            self._conn.executemany(
+                "INSERT INTO triage_budget_entries(run_id, sequence, entry_json) VALUES (?, ?, ?)",
+                [
+                    (entry.run_id, entry.sequence, self._dump(entry.model_dump(mode="json")))
+                    for entry in engine.budget_entries_for(run_id)
+                ],
+            )
+            self._conn.execute("DELETE FROM triage_seen_nonces WHERE run_id = ?", (run_id,))
+            self._conn.executemany(
+                "INSERT INTO triage_seen_nonces(run_id, nonce) VALUES (?, ?)",
+                [(run_id, nonce) for nonce in sorted(engine.seen_delegation_nonces)],
+            )
 
     def _available_controls(self, state: TaskState) -> list[str]:
         if state.status == RunStatus.SUCCEEDED:
@@ -521,15 +734,20 @@ class TriageRuntime:
         return ["pause", "cancel"]
 
     def _envelope(self, run_id: str, engine: TriageEngine) -> TriageRunEnvelope:
-        payload = json.loads(self._run_path(run_id).read_text(encoding="utf-8"))
+        row = self._conn.execute(
+            "SELECT scenario_id, idempotency_key FROM triage_runs WHERE run_id = ?",
+            (run_id,),
+        ).fetchone()
+        if row is None:
+            raise TriageNotFoundError(f"run not found: {run_id}")
         state = engine.inspect(run_id)
         return TriageRunEnvelope(
             run=state,
             delegated_tasks=engine.delegated_tasks_for(run_id),
             worker_results=engine.worker_results_for(run_id),
             available_controls=self._available_controls(state),
-            scenario_id=payload.get("scenario_id", "policy-triage-default"),
-            idempotency_key=payload.get("idempotency_key"),
+            scenario_id=row["scenario_id"],
+            idempotency_key=row["idempotency_key"],
         )
 
     def create(
@@ -538,11 +756,18 @@ class TriageRuntime:
         *,
         context: RunContext,
     ) -> TriageRunEnvelope:
-        idempotency = self._load_idempotency()
-        if request.idempotency_key and request.idempotency_key in idempotency:
-            run_id = idempotency[request.idempotency_key]
-            engine = self._load_engine(run_id)
-            return self._envelope(run_id, engine)
+        request_hash = self._request_hash(request, context)
+        if request.idempotency_key:
+            existing = self._conn.execute(
+                "SELECT run_id, request_hash FROM triage_idempotency WHERE idempotency_key = ?",
+                (request.idempotency_key,),
+            ).fetchone()
+            if existing is not None:
+                if existing["request_hash"] != request_hash:
+                    raise TriageConflictError("IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST")
+                run_id = existing["run_id"]
+                engine = self._load_engine(run_id)
+                return self._envelope(run_id, engine)
 
         engine = TriageEngine(self.tool_port)
         run_id = f"triage_{request.variant.value}_{uuid4().hex[:10]}"
@@ -554,13 +779,20 @@ class TriageRuntime:
             browser_profile=request.browser_profile,
         )
         if request.idempotency_key:
-            idempotency[request.idempotency_key] = run_id
-            self._save_idempotency(idempotency)
+            with self._conn:
+                self._conn.execute(
+                    """
+                    INSERT INTO triage_idempotency(idempotency_key, run_id, request_hash)
+                    VALUES (?, ?, ?)
+                    """,
+                    (request.idempotency_key, run_id, request_hash),
+                )
         self._save_engine(
             run_id,
             engine,
             scenario_id=request.scenario_id,
             idempotency_key=request.idempotency_key,
+            request_hash=request_hash,
         )
         return self._envelope(run_id, engine)
 
@@ -571,36 +803,48 @@ class TriageRuntime:
     def pause(self, run_id: str, request: TriageControlRequest) -> TriageRunEnvelope:
         engine = self._load_engine(run_id)
         state = engine.pause(run_id, expected_version=request.expected_version)
-        payload = json.loads(self._run_path(run_id).read_text(encoding="utf-8"))
+        row = self._conn.execute(
+            "SELECT scenario_id, idempotency_key, request_hash FROM triage_runs WHERE run_id = ?",
+            (run_id,),
+        ).fetchone()
         self._save_engine(
             run_id,
             engine,
-            scenario_id=payload.get("scenario_id", "policy-triage-default"),
-            idempotency_key=payload.get("idempotency_key"),
+            scenario_id=row["scenario_id"],
+            idempotency_key=row["idempotency_key"],
+            request_hash=row["request_hash"],
         )
         return self._envelope(state.run_id, engine)
 
     def resume(self, run_id: str, request: TriageControlRequest) -> TriageRunEnvelope:
         engine = self._load_engine(run_id)
         state = engine.resume(run_id, expected_version=request.expected_version)
-        payload = json.loads(self._run_path(run_id).read_text(encoding="utf-8"))
+        row = self._conn.execute(
+            "SELECT scenario_id, idempotency_key, request_hash FROM triage_runs WHERE run_id = ?",
+            (run_id,),
+        ).fetchone()
         self._save_engine(
             run_id,
             engine,
-            scenario_id=payload.get("scenario_id", "policy-triage-default"),
-            idempotency_key=payload.get("idempotency_key"),
+            scenario_id=row["scenario_id"],
+            idempotency_key=row["idempotency_key"],
+            request_hash=row["request_hash"],
         )
         return self._envelope(state.run_id, engine)
 
     def cancel(self, run_id: str, request: TriageControlRequest) -> TriageRunEnvelope:
         engine = self._load_engine(run_id)
         state = engine.cancel(run_id, expected_version=request.expected_version)
-        payload = json.loads(self._run_path(run_id).read_text(encoding="utf-8"))
+        row = self._conn.execute(
+            "SELECT scenario_id, idempotency_key, request_hash FROM triage_runs WHERE run_id = ?",
+            (run_id,),
+        ).fetchone()
         self._save_engine(
             run_id,
             engine,
-            scenario_id=payload.get("scenario_id", "policy-triage-default"),
-            idempotency_key=payload.get("idempotency_key"),
+            scenario_id=row["scenario_id"],
+            idempotency_key=row["idempotency_key"],
+            request_hash=row["request_hash"],
         )
         return self._envelope(state.run_id, engine)
 
@@ -670,6 +914,8 @@ def run_orchestration_verification(evidence_dir: Path) -> dict[str, Any]:
             for task in engine.issued_tasks
         ],
         "worker_results.json": [result.model_dump(mode="json") for result in engine.worker_results],
+        "transition_events.json": [event.model_dump(mode="json") for event in engine.transition_events],
+        "budget_ledger.json": [entry.model_dump(mode="json") for entry in engine.budget_entries],
         "a2a_no_use_adr.json": {"decision": comparison.a2a_decision},
         "orchestration_scorecard.json": scorecard.model_dump(mode="json"),
     }
