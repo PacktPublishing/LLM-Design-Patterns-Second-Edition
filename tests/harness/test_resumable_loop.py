@@ -18,6 +18,8 @@ from policyops.harness import (
     ResumableLoop,
     ReviewHarness,
     SessionPhase,
+    SessionRunRequest,
+    SessionRuntime,
     classify_failure,
     run_harness_verification,
 )
@@ -112,6 +114,31 @@ def test_checkpoint_is_recovery_cursor_not_alternate_history() -> None:
     assert checkpoint.state_hash.startswith("sha256:")
 
 
+def test_sqlite_store_persists_session_history_across_fresh_instances(tmp_path: Path) -> None:
+    db_path = tmp_path / "harness.sqlite3"
+    first = ResumableLoop(EventStore(db_path))
+    state = first.run_once("session-persisted")
+
+    second_store = EventStore(db_path)
+    rebuilt = second_store.current_state(state.session_id)
+
+    assert rebuilt.state == SessionPhase.VERIFIED
+    assert rebuilt.version == state.version
+    assert second_store.receipts[f"{state.session_id}:ticket"].external_reference == state.ticket_id
+
+
+def test_after_checkpoint_fault_resumes_from_durable_checkpoint_without_duplicate_ticket() -> None:
+    loop = ResumableLoop()
+    interrupted = loop.run_once("session-after-checkpoint", fault=FaultScenario.AFTER_CHECKPOINT)
+
+    assert interrupted.state == SessionPhase.EFFECT_DELIVERED
+
+    resumed = loop.resume(interrupted.session_id)
+
+    assert resumed.state == SessionPhase.VERIFIED
+    assert len(loop.store.receipts) == 1
+
+
 def test_fixture_verification_writes_harness_evidence(tmp_path: Path) -> None:
     result = run_harness_verification(tmp_path)
     assert result["gates_passed"] is True
@@ -120,3 +147,18 @@ def test_fixture_verification_writes_harness_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "replay_result.json").exists()
     assert (tmp_path / "runbook.json").exists()
     assert (tmp_path / "harness_scorecard.json").exists()
+
+
+def test_session_runtime_uses_durable_sqlite_database(tmp_path: Path) -> None:
+    runtime = SessionRuntime(tmp_path / "runtime")
+    runtime.run(
+        "runtime-db-session",
+        request=SessionRunRequest(expected_version=0, owner_id="worker-a", fault=FaultScenario.BEFORE_EFFECT),
+        tenant_id="tenant_alpha",
+        actor_id="actor_reader",
+        configuration_id="fixture-config",
+        request_id="req-runtime-db",
+        trace_id="trace-runtime-db",
+    )
+
+    assert (tmp_path / "runtime" / "session-runtime.sqlite3").exists()

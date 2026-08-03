@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -51,13 +52,179 @@ class SessionConflictError(RuntimeError):
 
 
 class EventStore:
-    def __init__(self) -> None:
-        self.events: dict[str, list[SessionEvent]] = {}
-        self.checkpoints: dict[str, SessionCheckpoint] = {}
-        self.leases: dict[str, Lease] = {}
-        self.intents: dict[str, ActionIntent] = {}
-        self.outbox: dict[str, OutboxMessage] = {}
-        self.receipts: dict[str, EffectReceipt] = {}
+    def __init__(self, db_path: str | Path | None = None) -> None:
+        self.db_path = ":memory:" if db_path is None else str(Path(db_path))
+        self._conn = sqlite3.connect(self.db_path)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._init_schema()
+
+    def _init_schema(self) -> None:
+        with self._conn:
+            self._conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS session_events (
+                    session_id TEXT NOT NULL,
+                    sequence INTEGER NOT NULL,
+                    request_id TEXT NOT NULL,
+                    trace_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    actor_id TEXT NOT NULL,
+                    configuration_id TEXT NOT NULL,
+                    new_state TEXT NOT NULL,
+                    event_json TEXT NOT NULL,
+                    PRIMARY KEY (session_id, sequence)
+                );
+
+                CREATE TABLE IF NOT EXISTS session_checkpoints (
+                    session_id TEXT PRIMARY KEY,
+                    event_sequence INTEGER NOT NULL,
+                    checkpoint_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS worker_leases (
+                    session_id TEXT PRIMARY KEY,
+                    owner_id TEXT NOT NULL,
+                    fencing_token INTEGER NOT NULL,
+                    expires_at INTEGER NOT NULL,
+                    renewed_at INTEGER NOT NULL,
+                    lease_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS action_intents (
+                    intent_id TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    actor_id TEXT NOT NULL,
+                    capability TEXT NOT NULL,
+                    idempotency_key TEXT NOT NULL,
+                    intent_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS outbox_messages (
+                    message_id TEXT PRIMARY KEY,
+                    intent_id TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    idempotency_key TEXT NOT NULL,
+                    delivered INTEGER NOT NULL,
+                    attempts INTEGER NOT NULL,
+                    message_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS effect_receipts (
+                    idempotency_key TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    capability TEXT NOT NULL,
+                    external_reference TEXT NOT NULL,
+                    receipt_json TEXT NOT NULL
+                );
+                """
+            )
+
+    def _dump(self, value: Any) -> str:
+        return json.dumps(value, sort_keys=True)
+
+    def _load(self, value: str) -> Any:
+        return json.loads(value)
+
+    def _require_active_fence(self, session_id: str, fencing_token: int) -> None:
+        active = self.leases.get(session_id)
+        if active is None or active.fencing_token != fencing_token:
+            raise FenceError("STALE_FENCE")
+
+    def _persist_lease(self, lease: Lease) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO worker_leases(session_id, owner_id, fencing_token, expires_at, renewed_at, lease_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(session_id) DO UPDATE SET
+                    owner_id = excluded.owner_id,
+                    fencing_token = excluded.fencing_token,
+                    expires_at = excluded.expires_at,
+                    renewed_at = excluded.renewed_at,
+                    lease_json = excluded.lease_json
+                """,
+                (
+                    lease.session_id,
+                    lease.owner_id,
+                    lease.fencing_token,
+                    lease.expires_at,
+                    lease.renewed_at,
+                    self._dump(lease.model_dump(mode="json")),
+                ),
+            )
+
+    def has_session(self, session_id: str) -> bool:
+        row = self._conn.execute(
+            "SELECT 1 FROM session_events WHERE session_id = ? LIMIT 1",
+            (session_id,),
+        ).fetchone()
+        return row is not None
+
+    @property
+    def events(self) -> dict[str, list[SessionEvent]]:
+        rows = self._conn.execute(
+            "SELECT session_id, event_json FROM session_events ORDER BY session_id, sequence"
+        ).fetchall()
+        streams: dict[str, list[SessionEvent]] = {}
+        for row in rows:
+            streams.setdefault(row["session_id"], []).append(
+                SessionEvent.model_validate(self._load(row["event_json"]))
+            )
+        return streams
+
+    @property
+    def checkpoints(self) -> dict[str, SessionCheckpoint]:
+        rows = self._conn.execute(
+            "SELECT session_id, checkpoint_json FROM session_checkpoints ORDER BY session_id"
+        ).fetchall()
+        return {
+            row["session_id"]: SessionCheckpoint.model_validate(self._load(row["checkpoint_json"]))
+            for row in rows
+        }
+
+    @property
+    def leases(self) -> dict[str, Lease]:
+        rows = self._conn.execute(
+            "SELECT session_id, lease_json FROM worker_leases ORDER BY session_id"
+        ).fetchall()
+        return {
+            row["session_id"]: Lease.model_validate(self._load(row["lease_json"]))
+            for row in rows
+        }
+
+    @property
+    def intents(self) -> dict[str, ActionIntent]:
+        rows = self._conn.execute(
+            "SELECT intent_id, intent_json FROM action_intents ORDER BY intent_id"
+        ).fetchall()
+        return {
+            row["intent_id"]: ActionIntent.model_validate(self._load(row["intent_json"]))
+            for row in rows
+        }
+
+    @property
+    def outbox(self) -> dict[str, OutboxMessage]:
+        rows = self._conn.execute(
+            "SELECT message_id, message_json FROM outbox_messages ORDER BY message_id"
+        ).fetchall()
+        return {
+            row["message_id"]: OutboxMessage.model_validate(self._load(row["message_json"]))
+            for row in rows
+        }
+
+    @property
+    def receipts(self) -> dict[str, EffectReceipt]:
+        rows = self._conn.execute(
+            "SELECT idempotency_key, receipt_json FROM effect_receipts ORDER BY idempotency_key"
+        ).fetchall()
+        return {
+            row["idempotency_key"]: EffectReceipt.model_validate(self._load(row["receipt_json"]))
+            for row in rows
+        }
 
     def acquire_lease(self, session_id: str, owner_id: str, *, now: int = NOW) -> Lease:
         previous = self.leases.get(session_id)
@@ -69,23 +236,239 @@ class EventStore:
             expires_at=now + 60,
             renewed_at=now,
         )
-        self.leases[session_id] = lease
+        self._persist_lease(lease)
         return lease
 
     def append(self, event: SessionEvent, *, expected_version: int, fencing_token: int) -> int:
-        active = self.leases.get(event.session_id)
-        if active is None or active.fencing_token != fencing_token:
-            raise FenceError("STALE_FENCE")
-        stream = self.events.setdefault(event.session_id, [])
-        if len(stream) != expected_version:
-            raise RuntimeError("SESSION_VERSION_CONFLICT")
-        stream.append(event)
-        return len(stream)
+        with self._conn:
+            self._require_active_fence(event.session_id, fencing_token)
+            row = self._conn.execute(
+                "SELECT COALESCE(MAX(sequence), 0) AS version FROM session_events WHERE session_id = ?",
+                (event.session_id,),
+            ).fetchone()
+            current_version = int(row["version"])
+            if current_version != expected_version:
+                raise RuntimeError("SESSION_VERSION_CONFLICT")
+            self._conn.execute(
+                """
+                INSERT INTO session_events(
+                    session_id,
+                    sequence,
+                    request_id,
+                    trace_id,
+                    tenant_id,
+                    actor_id,
+                    configuration_id,
+                    new_state,
+                    event_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event.session_id,
+                    event.sequence,
+                    event.request_id,
+                    event.trace_id,
+                    event.tenant_id,
+                    event.actor_id,
+                    event.configuration_id,
+                    event.new_state.value,
+                    self._dump(event.model_dump(mode="json")),
+                ),
+            )
+        return event.sequence
+
+    def save_intent(self, intent: ActionIntent) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT OR REPLACE INTO action_intents(
+                    intent_id, session_id, tenant_id, actor_id, capability, idempotency_key, intent_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    intent.intent_id,
+                    intent.session_id,
+                    intent.tenant_id,
+                    intent.actor_id,
+                    intent.capability,
+                    intent.idempotency_key,
+                    self._dump(intent.model_dump(mode="json")),
+                ),
+            )
+
+    def get_intent(self, intent_id: str) -> ActionIntent:
+        row = self._conn.execute(
+            "SELECT intent_json FROM action_intents WHERE intent_id = ?",
+            (intent_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(intent_id)
+        return ActionIntent.model_validate(self._load(row["intent_json"]))
+
+    def save_outbox(self, message: OutboxMessage) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT OR REPLACE INTO outbox_messages(
+                    message_id, intent_id, session_id, tenant_id, idempotency_key, delivered, attempts, message_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    message.message_id,
+                    message.intent_id,
+                    message.session_id,
+                    message.tenant_id,
+                    message.idempotency_key,
+                    int(message.delivered),
+                    message.attempts,
+                    self._dump(message.model_dump(mode="json")),
+                ),
+            )
+
+    def get_outbox_message(self, message_id: str) -> OutboxMessage:
+        row = self._conn.execute(
+            "SELECT message_json FROM outbox_messages WHERE message_id = ?",
+            (message_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(message_id)
+        return OutboxMessage.model_validate(self._load(row["message_json"]))
+
+    def mark_outbox_delivered(self, message_id: str) -> OutboxMessage:
+        message = self.get_outbox_message(message_id)
+        message.attempts += 1
+        message.delivered = True
+        self.save_outbox(message)
+        return message
+
+    def save_receipt(self, receipt: EffectReceipt) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT OR REPLACE INTO effect_receipts(
+                    idempotency_key, tenant_id, capability, external_reference, receipt_json
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    receipt.idempotency_key,
+                    receipt.tenant_id,
+                    receipt.capability,
+                    receipt.external_reference,
+                    self._dump(receipt.model_dump(mode="json")),
+                ),
+            )
+
+    def stage_action(
+        self,
+        state: SessionState,
+        *,
+        lease: Lease,
+        intent: ActionIntent,
+        message: OutboxMessage,
+    ) -> list[SessionEvent]:
+        action_ready = SessionEvent(
+            session_id=state.session_id,
+            sequence=state.version + 1,
+            event_type=EventType.ACTION_READY,
+            request_id=state.request_id,
+            trace_id=state.trace_id,
+            tenant_id=state.tenant_id,
+            actor_id=state.actor_id,
+            configuration_id=state.configuration_id,
+            prior_state=state.state,
+            new_state=SessionPhase.ACTION_READY,
+            fencing_token=lease.fencing_token,
+            payload_hash=sha_json({"event": EventType.ACTION_READY.value, "state": SessionPhase.ACTION_READY.value}),
+            occurred_at=NOW + state.version,
+        )
+        outbox_created = SessionEvent(
+            session_id=state.session_id,
+            sequence=state.version + 2,
+            event_type=EventType.OUTBOX_CREATED,
+            request_id=state.request_id,
+            trace_id=state.trace_id,
+            tenant_id=state.tenant_id,
+            actor_id=state.actor_id,
+            configuration_id=state.configuration_id,
+            prior_state=SessionPhase.ACTION_READY,
+            new_state=SessionPhase.ACTION_READY,
+            fencing_token=lease.fencing_token,
+            payload_hash=sha_json({"event": EventType.OUTBOX_CREATED.value, "state": SessionPhase.ACTION_READY.value}),
+            occurred_at=NOW + state.version + 1,
+        )
+        with self._conn:
+            self._require_active_fence(state.session_id, lease.fencing_token)
+            row = self._conn.execute(
+                "SELECT COALESCE(MAX(sequence), 0) AS version FROM session_events WHERE session_id = ?",
+                (state.session_id,),
+            ).fetchone()
+            current_version = int(row["version"])
+            if current_version != state.version:
+                raise RuntimeError("SESSION_VERSION_CONFLICT")
+            self._conn.execute(
+                """
+                INSERT OR REPLACE INTO action_intents(
+                    intent_id, session_id, tenant_id, actor_id, capability, idempotency_key, intent_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    intent.intent_id,
+                    intent.session_id,
+                    intent.tenant_id,
+                    intent.actor_id,
+                    intent.capability,
+                    intent.idempotency_key,
+                    self._dump(intent.model_dump(mode="json")),
+                ),
+            )
+            self._conn.execute(
+                """
+                INSERT OR REPLACE INTO outbox_messages(
+                    message_id, intent_id, session_id, tenant_id, idempotency_key, delivered, attempts, message_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    message.message_id,
+                    message.intent_id,
+                    message.session_id,
+                    message.tenant_id,
+                    message.idempotency_key,
+                    int(message.delivered),
+                    message.attempts,
+                    self._dump(message.model_dump(mode="json")),
+                ),
+            )
+            for event in (action_ready, outbox_created):
+                self._conn.execute(
+                    """
+                    INSERT INTO session_events(
+                        session_id,
+                        sequence,
+                        request_id,
+                        trace_id,
+                        tenant_id,
+                        actor_id,
+                        configuration_id,
+                        new_state,
+                        event_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        event.session_id,
+                        event.sequence,
+                        event.request_id,
+                        event.trace_id,
+                        event.tenant_id,
+                        event.actor_id,
+                        event.configuration_id,
+                        event.new_state.value,
+                        self._dump(event.model_dump(mode="json")),
+                    ),
+                )
+        return [action_ready, outbox_created]
 
     def write_checkpoint(self, state: SessionState, *, fencing_token: int) -> SessionCheckpoint:
-        active = self.leases.get(state.session_id)
-        if active is None or active.fencing_token != fencing_token:
-            raise FenceError("STALE_FENCE")
+        self._require_active_fence(state.session_id, fencing_token)
         checkpoint = SessionCheckpoint(
             session_id=state.session_id,
             event_sequence=state.version,
@@ -93,73 +476,67 @@ class EventStore:
             state=state.model_copy(deep=True),
             created_at=NOW,
         )
-        self.checkpoints[state.session_id] = checkpoint
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT OR REPLACE INTO session_checkpoints(session_id, event_sequence, checkpoint_json)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    state.session_id,
+                    checkpoint.event_sequence,
+                    self._dump(checkpoint.model_dump(mode="json")),
+                ),
+            )
         return checkpoint
 
     def current_state(self, session_id: str, reducer: SessionReducer | None = None) -> SessionState:
-        events = self.events.get(session_id)
+        reducer = reducer or SessionReducer()
+        events = self.events.get(session_id, [])
         checkpoint = self.checkpoints.get(session_id)
-        if checkpoint is not None and checkpoint.event_sequence == len(events or []):
-            return checkpoint.state.model_copy(deep=True)
+        if checkpoint is not None and checkpoint.event_sequence <= len(events):
+            if sha_json(checkpoint.state.model_dump(mode="json")) == checkpoint.state_hash:
+                state = checkpoint.state.model_copy(deep=True)
+                for event in events:
+                    if event.sequence > checkpoint.event_sequence:
+                        state = reducer.apply(state, event)
+                return state
         if not events:
             raise SessionNotFoundError(f"session not found: {session_id}")
-        return (reducer or SessionReducer()).replay(events)
+        return reducer.replay(events)
 
     def to_payload(self) -> dict[str, Any]:
         return {
-            "events": {
-                session_id: [event.model_dump(mode="json") for event in events]
-                for session_id, events in self.events.items()
-            },
-            "checkpoints": {
-                session_id: checkpoint.model_dump(mode="json")
-                for session_id, checkpoint in self.checkpoints.items()
-            },
-            "leases": {
-                session_id: lease.model_dump(mode="json")
-                for session_id, lease in self.leases.items()
-            },
-            "intents": {
-                intent_id: intent.model_dump(mode="json")
-                for intent_id, intent in self.intents.items()
-            },
-            "outbox": {
-                message_id: message.model_dump(mode="json")
-                for message_id, message in self.outbox.items()
-            },
-            "receipts": {
-                key: receipt.model_dump(mode="json")
-                for key, receipt in self.receipts.items()
-            },
+            "events": {session_id: [event.model_dump(mode="json") for event in events] for session_id, events in self.events.items()},
+            "checkpoints": {session_id: checkpoint.model_dump(mode="json") for session_id, checkpoint in self.checkpoints.items()},
+            "leases": {session_id: lease.model_dump(mode="json") for session_id, lease in self.leases.items()},
+            "intents": {intent_id: intent.model_dump(mode="json") for intent_id, intent in self.intents.items()},
+            "outbox": {message_id: message.model_dump(mode="json") for message_id, message in self.outbox.items()},
+            "receipts": {key: receipt.model_dump(mode="json") for key, receipt in self.receipts.items()},
         }
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> EventStore:
         store = cls()
-        store.events = {
-            session_id: [SessionEvent.model_validate(event) for event in events]
-            for session_id, events in payload.get("events", {}).items()
-        }
-        store.checkpoints = {
-            session_id: SessionCheckpoint.model_validate(checkpoint)
-            for session_id, checkpoint in payload.get("checkpoints", {}).items()
-        }
-        store.leases = {
-            session_id: Lease.model_validate(lease)
-            for session_id, lease in payload.get("leases", {}).items()
-        }
-        store.intents = {
-            intent_id: ActionIntent.model_validate(intent)
-            for intent_id, intent in payload.get("intents", {}).items()
-        }
-        store.outbox = {
-            message_id: OutboxMessage.model_validate(message)
-            for message_id, message in payload.get("outbox", {}).items()
-        }
-        store.receipts = {
-            key: EffectReceipt.model_validate(receipt)
-            for key, receipt in payload.get("receipts", {}).items()
-        }
+        for session_id, lease_payload in payload.get("leases", {}).items():
+            store._persist_lease(Lease.model_validate(lease_payload))
+        for session_id, events in payload.get("events", {}).items():
+            for event_payload in events:
+                event = SessionEvent.model_validate(event_payload)
+                store.append(
+                    event,
+                    expected_version=event.sequence - 1,
+                    fencing_token=event.fencing_token,
+                )
+        for session_id, checkpoint_payload in payload.get("checkpoints", {}).items():
+            checkpoint = SessionCheckpoint.model_validate(checkpoint_payload)
+            store.write_checkpoint(checkpoint.state, fencing_token=store.leases[session_id].fencing_token)
+        for intent_payload in payload.get("intents", {}).values():
+            store.save_intent(ActionIntent.model_validate(intent_payload))
+        for message_payload in payload.get("outbox", {}).values():
+            store.save_outbox(OutboxMessage.model_validate(message_payload))
+        for receipt_payload in payload.get("receipts", {}).values():
+            store.save_receipt(EffectReceipt.model_validate(receipt_payload))
         return store
 
 
@@ -249,8 +626,8 @@ class OutboxDispatcher:
     def deliver(self, message_id: str) -> EffectReceipt:
         if self.replay:
             raise EffectAttemptedDuringReplay("replay adapter rejects external effects")
-        message = self.store.outbox[message_id]
-        intent = self.store.intents[message.intent_id]
+        message = self.store.get_outbox_message(message_id)
+        intent = self.store.get_intent(message.intent_id)
         preview = self.tool_port.preview_policy_ticket(fixture_ticket(), fixture_context())
         approval = self.tool_port.approval_store.issuer.issue(
             preview,
@@ -265,8 +642,6 @@ class OutboxDispatcher:
             fixture_context(),
         )
         self.external_calls += 1
-        message.attempts += 1
-        message.delivered = True
         receipt = EffectReceipt(
             tenant_id=intent.tenant_id,
             capability=intent.capability,
@@ -277,7 +652,8 @@ class OutboxDispatcher:
             observed_postcondition={"ticket_count_delta": 1 if result.ticket_id else 0},
             recorded_at=NOW,
         )
-        self.store.receipts[message.idempotency_key] = receipt
+        self.store.mark_outbox_delivered(message.message_id)
+        self.store.save_receipt(receipt)
         return receipt
 
 
@@ -366,7 +742,6 @@ class ResumableLoop:
             configuration_id=state.configuration_id,
             expected_postcondition={"ticket_count_delta": 1},
         )
-        self.store.intents[intent.intent_id] = intent
         message = OutboxMessage(
             message_id=f"outbox-{session_id}",
             intent_id=intent.intent_id,
@@ -374,9 +749,8 @@ class ResumableLoop:
             tenant_id=intent.tenant_id,
             idempotency_key=intent.idempotency_key,
         )
-        self.store.outbox[message.message_id] = message
-        self._append(state, EventType.ACTION_READY, state.state, SessionPhase.ACTION_READY, lease)
-        self._append(state, EventType.OUTBOX_CREATED, SessionPhase.ACTION_READY, SessionPhase.ACTION_READY, lease)
+        staged_events = self.store.stage_action(state, lease=lease, intent=intent, message=message)
+        state.version = staged_events[-1].sequence
         state.state = SessionPhase.ACTION_READY
         state.pending_action_id = intent.intent_id
         if fault == FaultScenario.BEFORE_EFFECT:
@@ -387,14 +761,15 @@ class ResumableLoop:
         self._append(state, EventType.EFFECT_RECEIPT, state.state, SessionPhase.EFFECT_DELIVERED, lease)
         state.state = SessionPhase.EFFECT_DELIVERED
         state.ticket_id = receipt.external_reference
-        checkpoint = self.store.write_checkpoint(state, fencing_token=lease.fencing_token)
+        self.store.write_checkpoint(state, fencing_token=lease.fencing_token)
+        if fault == FaultScenario.AFTER_CHECKPOINT:
+            return state
         self._append(state, EventType.CHECKPOINT_WRITTEN, state.state, SessionPhase.VERIFIED, lease)
         state.state = SessionPhase.VERIFIED
-        self.store.checkpoints[session_id] = checkpoint
         return state
 
     def resume(self, session_id: str, owner_id: str = "worker-b") -> SessionState:
-        if session_id not in self.store.events:
+        if not self.store.has_session(session_id):
             raise SessionNotFoundError(f"session not found: {session_id}")
         lease = self.store.acquire_lease(session_id, owner_id)
         state = self.reducer.replay(self.store.events[session_id])
@@ -427,7 +802,7 @@ class ResumableLoop:
         return state
 
     def replay_no_effects(self, session_id: str) -> SessionState:
-        if session_id not in self.store.events:
+        if not self.store.has_session(session_id):
             raise SessionNotFoundError(f"session not found: {session_id}")
         dispatcher = OutboxDispatcher(self.store, replay=True)
         state = self.reducer.replay(self.store.events[session_id])
@@ -472,20 +847,14 @@ class SessionRuntime:
     def __init__(self, root: Path, tool_port: SecuredToolPort | None = None) -> None:
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
+        self.db_path = self.root / "session-runtime.sqlite3"
         self.tool_port = tool_port
 
-    def _session_path(self, session_id: str) -> Path:
-        return self.root / f"{session_id}.json"
-
     def _load_store(self, session_id: str) -> EventStore:
-        path = self._session_path(session_id)
-        if not path.exists():
-            return EventStore()
-        return EventStore.from_payload(json.loads(path.read_text(encoding="utf-8")))
+        return EventStore(self.db_path)
 
     def _save_store(self, session_id: str, store: EventStore) -> None:
-        path = self._session_path(session_id)
-        path.write_text(json.dumps(store.to_payload(), indent=2, sort_keys=True), encoding="utf-8")
+        return None
 
     def _envelope(self, session_id: str, store: EventStore) -> SessionEnvelope:
         reducer = SessionReducer()
@@ -524,7 +893,7 @@ class SessionRuntime:
     ) -> SessionEnvelope:
         store = self._load_store(session_id)
         loop = ResumableLoop(store, self.tool_port)
-        if session_id in store.events:
+        if store.has_session(session_id):
             current = store.current_state(session_id, loop.reducer)
             if request.expected_version is not None and current.version != request.expected_version:
                 raise SessionConflictError(
