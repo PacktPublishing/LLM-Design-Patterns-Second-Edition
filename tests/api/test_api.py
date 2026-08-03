@@ -13,6 +13,7 @@ from policyops.api import create_app
 from policyops.capstone import CapstoneRuntime
 from policyops.composition import AppContainer
 from policyops.config import Settings
+from policyops.deployment import DeploymentRuntime
 from policyops.harness import SessionRuntime
 from policyops.orchestration import TriageRuntime
 from policyops.telemetry import TelemetryRuntime
@@ -61,6 +62,7 @@ def client(tmp_path: Path) -> TestClient:
     app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
     app.state.triage_runtime = TriageRuntime(tmp_path / "triage-runtime")
     app.state.telemetry_runtime = TelemetryRuntime(tmp_path / "telemetry-runtime")
+    app.state.deployment_runtime = DeploymentRuntime(tmp_path / "deployment-runtime")
     app.state.capstone_runtime = CapstoneRuntime(tmp_path / "capstone-runtime")
     return TestClient(app)
 
@@ -89,6 +91,15 @@ def test_ready(client: TestClient) -> None:
     body = r.json()
     assert body["status"] == "ready"
     assert body["configuration_id"].startswith("sha256:")
+
+
+def test_startup_health_reports_ready(client: TestClient) -> None:
+    r = client.get("/health/startup")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["service"] == "policyops-api"
+    assert body["startup"] == "ready"
+    assert body["readiness"] == "ready"
 
 
 def test_answer_success(client: TestClient) -> None:
@@ -153,6 +164,7 @@ def test_openapi_has_answer_path(client: TestClient) -> None:
     schema = client.app.openapi()
     assert "/v1/answer" in schema["paths"]
     assert "/health/live" in schema["paths"]
+    assert "/health/startup" in schema["paths"]
 
 
 def test_openapi_matches_snapshot(client: TestClient) -> None:
@@ -187,6 +199,20 @@ def test_insufficient_scope_forbidden_no_model_call(client: TestClient) -> None:
     assert body["code"] == "FORBIDDEN"
     assert "answer" not in body
     assert replay.call_count == before
+
+
+def test_dependency_diagnostics_requires_operator_role(client: TestClient) -> None:
+    forbidden = client.get("/diagnostics/dependencies", headers=_headers())
+    assert forbidden.status_code == 403
+
+    allowed = client.get(
+        "/diagnostics/dependencies",
+        headers=_headers(**{"X-Roles": "platform-engineer"}),
+    )
+    assert allowed.status_code == 200
+    payload = allowed.json()
+    assert payload
+    assert all("reason_code" in item and "bounded_detail" in item for item in payload)
 
 
 def test_ready_returns_503_when_adapter_not_ready(tmp_path: Path) -> None:

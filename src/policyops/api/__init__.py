@@ -34,6 +34,7 @@ from policyops.contracts import (
     RetryClass,
     RunContext,
 )
+from policyops.deployment import DependencyDiagnostic, DeploymentRuntime, HealthReport, HealthState
 from policyops.harness import (
     SessionCancelRequest,
     SessionConflictError,
@@ -81,6 +82,9 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     )
     application.state.telemetry_runtime = TelemetryRuntime(
         Path(__file__).resolve().parents[3] / "build" / "ch12" / "runtime"
+    )
+    application.state.deployment_runtime = DeploymentRuntime(
+        Path(__file__).resolve().parents[3] / "build" / "ch14" / "runtime"
     )
     application.state.capstone_runtime = CapstoneRuntime(
         Path(__file__).resolve().parents[3] / "build" / "ch16" / "runtime"
@@ -134,6 +138,20 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         if envelope.spans[0].context.tenant_hash != hash_tenant(tenant_id):
             raise _problem(ErrorCode.FORBIDDEN, "operation tenant mismatch", http_status=403)
 
+    def _require_operator_role(roles_header: str | None) -> str:
+        roles = [r.strip() for r in (roles_header or "").split(",") if r.strip()]
+        allowed = {
+            "operator",
+            "platform-engineer",
+            "site-reliability-engineer",
+            "database-engineer",
+            "release-engineer",
+        }
+        for role in roles:
+            if role in allowed:
+                return role
+        raise _problem(ErrorCode.FORBIDDEN, "operator role required", http_status=403)
+
     def _run_context(
         *,
         tenant_id: str,
@@ -184,6 +202,27 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
             "profile": settings.profile,
         }
         return JSONResponse(status_code=200 if ok else 503, content=body)
+
+    @application.get("/health/startup", response_model=HealthReport)
+    async def startup(request: Request) -> Response:
+        runtime: DeploymentRuntime = request.app.state.deployment_runtime
+        report = runtime.startup_report()
+        return JSONResponse(
+            status_code=200 if report.startup == HealthState.READY else 503,
+            content=report.model_dump(mode="json"),
+        )
+
+    @application.get("/diagnostics/dependencies", response_model=list[DependencyDiagnostic])
+    async def dependency_diagnostics(
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+    ) -> list[DependencyDiagnostic]:
+        _require_identity(x_tenant_id, x_actor_id)
+        role = _require_operator_role(x_roles)
+        runtime: DeploymentRuntime = request.app.state.deployment_runtime
+        return runtime.dependency_diagnostics(role=role)
 
     @application.post("/v1/answer", response_model=AnswerResponse)
     async def answer(

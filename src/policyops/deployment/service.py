@@ -9,10 +9,13 @@ from typing import Any
 from policyops.deployment.schemas import (
     AdmissionLimits,
     BackupCatalog,
+    BackupVerificationReport,
     CanaryReport,
     ChaosResult,
     CircuitBreakerState,
+    DependencyDiagnostic,
     DeploymentScorecard,
+    DeploymentStatusEnvelope,
     ExecutionEnvelope,
     FailureClass,
     HealthReport,
@@ -23,7 +26,11 @@ from policyops.deployment.schemas import (
     ModelRouteDecision,
     OfferResult,
     OfferStatus,
+    QueueDrainReport,
+    ReconcileReport,
     RestoreReport,
+    RestoreExecutionReport,
+    RollbackReport,
     RetryPolicy,
     RunbookStep,
     WorkItem,
@@ -188,7 +195,7 @@ class HealthChecker:
         return HealthReport(
             service="policyops-api",
             liveness=HealthState.LIVE,
-            startup=HealthState.STARTUP if config_valid else HealthState.NOT_READY,
+            startup=HealthState.READY if config_valid else HealthState.NOT_READY,
             readiness=HealthState.READY if ready else HealthState.NOT_READY,
             dependency_ready=db_ready,
             schema_compatible=schema_compatible,
@@ -224,12 +231,19 @@ class ReleaseController:
             clean_database_verified=not unsafe,
         )
 
-    def canary(self, bad_image: bool = True) -> CanaryReport:
-        candidate = "sha256:badcandidate" if bad_image else "sha256:goodcandidate"
+    def canary(
+        self,
+        bad_image: bool = True,
+        *,
+        candidate_digest: str | None = None,
+        baseline_digest: str | None = None,
+    ) -> CanaryReport:
+        baseline = baseline_digest or self.baseline
+        candidate = candidate_digest or ("sha256:badcandidate" if bad_image else "sha256:goodcandidate")
         if bad_image:
             return CanaryReport(
                 release_id="rel-ch14-001",
-                baseline_digest=self.baseline,
+                baseline_digest=baseline,
                 candidate_digest=candidate,
                 health_passed=False,
                 error_rate=0.15,
@@ -237,11 +251,11 @@ class ReleaseController:
                 smoke_passed=False,
                 policy_passed=True,
                 decision="rollback",
-                accepted_digest_after=self.baseline,
+                accepted_digest_after=baseline,
             )
         return CanaryReport(
             release_id="rel-ch14-002",
-            baseline_digest=self.baseline,
+            baseline_digest=baseline,
             candidate_digest=candidate,
             health_passed=True,
             error_rate=0.01,
@@ -368,6 +382,269 @@ class LoadChaosDriver:
             )
             for index, name in enumerate(names)
         ]
+
+
+class DeploymentRuntime:
+    operator_roles = {
+        "operator",
+        "platform-engineer",
+        "site-reliability-engineer",
+        "database-engineer",
+        "release-engineer",
+    }
+
+    def __init__(self, root: Path) -> None:
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.release = ReleaseController()
+        self.health = HealthChecker()
+        self.backup = BackupRestoreController()
+
+    def _state_path(self) -> Path:
+        return self.root / "runtime_state.json"
+
+    def _events_dir(self) -> Path:
+        path = self.root / "events"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _seed_state(self) -> dict[str, Any]:
+        queue = [
+            WorkItem(
+                item_id=f"runtime-work-{index}",
+                envelope=fixture_envelope(
+                    tenant_id="tenant-alpha" if index % 2 == 0 else "tenant-beta",
+                    session_id=f"runtime-session-{index}",
+                ),
+                priority=index,
+                payload_bytes=512,
+            ).model_dump(mode="json")
+            for index in range(3)
+        ]
+        return {
+            "accepted_digest": self.release.baseline,
+            "containment_mode": False,
+            "db_ready": True,
+            "schema_compatible": True,
+            "config_valid": True,
+            "worker_safe": True,
+            "dependencies": {
+                "postgres": {"healthy": True, "reason_code": "ready"},
+                "model-gateway": {"healthy": True, "reason_code": "healthy"},
+                "ticket-service": {"healthy": True, "reason_code": "reachable"},
+                "telemetry-collector": {"healthy": True, "reason_code": "buffering_ok"},
+            },
+            "queue": queue,
+            "outbox_pending": [
+                {
+                    "idempotency_key": "idem-runtime-reconcile-1",
+                    "effect_ref": "ticket:create:runtime-session-0",
+                }
+            ],
+            "ticket_receipts": {},
+            "last_restore": None,
+        }
+
+    def _load_state(self) -> dict[str, Any]:
+        path = self._state_path()
+        if not path.exists():
+            state = self._seed_state()
+            self._save_state(state)
+            return state
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def _save_state(self, state: dict[str, Any]) -> None:
+        self._state_path().write_text(
+            json.dumps(state, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+
+    def _require_role(self, role: str) -> None:
+        if role not in self.operator_roles:
+            raise PermissionError(f"operator role required, got {role}")
+
+    def _queue_items(self, state: dict[str, Any]) -> list[WorkItem]:
+        return [WorkItem.model_validate(item) for item in state["queue"]]
+
+    def _save_queue(self, state: dict[str, Any], items: list[WorkItem]) -> None:
+        state["queue"] = [item.model_dump(mode="json") for item in items]
+
+    def startup_report(self) -> HealthReport:
+        state = self._load_state()
+        return self.health.report(
+            db_ready=state["db_ready"],
+            schema_compatible=state["schema_compatible"],
+            config_valid=state["config_valid"],
+            worker_safe=state["worker_safe"],
+        )
+
+    def dependency_diagnostics(self, *, role: str) -> list[DependencyDiagnostic]:
+        self._require_role(role)
+        state = self._load_state()
+        return [
+            DependencyDiagnostic(
+                dependency=name,
+                healthy=details["healthy"],
+                reason_code=details["reason_code"],
+                bounded_detail=f"{name}={details['reason_code']}",
+            )
+            for name, details in state["dependencies"].items()
+        ]
+
+    def status(self, *, role: str) -> DeploymentStatusEnvelope:
+        self._require_role(role)
+        state = self._load_state()
+        health = self.startup_report()
+        diagnostics = self.dependency_diagnostics(role=role)
+        queue_depth = len([item for item in self._queue_items(state) if item.state == WorkState.QUEUED])
+        return DeploymentStatusEnvelope(
+            accepted_digest=state["accepted_digest"],
+            startup=health.startup,
+            readiness=health.readiness,
+            queue_depth=queue_depth,
+            outbox_pending=len(state["outbox_pending"]),
+            containment_mode=state["containment_mode"],
+            diagnostics=diagnostics,
+        )
+
+    def queue_drain(self, *, role: str, dry_run: bool = False) -> QueueDrainReport:
+        self._require_role(role)
+        state = self._load_state()
+        items = self._queue_items(state)
+        before = len([item for item in items if item.state == WorkState.QUEUED])
+        drained = before
+        if not dry_run:
+            items = [item for item in items if item.state != WorkState.QUEUED]
+            state["containment_mode"] = True
+            self._save_queue(state, items)
+            self._save_state(state)
+        after = before if dry_run else 0
+        report = QueueDrainReport(
+            queue_depth_before=before,
+            drained_count=drained,
+            queue_depth_after=after,
+            containment_mode=True if not dry_run else state["containment_mode"],
+            dry_run=dry_run,
+        )
+        write_json(self._events_dir() / "queue_drain.json", report.model_dump(mode="json"))
+        return report
+
+    def outbox_reconcile(self, *, role: str, dry_run: bool = False) -> ReconcileReport:
+        self._require_role(role)
+        state = self._load_state()
+        pending = list(state["outbox_pending"])
+        receipts = dict(state["ticket_receipts"])
+        pending_before = len(pending)
+        duplicate_effects = 0
+        if not dry_run:
+            for entry in pending:
+                key = entry["idempotency_key"]
+                if key in receipts:
+                    duplicate_effects += 1
+                    continue
+                receipts[key] = "ticket-" + key[-8:]
+            state["ticket_receipts"] = receipts
+            state["outbox_pending"] = []
+            self._save_state(state)
+        pending_after = pending_before if dry_run else 0
+        report = ReconcileReport(
+            pending_before=pending_before,
+            reconciled_count=pending_before - duplicate_effects,
+            pending_after=pending_after,
+            duplicate_effects=duplicate_effects,
+            safe_to_resume=self.startup_report().readiness == HealthState.READY,
+            dry_run=dry_run,
+        )
+        write_json(self._events_dir() / "outbox_reconcile.json", report.model_dump(mode="json"))
+        return report
+
+    def canary_release(
+        self,
+        *,
+        role: str,
+        candidate_digest: str,
+        bad_image: bool = True,
+        dry_run: bool = False,
+    ) -> CanaryReport:
+        self._require_role(role)
+        state = self._load_state()
+        report = self.release.canary(
+            bad_image=bad_image,
+            candidate_digest=candidate_digest,
+            baseline_digest=state["accepted_digest"],
+        )
+        if not dry_run:
+            state["accepted_digest"] = report.accepted_digest_after
+            self._save_state(state)
+        write_json(self._events_dir() / "release_canary.json", report.model_dump(mode="json"))
+        return report
+
+    def rollback_release(
+        self,
+        *,
+        role: str,
+        target_digest: str | None = None,
+        dry_run: bool = False,
+    ) -> RollbackReport:
+        self._require_role(role)
+        state = self._load_state()
+        target = target_digest or self.release.baseline
+        if not dry_run:
+            state["accepted_digest"] = target
+            self._save_state(state)
+        report = RollbackReport(
+            release_id="rel-ch14-manual-rollback",
+            target_digest=target,
+            accepted_digest_after=state["accepted_digest"] if dry_run else target,
+            dry_run=dry_run,
+        )
+        write_json(self._events_dir() / "release_rollback.json", report.model_dump(mode="json"))
+        return report
+
+    def verify_backup(self, *, role: str, backup_id: str) -> BackupVerificationReport:
+        self._require_role(role)
+        catalogs = {catalog.backup_id: catalog for catalog in self.backup.catalogs()}
+        catalog = catalogs[backup_id]
+        report = BackupVerificationReport(
+            backup_id=backup_id,
+            checksum_valid=not catalog.corrupt,
+            catalog_complete=all(
+                [
+                    catalog.includes_sessions,
+                    catalog.includes_outbox,
+                    catalog.includes_approvals,
+                    catalog.includes_revocations,
+                ]
+            ),
+            corrupt_rejected=catalog.corrupt,
+        )
+        write_json(self._events_dir() / f"backup_verify_{backup_id}.json", report.model_dump(mode="json"))
+        return report
+
+    def run_restore(
+        self,
+        *,
+        role: str,
+        backup_id: str,
+        dry_run: bool = False,
+    ) -> RestoreExecutionReport:
+        self._require_role(role)
+        state = self._load_state()
+        catalogs = {catalog.backup_id: catalog for catalog in self.backup.catalogs()}
+        catalog = catalogs[backup_id]
+        restore = self.backup.restore(catalog)
+        if not dry_run:
+            state["last_restore"] = restore.model_dump(mode="json")
+            self._save_state(state)
+        report = RestoreExecutionReport(
+            backup_id=backup_id,
+            dry_run=dry_run,
+            promotion_ready=restore.restored_to_isolation and restore.integrity_passed,
+            reconciled_security_state=restore.deletion_receipts_preserved and restore.revocations_current,
+            report=restore,
+        )
+        write_json(self._events_dir() / f"restore_run_{backup_id}.json", report.model_dump(mode="json"))
+        return report
 
 
 class DeploymentVerification:

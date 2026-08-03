@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from policyops.deployment import (
     DeploymentVerification,
+    DeploymentRuntime,
     DurableWorkQueue,
     FailureClass,
     HealthChecker,
@@ -103,6 +104,43 @@ def test_load_and_chaos_scorecard_passes_hard_gates() -> None:
     assert scorecard.duplicate_tickets == 0
     assert scorecard.bad_image_rolled_back is True
     assert all(item["duplicate_effects"] == 0 for item in evidence["chaos"])
+
+
+def test_runtime_status_drain_reconcile_and_restore_surfaces_are_operational(tmp_path) -> None:
+    runtime = DeploymentRuntime(tmp_path / "runtime")
+    status = runtime.status(role="operator")
+    assert status.queue_depth == 3
+    assert status.outbox_pending == 1
+
+    dry_run = runtime.queue_drain(role="operator", dry_run=True)
+    assert dry_run.queue_depth_after == 3
+
+    applied = runtime.queue_drain(role="operator", dry_run=False)
+    assert applied.queue_depth_after == 0
+    assert applied.containment_mode is True
+
+    reconcile = runtime.outbox_reconcile(role="operator", dry_run=False)
+    assert reconcile.pending_before == 1
+    assert reconcile.pending_after == 0
+    assert reconcile.duplicate_effects == 0
+
+    canary = runtime.canary_release(
+        role="release-engineer",
+        candidate_digest="sha256:goodcandidate",
+        bad_image=False,
+        dry_run=False,
+    )
+    assert canary.decision == "promote"
+
+    rollback = runtime.rollback_release(role="release-engineer", dry_run=False)
+    assert rollback.accepted_digest_after == "sha256:acceptedbaseline"
+
+    backup = runtime.verify_backup(role="database-engineer", backup_id="backup-corrupt")
+    assert backup.corrupt_rejected is True
+
+    restore = runtime.run_restore(role="database-engineer", backup_id="backup-valid", dry_run=False)
+    assert restore.promotion_ready is True
+    assert restore.reconciled_security_state is True
 
 
 def test_deployment_verifier_writes_required_evidence(tmp_path) -> None:

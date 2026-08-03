@@ -25,6 +25,12 @@ canary_app = typer.Typer(help="Canary commands (Chapter 12)")
 ticket_app = typer.Typer(help="Capstone ticket workflow commands (Chapter 16)")
 memory_app = typer.Typer(help="Capstone memory lifecycle commands (Chapter 16)")
 release_app = typer.Typer(help="Capstone release decision commands (Chapter 16)")
+ops_app = typer.Typer(help="Deployment status commands (Chapter 14)")
+queue_app = typer.Typer(help="Deployment queue commands (Chapter 14)")
+outbox_app = typer.Typer(help="Deployment outbox commands (Chapter 14)")
+backup_app = typer.Typer(help="Deployment backup commands (Chapter 14)")
+restore_app = typer.Typer(help="Deployment restore commands (Chapter 14)")
+game_day_app = typer.Typer(help="Deployment game-day commands (Chapter 14)")
 app.add_typer(env_app, name="env")
 app.add_typer(eval_app, name="eval")
 app.add_typer(session_app, name="session")
@@ -35,6 +41,12 @@ app.add_typer(canary_app, name="canary")
 app.add_typer(ticket_app, name="ticket")
 app.add_typer(memory_app, name="memory")
 app.add_typer(release_app, name="release")
+app.add_typer(ops_app, name="ops")
+app.add_typer(queue_app, name="queue")
+app.add_typer(outbox_app, name="outbox")
+app.add_typer(backup_app, name="backup")
+app.add_typer(restore_app, name="restore")
+app.add_typer(game_day_app, name="game-day")
 console = Console()
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -71,6 +83,12 @@ def _triage_runtime_root() -> Path:
 
 def _telemetry_runtime_root() -> Path:
     path = _build_dir("ch12") / "runtime"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _deployment_runtime_root() -> Path:
+    path = _build_dir("ch14") / "runtime"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -539,12 +557,125 @@ def memory_delete(
     console.print_json(json.dumps(envelope.model_dump(mode="json")))
 
 
+@ops_app.command("status")
+def ops_status(
+    role: str = typer.Option("operator", "--role"),
+) -> None:
+    from policyops.deployment import DeploymentRuntime
+
+    payload = DeploymentRuntime(_deployment_runtime_root()).status(role=role)
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@queue_app.command("drain")
+def queue_drain(
+    role: str = typer.Option("operator", "--role"),
+    dry_run: bool = typer.Option(True, "--dry-run/--apply"),
+) -> None:
+    from policyops.deployment import DeploymentRuntime
+
+    payload = DeploymentRuntime(_deployment_runtime_root()).queue_drain(role=role, dry_run=dry_run)
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@outbox_app.command("reconcile")
+def outbox_reconcile(
+    role: str = typer.Option("operator", "--role"),
+    dry_run: bool = typer.Option(True, "--dry-run/--apply"),
+) -> None:
+    from policyops.deployment import DeploymentRuntime
+
+    payload = DeploymentRuntime(_deployment_runtime_root()).outbox_reconcile(role=role, dry_run=dry_run)
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
 @release_app.command("decide")
 def release_decide() -> None:
     from policyops.capstone import CapstoneRuntime
 
     envelope = CapstoneRuntime(_capstone_runtime_root()).release_decision()
     console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@release_app.command("canary")
+def release_canary(
+    role: str = typer.Option("release-engineer", "--role"),
+    candidate_digest: str = typer.Option("sha256:goodcandidate", "--candidate-digest"),
+    bad_image: bool = typer.Option(False, "--bad-image/--good-image"),
+    dry_run: bool = typer.Option(True, "--dry-run/--apply"),
+) -> None:
+    from policyops.deployment import DeploymentRuntime
+
+    payload = DeploymentRuntime(_deployment_runtime_root()).canary_release(
+        role=role,
+        candidate_digest=candidate_digest,
+        bad_image=bad_image,
+        dry_run=dry_run,
+    )
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@release_app.command("rollback")
+def release_rollback(
+    role: str = typer.Option("release-engineer", "--role"),
+    target_digest: str = typer.Option("sha256:acceptedbaseline", "--target-digest"),
+    dry_run: bool = typer.Option(True, "--dry-run/--apply"),
+) -> None:
+    from policyops.deployment import DeploymentRuntime
+
+    payload = DeploymentRuntime(_deployment_runtime_root()).rollback_release(
+        role=role,
+        target_digest=target_digest,
+        dry_run=dry_run,
+    )
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@backup_app.command("verify")
+def backup_verify(
+    role: str = typer.Option("database-engineer", "--role"),
+    backup_id: str = typer.Option("backup-valid", "--backup-id"),
+) -> None:
+    from policyops.deployment import DeploymentRuntime
+
+    payload = DeploymentRuntime(_deployment_runtime_root()).verify_backup(role=role, backup_id=backup_id)
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@restore_app.command("run")
+def restore_run(
+    role: str = typer.Option("database-engineer", "--role"),
+    backup_id: str = typer.Option("backup-valid", "--backup-id"),
+    dry_run: bool = typer.Option(True, "--dry-run/--apply"),
+) -> None:
+    from policyops.deployment import DeploymentRuntime
+
+    payload = DeploymentRuntime(_deployment_runtime_root()).run_restore(
+        role=role,
+        backup_id=backup_id,
+        dry_run=dry_run,
+    )
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@game_day_app.command("execute")
+def game_day_execute(
+    role: str = typer.Option("operator", "--role"),
+) -> None:
+    from policyops.deployment import DeploymentRuntime, run_deployment_faults, run_deployment_verification
+
+    runtime = DeploymentRuntime(_deployment_runtime_root())
+    status = runtime.status(role=role)
+    evidence_dir = _build_dir("ch14") / "game_day"
+    verify = run_deployment_verification(evidence_dir)
+    faults = run_deployment_faults(evidence_dir, "all")
+    payload = {
+        "status": status.model_dump(mode="json"),
+        "verify": verify,
+        "faults": faults,
+        "passed": verify["gates_passed"] and faults["passed"],
+    }
+    console.print_json(json.dumps(payload))
 
 
 @trace_app.command("inspect")

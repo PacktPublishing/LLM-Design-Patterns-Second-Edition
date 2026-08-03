@@ -225,6 +225,62 @@ class RunbookStep(StrictModel):
     escalate: str
 
 
+class DependencyDiagnostic(StrictModel):
+    dependency: str
+    healthy: bool
+    reason_code: str
+    bounded_detail: str
+
+
+class DeploymentStatusEnvelope(StrictModel):
+    accepted_digest: str
+    startup: HealthState
+    readiness: HealthState
+    queue_depth: int
+    outbox_pending: int
+    containment_mode: bool
+    diagnostics: list[DependencyDiagnostic]
+
+
+class QueueDrainReport(StrictModel):
+    queue_depth_before: int
+    drained_count: int
+    queue_depth_after: int
+    containment_mode: bool
+    dry_run: bool
+
+
+class ReconcileReport(StrictModel):
+    pending_before: int
+    reconciled_count: int
+    pending_after: int
+    duplicate_effects: int
+    safe_to_resume: bool
+    dry_run: bool
+
+
+class RollbackReport(StrictModel):
+    release_id: str
+    target_digest: str
+    accepted_digest_after: str
+    dry_run: bool
+
+
+class BackupVerificationReport(StrictModel):
+    backup_id: str
+    checksum_valid: bool
+    catalog_complete: bool
+    corrupt_rejected: bool
+
+
+class RestoreExecutionReport(StrictModel):
+    backup_id: str
+    dry_run: bool
+    promotion_ready: bool
+    reconciled_security_state: bool
+    report: RestoreReport
+
+
 class DeploymentScorecard(StrictModel):
     schema_version: Literal["1"] = "1"
     queue_bound_held: bool
