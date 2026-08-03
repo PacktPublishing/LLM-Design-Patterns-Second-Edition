@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
+import yaml
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -83,6 +84,7 @@ PII_PATTERNS = [
     re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I),
 ]
 SECRET_PATTERN = re.compile(r"\b(?:sk|pk|ghp|xoxb)-[A-Za-z0-9_\-]{8,}\b")
+DEFAULT_TELEMETRY_POLICY_PATH = Path(__file__).resolve().parents[3] / "config" / "telemetry_policy.yaml"
 
 _RECORDED: list[dict[str, Any]] = []
 
@@ -172,9 +174,17 @@ class ArtifactRegistry:
 
 
 class TelemetryPolicy:
-    def __init__(self, cardinality_limit: int = CARDINALITY_LIMIT) -> None:
-        self.cardinality_limit = cardinality_limit
+    def __init__(
+        self,
+        cardinality_limit: int = CARDINALITY_LIMIT,
+        *,
+        policy_path: Path | None = None,
+    ) -> None:
+        self.policy_path = policy_path or DEFAULT_TELEMETRY_POLICY_PATH
+        self.policy = self._load_policy()
+        self.cardinality_limit = int(self.policy.get("cardinality_limit", cardinality_limit))
         self.seen_values: dict[str, set[str]] = {}
+        self.semantic_attrs = frozenset(self.policy.get("semantic_attrs", sorted(SEMANTIC_ATTRS)))
 
     def semantic_context(self, raw: RawEvent) -> TraceContext:
         return TraceContext(
@@ -206,7 +216,7 @@ class TelemetryPolicy:
         redacted: list[str] = []
         dropped: list[str] = []
         for key, value in sorted(raw.attributes.items()):
-            if key not in SEMANTIC_ATTRS:
+            if key not in self.semantic_attrs:
                 dropped.append(key)
                 continue
             safe_value = self.redact_value(value)
@@ -229,6 +239,20 @@ class TelemetryPolicy:
             redacted_fields=redacted,
             dropped_fields=dropped,
         )
+
+    def _load_policy(self) -> dict[str, Any]:
+        if self.policy_path.exists():
+            loaded = yaml.safe_load(self.policy_path.read_text(encoding="utf-8"))
+            return dict(loaded)
+        return {
+            "cardinality_limit": CARDINALITY_LIMIT,
+            "semantic_attrs": sorted(SEMANTIC_ATTRS),
+            "stop_conditions": [
+                "success_rate_drop>0.05",
+                "safety_incidents>0",
+                "p95_latency_ms>2500",
+            ],
+        }
 
 
 class DeterministicExporter:
@@ -483,6 +507,7 @@ class TraceImprovementPipeline:
         )
 
     def simulate_canary(self, *, bad_release: bool = True) -> CanaryReport:
+        stop_conditions = list(self.policy.policy.get("stop_conditions", []))
         metrics = CanaryMetric(
             window="20 fixture requests",
             baseline_success_rate=0.92,
@@ -497,7 +522,7 @@ class TraceImprovementPipeline:
                 canary_id="canary-ch12-001",
                 baseline_alias_before="accepted:baseline",
                 candidate_hash=sha_json({"candidate": "bad"}),
-                stop_conditions=["success_rate_drop>0.05", "safety_incidents>0", "p95_latency_ms>2500"],
+                stop_conditions=stop_conditions,
                 metrics=metrics,
                 decision=CanaryDecision.ROLLBACK,
                 accepted_alias_after="accepted:baseline",
@@ -507,7 +532,7 @@ class TraceImprovementPipeline:
             canary_id="canary-ch12-002",
             baseline_alias_before="accepted:baseline",
             candidate_hash=sha_json({"candidate": "good"}),
-            stop_conditions=["success_rate_drop>0.05", "safety_incidents>0", "p95_latency_ms>2500"],
+            stop_conditions=stop_conditions,
             metrics=metrics,
             decision=CanaryDecision.PROMOTE,
             accepted_alias_after="accepted:candidate",
@@ -549,6 +574,10 @@ class TelemetryNotFoundError(RuntimeError):
     pass
 
 
+class ActiveCanaryExistsError(RuntimeError):
+    pass
+
+
 class TelemetryRuntime:
     def __init__(self, root: Path) -> None:
         self.root = Path(root)
@@ -574,6 +603,9 @@ class TelemetryRuntime:
         path = self.root / "canaries"
         path.mkdir(parents=True, exist_ok=True)
         return path
+
+    def _active_canary_path(self) -> Path:
+        return self.root / "active_canary.json"
 
     def inspect_operation(self, correlation_id: str) -> OperationEnvelope:
         artifacts, spans = self.pipeline.correlated_trace()
@@ -612,6 +644,11 @@ class TelemetryRuntime:
 
     def run_experiment(self, request: ExperimentRunRequest) -> ExperimentEnvelope:
         overfit = request.candidate_profile == "overfit"
+        active_path = self._active_canary_path()
+        if active_path.exists():
+            active = CanaryReport.model_validate(json.loads(active_path.read_text(encoding="utf-8")))
+            if active.decision == CanaryDecision.HOLD:
+                raise ActiveCanaryExistsError(f"active canary already running: {active.canary_id}")
         ledger = self.pipeline.run_experiment(overfit=overfit)
         active_canary_id: str | None = None
         if ledger.decision == ExperimentDecision.KEEP:
@@ -626,6 +663,7 @@ class TelemetryRuntime:
             active_canary_id = active.canary_id
             path = self._canaries_dir() / f"{active.canary_id}.json"
             path.write_text(json.dumps(active.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
+            active_path.write_text(json.dumps(active.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
         envelope = ExperimentEnvelope(ledger=ledger, active_canary_id=active_canary_id)
         path = self._experiments_dir() / f"{ledger.manifest.experiment_id}.json"
         path.write_text(json.dumps(envelope.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
@@ -650,6 +688,9 @@ class TelemetryRuntime:
             }
         )
         path.write_text(json.dumps(stopped.model_dump(mode="json"), indent=2, sort_keys=True), encoding="utf-8")
+        active_path = self._active_canary_path()
+        if active_path.exists():
+            active_path.unlink()
         return stopped
 
 
@@ -716,6 +757,10 @@ def run_observability_verification(evidence_dir: Path) -> dict[str, Any]:
     write_json(
         evidence_dir / "artifact_registry.json",
         artifacts.model_dump(mode="json"),
+    )
+    write_json(
+        evidence_dir / "telemetry_policy_bundle.json",
+        pipeline.policy.policy,
     )
     write_jsonl(
         evidence_dir / "trace_export.jsonl",

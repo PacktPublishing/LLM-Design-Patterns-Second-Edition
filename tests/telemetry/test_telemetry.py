@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from policyops.telemetry import (
+    ActiveCanaryExistsError,
     AdjudicationRequest,
     ALLOWED_ATTRS,
     ArtifactRegistry,
@@ -131,6 +132,7 @@ def test_observability_verifier_writes_required_evidence(tmp_path) -> None:
     assert payload["gates_passed"] is True
     required = [
         "artifact_registry.json",
+        "telemetry_policy_bundle.json",
         "trace_export.jsonl",
         "privacy_report.json",
         "slo_records.json",
@@ -190,3 +192,15 @@ def test_telemetry_runtime_persists_operation_adjudication_experiment_and_canary
     )
     assert stopped.decision.value == "rollback"
     assert stopped.rollback_reason == "operator stopped canary"
+
+
+def test_only_one_active_canary_can_run_at_a_time(tmp_path) -> None:
+    runtime = TelemetryRuntime(tmp_path / "runtime")
+    experiment = runtime.run_experiment(ExperimentRunRequest(candidate_profile="accepted"))
+    assert experiment.active_canary_id == "canary-ch12-active"
+    try:
+        runtime.run_experiment(ExperimentRunRequest(candidate_profile="accepted"))
+    except ActiveCanaryExistsError:
+        pass
+    else:
+        raise AssertionError("expected runtime to reject a second active canary")

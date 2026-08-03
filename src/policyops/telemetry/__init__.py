@@ -30,6 +30,7 @@ from policyops.telemetry.schemas import (
     TraceContext,
 )
 from policyops.telemetry.service import (
+    ActiveCanaryExistsError,
     ALLOWED_ATTRS,
     ArtifactRegistry,
     DeterministicExporter,
@@ -51,6 +52,7 @@ from policyops.telemetry.service import (
 
 __all__ = [
     "ALLOWED_ATTRS",
+    "ActiveCanaryExistsError",
     "ArtifactRecord",
     "ArtifactRegistry",
     "ArtifactSet",

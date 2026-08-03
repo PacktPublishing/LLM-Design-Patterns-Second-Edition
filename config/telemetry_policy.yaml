@@ -1,0 +1,20 @@
+policy_version: "ch12-fixture-v1"
+cardinality_limit: 100
+semantic_attrs:
+  - component
+  - operation
+  - status
+  - latency_ms
+  - cost_cents
+  - tokens_in
+  - tokens_out
+  - quality_score
+  - ticket_created
+  - tool_name
+  - approval_required
+  - browser_profile
+  - risk_tier
+stop_conditions:
+  - success_rate_drop>0.05
+  - safety_incidents>0
+  - p95_latency_ms>2500
