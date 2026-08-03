@@ -128,6 +128,17 @@ def test_replacement_activates_new_version_and_old_citation_stops_resolving() ->
     assert any(item.citation.version_id == "v3" for item in new_pack.items)
 
 
+def test_replacement_is_idempotent_and_records_active_manifest() -> None:
+    corpus = FixtureCorpus()
+    first = corpus.replace_source("policy_remote", "Remote work now allows three days.", "replace-same")
+    second = corpus.replace_source("policy_remote", "Remote work now allows three days.", "replace-same")
+    assert first == second
+    assert corpus.versions["policy_remote"].version_id == "v3"
+    manifest = corpus.index_manifests[first.manifest_generation]
+    assert manifest.active_versions["policy_remote"] == "v3"
+    assert any(job.idempotency_key == "replace-same" for job in corpus.ingestion_jobs.values())
+
+
 def test_timeout_returns_typed_abstention() -> None:
     retriever = HybridRetriever()
     pack = retriever.query(_request("remote days"), timeout_stage="vector")
@@ -183,3 +194,5 @@ def test_sqlite_backed_fixture_corpus_persists_replacements_and_deletions(tmp_pa
     assert reloaded.versions["policy_remote"].version_id == "v3"
     assert reloaded.versions["policy_scanned"].deleted is True
     assert len(reloaded.receipts) == 2
+    assert len(reloaded.ingestion_jobs) == 2
+    assert max(reloaded.index_manifests).bit_length() > 0

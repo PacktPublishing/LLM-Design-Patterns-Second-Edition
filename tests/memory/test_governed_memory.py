@@ -200,6 +200,24 @@ def test_optimistic_concurrency_preserves_competing_versions() -> None:
         ledger.apply(stale, authorizer.evaluate(stale, principal, clock.now()))
 
 
+def test_apply_is_idempotent_for_same_proposal_and_rejects_payload_drift() -> None:
+    clock = FakeClock()
+    ledger = MemoryLedger(clock)
+    authorizer = MemoryAuthorizer()
+    principal = _principal()
+    proposal = _proposal(proposal_id="idem")
+    decision = authorizer.evaluate(proposal, principal, clock.now())
+    first = ledger.apply(proposal, decision)
+    second = ledger.apply(proposal, decision)
+    assert first is not None and second is not None
+    assert first.record_id == second.record_id
+    assert len(ledger.events) == 1
+
+    drifted = _proposal(proposal_id="idem", text="Same proposal id with changed content.")
+    with pytest.raises(ValueError, match="MEMORY_IDEMPOTENCY_CONFLICT"):
+        ledger.apply(drifted, authorizer.evaluate(drifted, principal, clock.now()))
+
+
 def test_deletion_removes_active_and_derived_content_but_keeps_redacted_receipt() -> None:
     clock = FakeClock()
     ledger = MemoryLedger(clock)
@@ -289,6 +307,7 @@ def test_fixture_verification_writes_memory_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "memory_views.json").exists()
     assert (tmp_path / "recall_report.json").exists()
     assert (tmp_path / "deletion_receipt.json").exists()
+    assert (tmp_path / "export_jobs.json").exists()
     assert (tmp_path / "memory_scorecard.json").exists()
 
 
@@ -300,6 +319,7 @@ def test_sqlite_backed_memory_ledger_persists_records_events_and_receipts(tmp_pa
     principal = _principal()
     created = ledger.apply(_proposal(proposal_id="persist"), authorizer.evaluate(_proposal(proposal_id="persist"), principal, clock.now()))
     assert created is not None
+    exported = ledger.export(principal)
     receipt = ledger.delete(created.record_id, principal, expected_version=created.version)
 
     reloaded = MemoryLedger(clock, db_path=db_path)
@@ -307,6 +327,9 @@ def test_sqlite_backed_memory_ledger_persists_records_events_and_receipts(tmp_pa
     assert created.record_id in reloaded.records
     assert any(event.proposal_id == "persist" for event in reloaded.events)
     assert receipt.receipt_id in reloaded.deleted_receipts
+    assert exported
+    assert reloaded.idempotency["persist"]["record_id"] == created.record_id
+    assert len(reloaded.export_jobs) == 1
 
 
 def test_policy_allows_fixture_scopes_without_global_by_default() -> None:

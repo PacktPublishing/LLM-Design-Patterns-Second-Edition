@@ -26,6 +26,8 @@ from policyops.retrieval.schemas import (
     CitationRef,
     EvidenceItem,
     EvidencePack,
+    IndexManifest,
+    IngestionJob,
     LifecycleReceipt,
     Principal,
     QueryClass,
@@ -56,6 +58,7 @@ class FixtureCorpus:
         if self._is_empty():
             self.manifest_generation = 1
             self._load()
+            self._save_manifest(self._build_index_manifest())
 
     def _init_schema(self) -> None:
         with self._conn:
@@ -82,6 +85,19 @@ class FixtureCorpus:
                 CREATE TABLE IF NOT EXISTS lifecycle_receipts (
                     receipt_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
                     receipt_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS ingestion_jobs (
+                    job_id TEXT PRIMARY KEY,
+                    idempotency_key TEXT NOT NULL UNIQUE,
+                    source_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    job_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS index_manifests (
+                    manifest_generation INTEGER PRIMARY KEY,
+                    manifest_json TEXT NOT NULL
                 );
                 """
             )
@@ -170,6 +186,26 @@ class FixtureCorpus:
                 [(self._dump(receipt.model_dump(mode="json")),) for receipt in payload],
             )
 
+    @property
+    def ingestion_jobs(self) -> dict[str, IngestionJob]:
+        rows = self._conn.execute(
+            "SELECT job_id, job_json FROM ingestion_jobs ORDER BY job_id"
+        ).fetchall()
+        return {
+            row["job_id"]: IngestionJob.model_validate(self._load_json(row["job_json"]))
+            for row in rows
+        }
+
+    @property
+    def index_manifests(self) -> dict[int, IndexManifest]:
+        rows = self._conn.execute(
+            "SELECT manifest_generation, manifest_json FROM index_manifests ORDER BY manifest_generation"
+        ).fetchall()
+        return {
+            int(row["manifest_generation"]): IndexManifest.model_validate(self._load_json(row["manifest_json"]))
+            for row in rows
+        }
+
     def _save_version(self, version: SourceVersion) -> None:
         with self._conn:
             self._conn.execute(
@@ -201,6 +237,77 @@ class FixtureCorpus:
                 "INSERT INTO lifecycle_receipts(receipt_json) VALUES (?)",
                 (self._dump(receipt.model_dump(mode="json")),),
             )
+
+    def _save_job(self, job: IngestionJob) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO ingestion_jobs(job_id, idempotency_key, source_id, action, job_json)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(job_id) DO UPDATE SET
+                    idempotency_key = excluded.idempotency_key,
+                    source_id = excluded.source_id,
+                    action = excluded.action,
+                    job_json = excluded.job_json
+                """,
+                (
+                    job.job_id,
+                    job.idempotency_key,
+                    job.source_id,
+                    job.action,
+                    self._dump(job.model_dump(mode="json")),
+                ),
+            )
+
+    def _save_manifest(self, manifest: IndexManifest) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO index_manifests(manifest_generation, manifest_json)
+                VALUES (?, ?)
+                ON CONFLICT(manifest_generation) DO UPDATE SET
+                    manifest_json = excluded.manifest_json
+                """,
+                (manifest.manifest_generation, self._dump(manifest.model_dump(mode="json"))),
+            )
+
+    def _find_job(self, *, source_id: str, action: str, idempotency_key: str) -> IngestionJob | None:
+        row = self._conn.execute(
+            """
+            SELECT job_json FROM ingestion_jobs
+            WHERE source_id = ? AND action = ? AND idempotency_key = ?
+            """,
+            (source_id, action, idempotency_key),
+        ).fetchone()
+        if row is None:
+            return None
+        return IngestionJob.model_validate(self._load_json(row["job_json"]))
+
+    def _build_index_manifest(self) -> IndexManifest:
+        active_versions = {
+            source_id: version.version_id if version.active and not version.deleted else None
+            for source_id, version in sorted(self.versions.items())
+        }
+        deleted_sources = sorted(
+            source_id for source_id, version in self.versions.items() if version.deleted
+        )
+        manifest = IndexManifest(
+            manifest_generation=self.manifest_generation,
+            active_versions=active_versions,
+            deleted_sources=deleted_sources,
+            content_hash="pending",
+        )
+        manifest.content_hash = sha_text(
+            json.dumps(
+                {
+                    "manifest_generation": manifest.manifest_generation,
+                    "active_versions": manifest.active_versions,
+                    "deleted_sources": manifest.deleted_sources,
+                },
+                sort_keys=True,
+            )
+        )
+        return manifest
 
     def _load(self) -> None:
         self._add_source(
@@ -372,6 +479,9 @@ class FixtureCorpus:
         return span.text
 
     def replace_source(self, source_id: str, new_text: str, idempotency_key: str) -> LifecycleReceipt:
+        existing = self._find_job(source_id=source_id, action="replace", idempotency_key=idempotency_key)
+        if existing is not None:
+            return existing.receipt
         previous = self.versions[source_id].version_id
         new_version = f"v{int(previous.removeprefix('v')) + 1}"
         self.manifest_generation += 1
@@ -403,9 +513,22 @@ class FixtureCorpus:
             freshness_lag_ms=100,
         )
         self._append_receipt(receipt)
+        self._save_job(
+            IngestionJob(
+                job_id=f"job_replace_{source_id}_{idempotency_key}",
+                source_id=source_id,
+                action="replace",
+                idempotency_key=idempotency_key,
+                receipt=receipt,
+            )
+        )
+        self._save_manifest(self._build_index_manifest())
         return receipt
 
     def delete_source(self, source_id: str, expected_version: str, idempotency_key: str) -> LifecycleReceipt:
+        existing = self._find_job(source_id=source_id, action="delete", idempotency_key=idempotency_key)
+        if existing is not None:
+            return existing.receipt
         version = self.versions[source_id]
         if version.version_id != expected_version and not version.deleted:
             raise ValueError("SOURCE_VERSION_CONFLICT")
@@ -424,6 +547,16 @@ class FixtureCorpus:
             freshness_lag_ms=100,
         )
         self._append_receipt(receipt)
+        self._save_job(
+            IngestionJob(
+                job_id=f"job_delete_{source_id}_{idempotency_key}",
+                source_id=source_id,
+                action="delete",
+                idempotency_key=idempotency_key,
+                receipt=receipt,
+            )
+        )
+        self._save_manifest(self._build_index_manifest())
         return receipt
 
 
@@ -730,6 +863,22 @@ def run_retrieval_verification(evidence_dir: Path) -> dict[str, object]:
     (evidence_dir / "scorecard.json").write_text(scorecard.model_dump_json(indent=2), encoding="utf-8")
     (evidence_dir / "freshness_receipts.json").write_text(
         json.dumps([deleted_receipt.model_dump(mode="json")], indent=2), encoding="utf-8"
+    )
+    (evidence_dir / "ingestion_jobs.json").write_text(
+        json.dumps(
+            [job.model_dump(mode="json") for job in retriever.corpus.ingestion_jobs.values()],
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    (evidence_dir / "index_manifests.json").write_text(
+        json.dumps(
+            [manifest.model_dump(mode="json") for _, manifest in sorted(retriever.corpus.index_manifests.items())],
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
     )
     fault_payload = {
         "cross_tenant_items": [item.citation.source_id for item in cross_pack.items],

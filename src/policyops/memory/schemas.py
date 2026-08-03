@@ -234,6 +234,15 @@ class ExportRecord(StrictModel):
     version: int
 
 
+class ExportJob(StrictModel):
+    export_id: str
+    tenant_id: str
+    subject_id: str
+    record_count: int
+    created_at: int
+    expires_at: int
+
+
 class MemoryScorecard(StrictModel):
     schema_version: Literal["1"] = "1"
     mutation_decision_accuracy: float

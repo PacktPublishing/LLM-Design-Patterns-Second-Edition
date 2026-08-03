@@ -136,6 +136,23 @@ class LifecycleReceipt(StrictModel):
     freshness_lag_ms: int
 
 
+class IngestionJob(StrictModel):
+    job_id: str
+    source_id: str
+    action: Literal["replace", "delete"]
+    idempotency_key: str
+    state: Literal["active"] = "active"
+    receipt: LifecycleReceipt
+
+
+class IndexManifest(StrictModel):
+    schema_version: Literal["1"] = "1"
+    manifest_generation: int
+    active_versions: dict[str, str | None]
+    deleted_sources: list[str] = Field(default_factory=list)
+    content_hash: str
+
+
 class RetrievalScorecard(StrictModel):
     recall_at_10: float
     ndcg_at_10: float

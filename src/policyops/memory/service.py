@@ -21,6 +21,7 @@ from policyops.context import (
 from policyops.memory.schemas import (
     ConsentReceipt,
     DeletionReceipt,
+    ExportJob,
     ExportRecord,
     MemoryEvent,
     MemoryKind,
@@ -225,6 +226,21 @@ class MemoryLedger:
                     deleted_at INTEGER NOT NULL,
                     receipt_json TEXT NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS memory_idempotency (
+                    proposal_id TEXT PRIMARY KEY,
+                    request_hash TEXT NOT NULL,
+                    record_id TEXT,
+                    idempotency_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS export_jobs (
+                    export_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    subject_id TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    job_json TEXT NOT NULL
+                );
                 """
             )
 
@@ -329,6 +345,26 @@ class MemoryLedger:
                 ],
             )
 
+    @property
+    def idempotency(self) -> dict[str, dict[str, object]]:
+        rows = self._conn.execute(
+            "SELECT proposal_id, idempotency_json FROM memory_idempotency ORDER BY proposal_id"
+        ).fetchall()
+        return {
+            row["proposal_id"]: dict(self._load(row["idempotency_json"]))
+            for row in rows
+        }
+
+    @property
+    def export_jobs(self) -> dict[str, ExportJob]:
+        rows = self._conn.execute(
+            "SELECT export_id, job_json FROM export_jobs ORDER BY created_at, export_id"
+        ).fetchall()
+        return {
+            row["export_id"]: ExportJob.model_validate(self._load(row["job_json"]))
+            for row in rows
+        }
+
     def _save_record(self, record: MemoryRecord) -> None:
         with self._conn:
             self._conn.execute(
@@ -353,6 +389,64 @@ class MemoryLedger:
                     record.status.value,
                     record.version,
                     self._dump(record.model_dump(mode="json")),
+                ),
+            )
+
+    def _request_hash(self, proposal: MemoryProposal) -> str:
+        return sha_text(json.dumps(proposal.model_dump(mode="json"), sort_keys=True))
+
+    def _save_idempotency(self, proposal_id: str, request_hash: str, record_id: str | None) -> None:
+        payload = {
+            "proposal_id": proposal_id,
+            "request_hash": request_hash,
+            "record_id": record_id,
+        }
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO memory_idempotency(proposal_id, request_hash, record_id, idempotency_json)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(proposal_id) DO UPDATE SET
+                    request_hash = excluded.request_hash,
+                    record_id = excluded.record_id,
+                    idempotency_json = excluded.idempotency_json
+                """,
+                (proposal_id, request_hash, record_id, self._dump(payload)),
+            )
+
+    def _idempotent_result(self, proposal: MemoryProposal) -> MemoryRecord | None | object:
+        row = self._conn.execute(
+            "SELECT request_hash, record_id FROM memory_idempotency WHERE proposal_id = ?",
+            (proposal.proposal_id,),
+        ).fetchone()
+        if row is None:
+            return ...
+        expected_hash = self._request_hash(proposal)
+        if row["request_hash"] != expected_hash:
+            raise ValueError("MEMORY_IDEMPOTENCY_CONFLICT")
+        record_id = row["record_id"]
+        if record_id is None:
+            return None
+        return self.get_record(record_id)
+
+    def _save_export_job(self, job: ExportJob) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO export_jobs(export_id, tenant_id, subject_id, created_at, job_json)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(export_id) DO UPDATE SET
+                    tenant_id = excluded.tenant_id,
+                    subject_id = excluded.subject_id,
+                    created_at = excluded.created_at,
+                    job_json = excluded.job_json
+                """,
+                (
+                    job.export_id,
+                    job.tenant_id,
+                    job.subject_id,
+                    job.created_at,
+                    self._dump(job.model_dump(mode="json")),
                 ),
             )
 
@@ -405,9 +499,13 @@ class MemoryLedger:
         return MemoryRecord.model_validate(self._load(row["record_json"]))
 
     def apply(self, proposal: MemoryProposal, decision: MutationDecision) -> MemoryRecord | None:
+        existing = self._idempotent_result(proposal)
+        if existing is not ...:
+            return existing
         now = self.clock.now()
         if decision.action == MutationAction.NOOP:
             self._event(proposal, decision, None, version=0, content_hash=None)
+            self._save_idempotency(proposal.proposal_id, self._request_hash(proposal), None)
             return None
         if decision.action == MutationAction.DELETE:
             raise ValueError("use delete() for delete decisions")
@@ -452,6 +550,7 @@ class MemoryLedger:
         )
         self._save_record(record)
         self._event(proposal, decision, record_id, version=version, content_hash=record.source_hash)
+        self._save_idempotency(proposal.proposal_id, self._request_hash(proposal), record.record_id)
         return record
 
     def delete(
@@ -579,7 +678,7 @@ class MemoryLedger:
         return views
 
     def export(self, principal: Principal) -> list[ExportRecord]:
-        return [
+        records = [
             ExportRecord(
                 record_id=record.record_id,
                 kind=record.kind,
@@ -594,6 +693,21 @@ class MemoryLedger:
             for record in self.records.values()
             if record.tenant_id == principal.tenant_id and record.subject_id == principal.subject_id
         ]
+        now = self.clock.now()
+        export_id = "exp_" + hashlib.sha256(
+            f"{principal.tenant_id}:{principal.subject_id}:{now}:{len(records)}".encode("utf-8")
+        ).hexdigest()[:12]
+        self._save_export_job(
+            ExportJob(
+                export_id=export_id,
+                tenant_id=principal.tenant_id,
+                subject_id=principal.subject_id,
+                record_count=len(records),
+                created_at=now,
+                expires_at=now + 900,
+            )
+        )
+        return records
 
 
 class MemoryRetriever:
@@ -765,6 +879,7 @@ def run_memory_verification(evidence_dir: Path) -> dict[str, object]:
             as_of=now,
         )
     )
+    ledger.export(principal)
     first = recall.items[0]
     receipt = ledger.delete(first.record_id, principal, expected_version=first.version)
     cross_tenant = retriever.recall(
@@ -813,6 +928,14 @@ def run_memory_verification(evidence_dir: Path) -> dict[str, object]:
     )
     (evidence_dir / "deletion_receipt.json").write_text(
         receipt.model_dump_json(indent=2),
+        encoding="utf-8",
+    )
+    (evidence_dir / "export_jobs.json").write_text(
+        json.dumps(
+            [job.model_dump(mode="json") for job in ledger.export_jobs.values()],
+            indent=2,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
     (evidence_dir / "memory_scorecard.json").write_text(
