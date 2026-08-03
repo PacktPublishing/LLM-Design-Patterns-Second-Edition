@@ -11,6 +11,7 @@ from policyops.extensions import (
     CapabilityContextSource,
     CapabilityResource,
     DomainErrorCode,
+    ExtensionRuntime,
     ImpactClass,
     McpAdapter,
     McpProfile,
@@ -98,6 +99,27 @@ def test_direct_and_mcp_paths_converge_on_same_toolport_and_idempotency() -> Non
     assert len(port.repository.tickets) == 1
 
 
+def test_sqlite_backed_ticket_and_audit_state_persist_across_instances(tmp_path: Path) -> None:
+    db_path = tmp_path / "extensions.sqlite"
+    first = SecuredToolPort(db_path=db_path)
+    context = fixture_context()
+    preview = first.preview_policy_ticket(fixture_ticket(), context)
+    approval = first.approval_store.issuer.issue(
+        preview,
+        context,
+        nonce="persist-1",
+        expires_at=first.approval_store.now + 60,
+    )
+    created = first.create_policy_ticket(preview, approval, "idem-persist", context)
+    assert created.status == TicketStatus.CREATED
+
+    second = SecuredToolPort(db_path=db_path)
+    duplicate = second.repository.create_once(preview, context, "idem-persist")
+    assert duplicate.ticket_id == created.ticket_id
+    assert len(second.repository.tickets) == 1
+    assert len(second.audit_store.events) == 1
+
+
 def test_pre_hook_timeout_and_revocation_fail_closed() -> None:
     port = SecuredToolPort()
     context = fixture_context()
@@ -157,6 +179,33 @@ def test_plugin_loader_rejects_tamper_revocation_and_excessive_permissions() -> 
     risky_check = loader.verify(risky, files)
     assert risky_check.accepted is False
     assert "excessive_permission" in risky_check.reason_codes
+
+
+def test_runtime_lifecycle_stage_activate_disable_rollback_and_revoke(tmp_path: Path) -> None:
+    runtime = ExtensionRuntime(tmp_path / "runtime")
+    loader = runtime.loader
+    initial = runtime.list_extensions()
+    assert any(item.version == "1.0.0" and item.status.value == "active" for item in initial)
+
+    manifest, files = fixture_manifest(loader, version="1.1.0", predecessor="1.0.0")
+    staged = runtime.stage_package(manifest, files)
+    assert staged.accepted is True
+
+    activated = runtime.activate_extension("policyops-ticket-pack", "1.1.0")
+    assert activated.version == "1.1.0"
+    assert activated.status.value == "active"
+
+    disabled = runtime.disable_extension("policyops-ticket-pack")
+    assert disabled.status.value == "disabled"
+
+    runtime.activate_extension("policyops-ticket-pack", "1.1.0")
+    rolled_back = runtime.rollback_extension("policyops-ticket-pack")
+    assert rolled_back.version == "1.0.0"
+    assert rolled_back.status.value == "active"
+
+    revoked = runtime.revoke_extension("policyops-ticket-pack")
+    assert revoked.version == "1.0.0"
+    assert revoked.status.value == "revoked"
 
 
 def test_rc_mcp_profile_is_opt_in_and_fails_closed_by_default() -> None:
@@ -227,4 +276,5 @@ def test_fixture_verification_writes_extension_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "activation_scorecard.json").exists()
     assert (tmp_path / "package_verification.json").exists()
     assert (tmp_path / "compatibility_report.json").exists()
+    assert (tmp_path / "lifecycle_controls.json").exists()
     assert (tmp_path / "extension_scorecard.json").exists()

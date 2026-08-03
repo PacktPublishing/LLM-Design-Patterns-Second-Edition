@@ -31,6 +31,7 @@ outbox_app = typer.Typer(help="Deployment outbox commands (Chapter 14)")
 backup_app = typer.Typer(help="Deployment backup commands (Chapter 14)")
 restore_app = typer.Typer(help="Deployment restore commands (Chapter 14)")
 game_day_app = typer.Typer(help="Deployment game-day commands (Chapter 14)")
+extensions_app = typer.Typer(help="Extension lifecycle commands (Chapter 9)")
 app.add_typer(env_app, name="env")
 app.add_typer(eval_app, name="eval")
 app.add_typer(session_app, name="session")
@@ -47,6 +48,7 @@ app.add_typer(outbox_app, name="outbox")
 app.add_typer(backup_app, name="backup")
 app.add_typer(restore_app, name="restore")
 app.add_typer(game_day_app, name="game-day")
+app.add_typer(extensions_app, name="extensions")
 console = Console()
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -89,6 +91,12 @@ def _telemetry_runtime_root() -> Path:
 
 def _deployment_runtime_root() -> Path:
     path = _build_dir("ch14") / "runtime"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _extensions_runtime_root() -> Path:
+    path = _build_dir("ch09") / "runtime"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -586,6 +594,86 @@ def outbox_reconcile(
     from policyops.deployment import DeploymentRuntime
 
     payload = DeploymentRuntime(_deployment_runtime_root()).outbox_reconcile(role=role, dry_run=dry_run)
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@extensions_app.command("verify")
+def extensions_verify(
+    package: str = typer.Argument("policyops-ticket-pack"),
+    tampered: bool = typer.Option(False, "--tampered"),
+) -> None:
+    from policyops.extensions import ExtensionRuntime, fixture_manifest
+
+    runtime = ExtensionRuntime(_extensions_runtime_root())
+    manifest, files = fixture_manifest(runtime.loader, tampered=tampered)
+    payload = runtime.verify_package(manifest, files)
+    console.print_json(json.dumps({"package": package, **payload.model_dump(mode="json")}))
+
+
+@extensions_app.command("install")
+def extensions_install(
+    package: str = typer.Argument("policyops-ticket-pack"),
+) -> None:
+    from policyops.extensions import ExtensionRuntime, fixture_manifest
+
+    runtime = ExtensionRuntime(_extensions_runtime_root())
+    manifest, files = fixture_manifest(runtime.loader)
+    payload = runtime.install_package(manifest, files)
+    console.print_json(json.dumps({"package": package, **payload.model_dump(mode="json")}))
+
+
+@extensions_app.command("stage")
+def extensions_stage(
+    package: str = typer.Argument("policyops-ticket-pack"),
+    version: str = typer.Option("1.1.0", "--version"),
+    predecessor: str = typer.Option("1.0.0", "--predecessor"),
+) -> None:
+    from policyops.extensions import ExtensionRuntime, fixture_manifest
+
+    runtime = ExtensionRuntime(_extensions_runtime_root())
+    manifest, files = fixture_manifest(runtime.loader, version=version, predecessor=predecessor)
+    payload = runtime.stage_package(manifest, files)
+    console.print_json(json.dumps({"package": package, **payload.model_dump(mode="json")}))
+
+
+@extensions_app.command("activate")
+def extensions_activate(
+    extension_id: str = typer.Argument("policyops-ticket-pack"),
+    version: str | None = typer.Option(None, "--version"),
+) -> None:
+    from policyops.extensions import ExtensionRuntime
+
+    payload = ExtensionRuntime(_extensions_runtime_root()).activate_extension(extension_id, version)
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@extensions_app.command("disable")
+def extensions_disable(
+    extension_id: str = typer.Argument("policyops-ticket-pack"),
+) -> None:
+    from policyops.extensions import ExtensionRuntime
+
+    payload = ExtensionRuntime(_extensions_runtime_root()).disable_extension(extension_id)
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@extensions_app.command("rollback")
+def extensions_rollback(
+    extension_id: str = typer.Argument("policyops-ticket-pack"),
+) -> None:
+    from policyops.extensions import ExtensionRuntime
+
+    payload = ExtensionRuntime(_extensions_runtime_root()).rollback_extension(extension_id)
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@extensions_app.command("revoke")
+def extensions_revoke(
+    extension_id: str = typer.Argument("policyops-ticket-pack"),
+) -> None:
+    from policyops.extensions import ExtensionRuntime
+
+    payload = ExtensionRuntime(_extensions_runtime_root()).revoke_extension(extension_id)
     console.print_json(json.dumps(payload.model_dump(mode="json")))
 
 

@@ -35,6 +35,7 @@ from policyops.contracts import (
     RunContext,
 )
 from policyops.deployment import DependencyDiagnostic, DeploymentRuntime, HealthReport, HealthState
+from policyops.extensions import ExtensionRuntime, ExtensionVersion
 from policyops.harness import (
     SessionCancelRequest,
     SessionConflictError,
@@ -82,6 +83,9 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     )
     application.state.telemetry_runtime = TelemetryRuntime(
         Path(__file__).resolve().parents[3] / "build" / "ch12" / "runtime"
+    )
+    application.state.extension_runtime = ExtensionRuntime(
+        Path(__file__).resolve().parents[3] / "build" / "ch09" / "runtime"
     )
     application.state.deployment_runtime = DeploymentRuntime(
         Path(__file__).resolve().parents[3] / "build" / "ch14" / "runtime"
@@ -223,6 +227,70 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         role = _require_operator_role(x_roles)
         runtime: DeploymentRuntime = request.app.state.deployment_runtime
         return runtime.dependency_diagnostics(role=role)
+
+    @application.get("/v1/extensions", response_model=list[ExtensionVersion])
+    async def list_extensions(
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+    ) -> list[ExtensionVersion]:
+        _require_identity(x_tenant_id, x_actor_id)
+        _require_operator_role(x_roles)
+        runtime: ExtensionRuntime = request.app.state.extension_runtime
+        return runtime.list_extensions()
+
+    @application.post("/v1/extensions/{extension_id}:disable", response_model=ExtensionVersion)
+    async def disable_extension(
+        extension_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+    ) -> ExtensionVersion:
+        _require_identity(x_tenant_id, x_actor_id)
+        _require_operator_role(x_roles)
+        runtime: ExtensionRuntime = request.app.state.extension_runtime
+        return runtime.disable_extension(extension_id)
+
+    @application.post("/v1/extensions/{extension_id}:activate", response_model=ExtensionVersion)
+    async def activate_extension(
+        extension_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+    ) -> ExtensionVersion:
+        _require_identity(x_tenant_id, x_actor_id)
+        _require_operator_role(x_roles)
+        runtime: ExtensionRuntime = request.app.state.extension_runtime
+        return runtime.activate_extension(extension_id)
+
+    @application.post("/v1/extensions/{extension_id}:rollback", response_model=ExtensionVersion)
+    async def rollback_extension(
+        extension_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+    ) -> ExtensionVersion:
+        _require_identity(x_tenant_id, x_actor_id)
+        _require_operator_role(x_roles)
+        runtime: ExtensionRuntime = request.app.state.extension_runtime
+        return runtime.rollback_extension(extension_id)
+
+    @application.post("/v1/extensions/{extension_id}:revoke", response_model=ExtensionVersion)
+    async def revoke_extension(
+        extension_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+    ) -> ExtensionVersion:
+        _require_identity(x_tenant_id, x_actor_id)
+        _require_operator_role(x_roles)
+        runtime: ExtensionRuntime = request.app.state.extension_runtime
+        return runtime.revoke_extension(extension_id)
 
     @application.post("/v1/answer", response_model=AnswerResponse)
     async def answer(

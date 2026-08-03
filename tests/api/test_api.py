@@ -14,6 +14,7 @@ from policyops.capstone import CapstoneRuntime
 from policyops.composition import AppContainer
 from policyops.config import Settings
 from policyops.deployment import DeploymentRuntime
+from policyops.extensions import ExtensionRuntime
 from policyops.harness import SessionRuntime
 from policyops.orchestration import TriageRuntime
 from policyops.telemetry import TelemetryRuntime
@@ -62,6 +63,7 @@ def client(tmp_path: Path) -> TestClient:
     app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
     app.state.triage_runtime = TriageRuntime(tmp_path / "triage-runtime")
     app.state.telemetry_runtime = TelemetryRuntime(tmp_path / "telemetry-runtime")
+    app.state.extension_runtime = ExtensionRuntime(tmp_path / "extension-runtime")
     app.state.deployment_runtime = DeploymentRuntime(tmp_path / "deployment-runtime")
     app.state.capstone_runtime = CapstoneRuntime(tmp_path / "capstone-runtime")
     return TestClient(app)
@@ -165,6 +167,7 @@ def test_openapi_has_answer_path(client: TestClient) -> None:
     assert "/v1/answer" in schema["paths"]
     assert "/health/live" in schema["paths"]
     assert "/health/startup" in schema["paths"]
+    assert "/v1/extensions" in schema["paths"]
 
 
 def test_openapi_matches_snapshot(client: TestClient) -> None:
@@ -213,6 +216,20 @@ def test_dependency_diagnostics_requires_operator_role(client: TestClient) -> No
     payload = allowed.json()
     assert payload
     assert all("reason_code" in item and "bounded_detail" in item for item in payload)
+
+
+def test_extension_lifecycle_routes_require_operator_role_and_mutate_state(client: TestClient) -> None:
+    forbidden = client.get("/v1/extensions", headers=_headers())
+    assert forbidden.status_code == 403
+
+    allowed_headers = _headers(**{"X-Roles": "platform-engineer"})
+    listed = client.get("/v1/extensions", headers=allowed_headers)
+    assert listed.status_code == 200
+    assert any(item["extension_id"] == "policyops-ticket-pack" for item in listed.json())
+
+    disabled = client.post("/v1/extensions/policyops-ticket-pack:disable", headers=allowed_headers)
+    assert disabled.status_code == 200
+    assert disabled.json()["status"] == "disabled"
 
 
 def test_ready_returns_503_when_adapter_not_ready(tmp_path: Path) -> None:
