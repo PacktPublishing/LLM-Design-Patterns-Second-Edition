@@ -20,6 +20,7 @@ from policyops.contracts import (
     RunContext,
     Usage,
 )
+from policyops.util import fake_now
 
 
 class ReplayModelClient:
@@ -63,6 +64,15 @@ class ReplayModelClient:
 
     async def generate(self, request: ModelRequest, context: RunContext) -> ModelResult:
         self._call_count += 1
+        if self.configuration_id and context.configuration_id != self.configuration_id:
+            return ModelFailureResult(
+                failure=ModelFailure(
+                    code=ErrorCode.CONFIG_INVALID,
+                    retry_class=RetryClass.CONFIG,
+                    message="configuration fingerprint does not match replay fixture binding",
+                    correlation_token=context.request_id,
+                )
+            )
         scenario_id = self.fault_scenario or self._select_scenario(request, context)
         scenario = self._scenarios.get(scenario_id)
         if scenario is None:
@@ -78,6 +88,16 @@ class ReplayModelClient:
         kind = scenario.get("kind", "success")
         if kind == "timeout":
             delay_ms = int(scenario.get("delay_ms", 50))
+            remaining_ms = int((context.deadline_at - fake_now()).total_seconds() * 1000)
+            if remaining_ms <= 0 or delay_ms > remaining_ms:
+                return ModelFailureResult(
+                    failure=ModelFailure(
+                        code=ErrorCode.DEADLINE_EXCEEDED,
+                        retry_class=RetryClass.CALLER,
+                        message="adapter deadline exceeded",
+                        correlation_token=context.request_id,
+                    )
+                )
             await asyncio.sleep(delay_ms / 1000)
             return ModelFailureResult(
                 failure=ModelFailure(

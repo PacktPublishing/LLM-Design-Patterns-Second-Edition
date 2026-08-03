@@ -35,7 +35,7 @@ class LocalModelClient:
     def __init__(self, fixture_pack: Path, *, fault_scenario: str | None = None) -> None:
         self.fixture_pack = Path(fixture_pack)
         self.fault_scenario = fault_scenario
-        runtime_script = Path(__file__).with_name("local_runtime.py")
+        runtime_script = Path(__file__).with_name("runtime.py")
         self._runner = [
             sys.executable,
             str(runtime_script),

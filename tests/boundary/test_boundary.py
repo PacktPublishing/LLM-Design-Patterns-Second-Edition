@@ -57,7 +57,7 @@ def test_env_example_has_no_real_secrets() -> None:
 
 
 def test_local_adapter_does_not_delegate_to_replay_adapter() -> None:
-    path = SRC / "adapters" / "local.py"
+    path = SRC / "adapters" / "local" / "__init__.py"
     text = path.read_text(encoding="utf-8")
     assert "policyops.adapters.replay" not in text
     assert "ReplayModelClient" not in text

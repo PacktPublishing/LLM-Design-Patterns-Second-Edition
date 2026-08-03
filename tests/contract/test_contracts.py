@@ -147,6 +147,28 @@ async def test_replay_unknown_scenario_reports_capacity() -> None:
 
 
 @pytest.mark.asyncio
+async def test_replay_adapter_fails_closed_on_configuration_mismatch() -> None:
+    client = ReplayModelClient(FIXTURES, configuration_id="sha256:expected")
+    result = await client.generate(
+        ModelRequest(question="How many remote days are allowed?"),
+        _context(configuration_id="sha256:different"),
+    )
+    assert result.kind == "failure"
+    assert result.failure.code.value == "CONFIG_INVALID"
+
+
+@pytest.mark.asyncio
+async def test_replay_timeout_honors_context_deadline_without_waiting_full_delay() -> None:
+    client = ReplayModelClient(FIXTURES, fault_scenario="timeout")
+    result = await client.generate(
+        ModelRequest(question="x"),
+        _context(deadline_at=datetime(2030, 1, 1, 0, 0, 0, 5_000, tzinfo=UTC)),
+    )
+    assert result.kind == "failure"
+    assert result.failure.code.value == "DEADLINE_EXCEEDED"
+
+
+@pytest.mark.asyncio
 async def test_service_fails_closed_on_expired_deadline() -> None:
     from policyops.contracts import DomainError
     from policyops.services import AnswerService
