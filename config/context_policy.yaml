@@ -1,0 +1,23 @@
+schema_version: "1"
+authority_order:
+  - system_policy
+  - project_instruction
+  - task_instruction
+  - verified_evidence
+  - state
+  - user_input
+  - untrusted_content
+stable_prefix_authorities:
+  - system_policy
+  - project_instruction
+max_summary_calls: 16
+max_materializations: 16
+render_overhead_tokens: 96
+optional_source_token_budgets:
+  policy: 96
+  project: 96
+  task: 96
+  evidence: 360
+  memory: 120
+  capability: 80
+  observation: 96

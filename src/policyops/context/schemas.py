@@ -74,7 +74,9 @@ class DecisionReason(str, Enum):
     INCLUDED_REQUIRED = "included_required"
     INCLUDED_RELEVANT = "included_relevant"
     EXCLUDED_IRRELEVANT = "excluded_irrelevant"
+    EXCLUDED_BUDGET = "excluded_budget"
     REJECTED_SECRET = "rejected_secret"
+    REJECTED_CONFLICT = "rejected_conflict"
     REJECTED_AUTHORITY_ELEVATION = "rejected_authority_elevation"
     REJECTED_STALE = "rejected_stale"
     REJECTED_SENSITIVITY = "rejected_sensitivity"
@@ -131,6 +133,26 @@ class ContextRequest(StrictModel):
     output_reserve_tokens: int = Field(default=256, ge=1)
     allowed_sensitivity: Sensitivity = Sensitivity.INTERNAL
     policy_version: str = "context-policy-v1"
+
+
+class ContextPolicy(StrictModel):
+    schema_version: Literal["1"] = "1"
+    authority_order: list[AuthorityLevel]
+    stable_prefix_authorities: list[AuthorityLevel]
+    max_summary_calls: int = Field(default=16, ge=1)
+    max_materializations: int = Field(default=16, ge=1)
+    render_overhead_tokens: int = Field(default=96, ge=0)
+    optional_source_token_budgets: dict[SourceKind, int] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_authority_order(self) -> "ContextPolicy":
+        expected = sorted(AUTHORITY_RANK, key=AUTHORITY_RANK.get)
+        if self.authority_order != expected:
+            raise ValueError("authority_order must match the supported authority ranking")
+        invalid = [level for level in self.stable_prefix_authorities if level not in self.authority_order]
+        if invalid:
+            raise ValueError("stable_prefix_authorities must be drawn from authority_order")
+        return self
 
 
 class ManifestDecision(StrictModel):
