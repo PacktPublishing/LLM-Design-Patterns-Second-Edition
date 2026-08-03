@@ -8,6 +8,7 @@ from pathlib import Path
 from policyops.graph import (
     GraphQuery,
     GraphRoute,
+    GraphSnapshot,
     GraphService,
     PathStatus,
     fixture_queries,
@@ -132,3 +133,18 @@ def test_fixture_query_routes_are_deterministic() -> None:
     first = [service.query(query).model_dump(mode="json") for query in fixture_queries()]
     second = [service.query(query).model_dump(mode="json") for query in fixture_queries()]
     assert first == second
+
+
+def test_sqlite_backed_graph_snapshot_persists_repairs_across_fresh_instances(tmp_path: Path) -> None:
+    db_path = tmp_path / "graph.sqlite3"
+    snapshot = GraphSnapshot(db_path=db_path)
+    snapshot.mark_deleted("claim_remote_days_conflict")
+    snapshot.update_claim(
+        snapshot.claims["claim_remote_days_v2"].model_copy(update={"confidence": 0.99})
+    )
+    snapshot.manifest = snapshot.manifest.model_copy(update={"content_hash": snapshot.content_hash()})
+
+    reloaded = GraphSnapshot(db_path=db_path)
+
+    assert "claim_remote_days_conflict" in reloaded.deleted_claims
+    assert reloaded.claims["claim_remote_days_v2"].confidence == 0.99

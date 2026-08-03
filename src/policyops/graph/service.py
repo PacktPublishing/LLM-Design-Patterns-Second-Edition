@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sqlite3
 from datetime import date
 from pathlib import Path
 
@@ -42,24 +43,181 @@ def _terms(text: str) -> set[str]:
 
 
 class GraphSnapshot:
-    def __init__(self, snapshot_id: str = "graph-snapshot-v1") -> None:
-        self.manifest = SnapshotManifest(
-            snapshot_id=snapshot_id,
-            source_manifest_generation=1,
-            extraction_version="extract-fixture-v1",
-            tenant_ids=["tenant_alpha", "tenant_beta"],
-            content_hash="pending",
-            active=True,
-        )
-        self.entities: dict[str, Entity] = {}
-        self.claims: dict[str, ClaimRef] = {}
-        self.edges: dict[str, list[str]] = {}
-        self.communities: dict[str, list[str]] = {}
-        self.deleted_claims: set[str] = set()
-        self._load()
-        self.manifest.content_hash = self.content_hash()
+    def __init__(self, snapshot_id: str = "graph-snapshot-v1", db_path: str | Path | None = None) -> None:
+        self.db_path = ":memory:" if db_path is None else str(Path(db_path))
+        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._init_schema()
+        if self._is_empty():
+            self.manifest = SnapshotManifest(
+                snapshot_id=snapshot_id,
+                source_manifest_generation=1,
+                extraction_version="extract-fixture-v1",
+                tenant_ids=["tenant_alpha", "tenant_beta"],
+                content_hash="pending",
+                active=True,
+            )
+            self._load_defaults()
+            manifest = self.manifest.model_copy(update={"content_hash": self.content_hash()})
+            self.manifest = manifest
+        else:
+            self.manifest = self.manifest.model_copy(update={"content_hash": self.content_hash()})
 
-    def _load(self) -> None:
+    def _init_schema(self) -> None:
+        with self._conn:
+            self._conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS snapshot_meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS entities (
+                    entity_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    entity_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS claims (
+                    claim_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    source_id TEXT NOT NULL,
+                    claim_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS edges (
+                    entity_id TEXT PRIMARY KEY,
+                    edge_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS communities (
+                    community_id TEXT PRIMARY KEY,
+                    community_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS deleted_claims (
+                    claim_id TEXT PRIMARY KEY
+                );
+                """
+            )
+
+    def _is_empty(self) -> bool:
+        row = self._conn.execute("SELECT COUNT(*) AS count FROM entities").fetchone()
+        return int(row["count"]) == 0
+
+    def _dump(self, payload: object) -> str:
+        return json.dumps(payload, sort_keys=True, default=str)
+
+    def _load_json(self, payload: str) -> object:
+        return json.loads(payload)
+
+    @property
+    def manifest(self) -> SnapshotManifest:
+        row = self._conn.execute(
+            "SELECT value FROM snapshot_meta WHERE key = 'manifest'"
+        ).fetchone()
+        if row is None:
+            raise RuntimeError("graph snapshot manifest not initialized")
+        return SnapshotManifest.model_validate(self._load_json(row["value"]))
+
+    @manifest.setter
+    def manifest(self, value: SnapshotManifest) -> None:
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO snapshot_meta(key, value) VALUES ('manifest', ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """,
+                (self._dump(value.model_dump(mode="json")),),
+            )
+
+    @property
+    def entities(self) -> dict[str, Entity]:
+        rows = self._conn.execute("SELECT entity_id, entity_json FROM entities ORDER BY entity_id").fetchall()
+        return {
+            row["entity_id"]: Entity.model_validate(self._load_json(row["entity_json"]))
+            for row in rows
+        }
+
+    @entities.setter
+    def entities(self, payload: dict[str, Entity]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM entities")
+            self._conn.executemany(
+                "INSERT INTO entities(entity_id, tenant_id, entity_json) VALUES (?, ?, ?)",
+                [
+                    (entity_id, entity.tenant_id, self._dump(entity.model_dump(mode="json")))
+                    for entity_id, entity in payload.items()
+                ],
+            )
+
+    @property
+    def claims(self) -> dict[str, ClaimRef]:
+        rows = self._conn.execute("SELECT claim_id, claim_json FROM claims ORDER BY claim_id").fetchall()
+        return {
+            row["claim_id"]: ClaimRef.model_validate(self._load_json(row["claim_json"]))
+            for row in rows
+        }
+
+    @claims.setter
+    def claims(self, payload: dict[str, ClaimRef]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM claims")
+            self._conn.executemany(
+                "INSERT INTO claims(claim_id, tenant_id, source_id, claim_json) VALUES (?, ?, ?, ?)",
+                [
+                    (claim_id, claim.tenant_id, claim.source_id, self._dump(claim.model_dump(mode="json")))
+                    for claim_id, claim in payload.items()
+                ],
+            )
+
+    @property
+    def edges(self) -> dict[str, list[str]]:
+        rows = self._conn.execute("SELECT entity_id, edge_json FROM edges ORDER BY entity_id").fetchall()
+        return {row["entity_id"]: list(self._load_json(row["edge_json"])) for row in rows}
+
+    @edges.setter
+    def edges(self, payload: dict[str, list[str]]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM edges")
+            self._conn.executemany(
+                "INSERT INTO edges(entity_id, edge_json) VALUES (?, ?)",
+                [(entity_id, self._dump(claim_ids)) for entity_id, claim_ids in payload.items()],
+            )
+
+    @property
+    def communities(self) -> dict[str, list[str]]:
+        rows = self._conn.execute(
+            "SELECT community_id, community_json FROM communities ORDER BY community_id"
+        ).fetchall()
+        return {row["community_id"]: list(self._load_json(row["community_json"])) for row in rows}
+
+    @communities.setter
+    def communities(self, payload: dict[str, list[str]]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM communities")
+            self._conn.executemany(
+                "INSERT INTO communities(community_id, community_json) VALUES (?, ?)",
+                [(community_id, self._dump(claim_ids)) for community_id, claim_ids in payload.items()],
+            )
+
+    @property
+    def deleted_claims(self) -> set[str]:
+        rows = self._conn.execute("SELECT claim_id FROM deleted_claims ORDER BY claim_id").fetchall()
+        return {row["claim_id"] for row in rows}
+
+    @deleted_claims.setter
+    def deleted_claims(self, payload: set[str]) -> None:
+        with self._conn:
+            self._conn.execute("DELETE FROM deleted_claims")
+            self._conn.executemany(
+                "INSERT INTO deleted_claims(claim_id) VALUES (?)",
+                [(claim_id,) for claim_id in sorted(payload)],
+            )
+
+    def _load_defaults(self) -> None:
         self.entities = {
             "ent_remote_work": Entity(
                 entity_id="ent_remote_work",
@@ -180,6 +338,7 @@ class GraphSnapshot:
             "remote_policy": ["claim_remote_days_v2", "claim_remote_approval"],
             "travel_policy": ["claim_travel_receipts"],
         }
+        self.deleted_claims = set()
 
     def content_hash(self) -> str:
         payload = {
@@ -198,6 +357,16 @@ class GraphSnapshot:
             for claim in self.claims.values()
             if claim.tenant_id == tenant_id and claim.claim_id not in self.deleted_claims
         ]
+
+    def update_claim(self, claim: ClaimRef) -> None:
+        claims = self.claims
+        claims[claim.claim_id] = claim
+        self.claims = claims
+
+    def mark_deleted(self, claim_id: str) -> None:
+        deleted = self.deleted_claims
+        deleted.add(claim_id)
+        self.deleted_claims = deleted
 
 
 class GraphService:
@@ -426,21 +595,21 @@ class GraphService:
         before_hash = self._unrelated_hash(exclude_source=source_id)
         candidate = GraphSnapshot(snapshot_id=f"{before.manifest.snapshot_id}-{repair_id}")
         if action == "correct":
-            candidate.claims["claim_remote_days_v2"] = candidate.claims["claim_remote_days_v2"].model_copy(
-                update={"value": "2", "confidence": 0.99}
+            candidate.update_claim(
+                candidate.claims["claim_remote_days_v2"].model_copy(update={"value": "2", "confidence": 0.99})
             )
             affected = ["claim_remote_days_v2"]
         elif action == "supersede":
-            candidate.claims["claim_remote_days_old"] = candidate.claims["claim_remote_days_old"].model_copy(
-                update={"status": ClaimStatus.SUPERSEDED}
+            candidate.update_claim(
+                candidate.claims["claim_remote_days_old"].model_copy(update={"status": ClaimStatus.SUPERSEDED})
             )
             affected = ["claim_remote_days_old"]
         elif action == "delete":
-            candidate.deleted_claims.add("claim_remote_days_conflict")
+            candidate.mark_deleted("claim_remote_days_conflict")
             affected = ["claim_remote_days_conflict"]
         else:
             raise ValueError(action)
-        candidate.manifest.content_hash = candidate.content_hash()
+        candidate.manifest = candidate.manifest.model_copy(update={"content_hash": candidate.content_hash()})
         self.previous_snapshots[before.manifest.snapshot_id] = before
         self.snapshot = candidate
         after_hash = self._unrelated_hash(exclude_source=source_id)
