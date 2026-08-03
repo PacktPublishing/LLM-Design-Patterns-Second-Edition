@@ -12,6 +12,17 @@ from fastapi import FastAPI, Header, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from policyops.capstone import (
+    CapstoneRunRecord,
+    CapstoneRuntime,
+    MemoryCorrectionRequest,
+    MemoryDeleteRequest,
+    MemoryEnvelope,
+    TicketExecuteRequest,
+    TicketExecutionEnvelope,
+    TicketPreviewRequest,
+)
+from policyops.capstone.service import CapstoneConflictError, CapstoneNotFoundError
 from policyops.composition import AppContainer, build_container
 from policyops.contracts import (
     AnswerResponse,
@@ -70,6 +81,9 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     )
     application.state.telemetry_runtime = TelemetryRuntime(
         Path(__file__).resolve().parents[3] / "build" / "ch12" / "runtime"
+    )
+    application.state.capstone_runtime = CapstoneRuntime(
+        Path(__file__).resolve().parents[3] / "build" / "ch16" / "runtime"
     )
 
     @application.exception_handler(DomainError)
@@ -346,6 +360,141 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         try:
             return runtime.cancel(run_id, body)
         except TriageConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
+
+    @application.post("/v1/tickets/preview", response_model=TicketExecutionEnvelope)
+    async def ticket_preview(
+        body: TicketPreviewRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_request_id: str | None = Header(default=None),
+        x_trace_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+        x_authz_scopes: str | None = Header(default=None),
+        x_authz_decision_id: str | None = Header(default=None),
+    ) -> TicketExecutionEnvelope:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        settings = request.app.state.container.settings
+        context = _run_context(
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            settings=settings,
+            request_id=x_request_id,
+            trace_id=x_trace_id,
+            roles_header=x_roles,
+            scopes_header=x_authz_scopes or "ticket:preview,ticket:create",
+            decision_id=x_authz_decision_id,
+            purpose="policy-support-ticket-preview",
+        )
+        runtime: CapstoneRuntime = request.app.state.capstone_runtime
+        try:
+            return runtime.preview_ticket(body, context=context)
+        except PermissionError as exc:
+            raise _problem(ErrorCode.FORBIDDEN, str(exc), http_status=403) from exc
+        except ValueError as exc:
+            raise _problem(ErrorCode.VALIDATION_ERROR, str(exc), http_status=400) from exc
+
+    @application.post("/v1/tickets/execute", response_model=TicketExecutionEnvelope)
+    async def ticket_execute(
+        body: TicketExecuteRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+        x_request_id: str | None = Header(default=None),
+        x_trace_id: str | None = Header(default=None),
+        x_roles: str | None = Header(default=None),
+        x_authz_scopes: str | None = Header(default=None),
+        x_authz_decision_id: str | None = Header(default=None),
+    ) -> TicketExecutionEnvelope:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        settings = request.app.state.container.settings
+        context = _run_context(
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            settings=settings,
+            request_id=x_request_id,
+            trace_id=x_trace_id,
+            roles_header=x_roles,
+            scopes_header=x_authz_scopes or "ticket:preview,ticket:create",
+            decision_id=x_authz_decision_id,
+            purpose="policy-support-ticket-execute",
+        )
+        runtime: CapstoneRuntime = request.app.state.capstone_runtime
+        try:
+            return runtime.execute_ticket(body, context=context)
+        except PermissionError as exc:
+            raise _problem(ErrorCode.FORBIDDEN, str(exc), http_status=403) from exc
+        except ValueError as exc:
+            raise _problem(ErrorCode.VALIDATION_ERROR, str(exc), http_status=400) from exc
+        except CapstoneConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
+
+    @application.get("/v1/runs/{run_id}", response_model=CapstoneRunRecord)
+    async def capstone_run_inspect(
+        run_id: str,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> CapstoneRunRecord:
+        tenant_id, actor_id = _require_identity(x_tenant_id, x_actor_id)
+        runtime: CapstoneRuntime = request.app.state.capstone_runtime
+        try:
+            run = runtime.inspect_run(run_id)
+        except CapstoneNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
+        if run.tenant_id != tenant_id or run.actor_id != actor_id:
+            raise _problem(ErrorCode.FORBIDDEN, "run identity mismatch", http_status=403)
+        return run
+
+    @application.get("/v1/memory", response_model=MemoryEnvelope)
+    async def memory_export(
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> MemoryEnvelope:
+        _require_identity(x_tenant_id, x_actor_id)
+        runtime: CapstoneRuntime = request.app.state.capstone_runtime
+        return runtime.memory_export()
+
+    @application.get("/v1/memory/export", response_model=MemoryEnvelope)
+    async def memory_export_alias(
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> MemoryEnvelope:
+        return await memory_export(request, x_tenant_id, x_actor_id)
+
+    @application.post("/v1/memory/correct", response_model=MemoryEnvelope)
+    async def memory_correct(
+        body: MemoryCorrectionRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> MemoryEnvelope:
+        _require_identity(x_tenant_id, x_actor_id)
+        runtime: CapstoneRuntime = request.app.state.capstone_runtime
+        try:
+            return runtime.memory_correct(body)
+        except CapstoneNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
+        except CapstoneConflictError as exc:
+            raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
+
+    @application.post("/v1/memory/delete", response_model=MemoryEnvelope)
+    async def memory_delete(
+        body: MemoryDeleteRequest,
+        request: Request,
+        x_tenant_id: str | None = Header(default=None),
+        x_actor_id: str | None = Header(default=None),
+    ) -> MemoryEnvelope:
+        _require_identity(x_tenant_id, x_actor_id)
+        runtime: CapstoneRuntime = request.app.state.capstone_runtime
+        try:
+            return runtime.memory_delete(body)
+        except CapstoneNotFoundError as exc:
+            raise _problem(ErrorCode.NOT_FOUND, str(exc), http_status=404) from exc
+        except CapstoneConflictError as exc:
             raise _problem(ErrorCode.CONFLICT, str(exc), http_status=409) from exc
 
     @application.get("/operations/{correlation_id}", response_model=OperationEnvelope)

@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from policyops.adapters.replay import ReplayModelClient
 from policyops.api import create_app
+from policyops.capstone import CapstoneRuntime
 from policyops.composition import AppContainer
 from policyops.config import Settings
 from policyops.harness import SessionRuntime
@@ -60,6 +61,7 @@ def client(tmp_path: Path) -> TestClient:
     app.state.session_runtime = SessionRuntime(tmp_path / "runtime")
     app.state.triage_runtime = TriageRuntime(tmp_path / "triage-runtime")
     app.state.telemetry_runtime = TelemetryRuntime(tmp_path / "telemetry-runtime")
+    app.state.capstone_runtime = CapstoneRuntime(tmp_path / "capstone-runtime")
     return TestClient(app)
 
 
@@ -284,6 +286,125 @@ def test_triage_pause_resume_cancel_routes(client: TestClient) -> None:
     )
     assert cancelled.status_code == 200
     assert cancelled.json()["run"]["status"] == "cancelled"
+
+
+def test_ticket_preview_execute_and_run_inspect_routes(client: TestClient) -> None:
+    ticket = {
+        "tenant_id": "tenant_alpha",
+        "title": "Remote-work exception support",
+        "description": "Create a policy support ticket for a manager-approved remote-work exception.",
+        "severity": "medium",
+        "source_refs": ["policy_remote:v2:span_remote_approval"],
+    }
+    preview = client.post(
+        "/v1/tickets/preview",
+        headers=_headers(),
+        json={"ticket": ticket},
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+    assert preview_body["result"]["status"] == "preview"
+    assert preview_body["result"]["ticket_id"] is None
+
+    execute = client.post(
+        "/v1/tickets/execute",
+        headers=_headers(),
+        json={
+            "ticket": ticket,
+            "preview": preview_body["preview"],
+            "idempotency_key": "ticket-api-1",
+        },
+    )
+    assert execute.status_code == 200
+    execute_body = execute.json()
+    assert execute_body["result"]["status"] == "created"
+    assert execute_body["result"]["ticket_id"].startswith("ticket_")
+    assert execute_body["run"]["status"] == "executed"
+
+    inspect = client.get(f"/v1/runs/{execute_body['run']['run_id']}", headers=_headers())
+    assert inspect.status_code == 200
+    assert inspect.json()["ticket_id"] == execute_body["result"]["ticket_id"]
+
+    replay = client.post(
+        "/v1/tickets/execute",
+        headers=_headers(),
+        json={
+            "ticket": ticket,
+            "preview": preview_body["preview"],
+            "idempotency_key": "ticket-api-1",
+        },
+    )
+    assert replay.status_code == 200
+    assert replay.json()["run"]["run_id"] == execute_body["run"]["run_id"]
+    assert replay.json()["result"]["ticket_id"] == execute_body["result"]["ticket_id"]
+
+
+def test_ticket_execute_conflict_returns_409(client: TestClient) -> None:
+    preview = client.post(
+        "/v1/tickets/preview",
+        headers=_headers(),
+        json={
+            "ticket": {
+                "tenant_id": "tenant_alpha",
+                "title": "Remote-work exception support",
+                "description": "Create a policy support ticket for a manager-approved remote-work exception.",
+                "severity": "medium",
+                "source_refs": ["policy_remote:v2:span_remote_approval"],
+            }
+        },
+    )
+    preview_body = preview.json()
+    conflict = client.post(
+        "/v1/tickets/execute",
+        headers=_headers(),
+        json={
+            "ticket": {
+                "tenant_id": "tenant_alpha",
+                "title": "Changed request title",
+                "description": "Create a policy support ticket for a manager-approved remote-work exception.",
+                "severity": "medium",
+                "source_refs": ["policy_remote:v2:span_remote_approval"],
+            },
+            "preview": preview_body["preview"],
+            "idempotency_key": "ticket-api-conflict",
+        },
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["code"] == "CONFLICT"
+
+
+def test_memory_routes_support_export_correct_and_delete(client: TestClient) -> None:
+    exported = client.get("/v1/memory", headers=_headers())
+    assert exported.status_code == 200
+    records = exported.json()["records"]
+    assert records
+    record = records[0]
+
+    corrected = client.post(
+        "/v1/memory/correct",
+        headers=_headers(),
+        json={
+            "record_id": record["record_id"],
+            "expected_version": record["version"],
+            "text": "Corrected memory text for chapter 16 runtime coverage.",
+        },
+    )
+    assert corrected.status_code == 200
+    corrected_body = corrected.json()
+    assert corrected_body["correction"]["supersedes"] == record["record_id"]
+
+    deleted = client.post(
+        "/v1/memory/delete",
+        headers=_headers(),
+        json={
+            "record_id": corrected_body["correction"]["record_id"],
+            "expected_version": corrected_body["correction"]["version"],
+        },
+    )
+    assert deleted.status_code == 200
+    deleted_body = deleted.json()
+    assert deleted_body["deletion_receipt"]["record_ids"]
+    assert deleted_body["rights_receipt"]["complete"] is True
 
 
 def test_triage_state_version_conflict_returns_409(client: TestClient) -> None:

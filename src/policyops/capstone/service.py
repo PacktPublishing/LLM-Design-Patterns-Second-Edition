@@ -6,17 +6,49 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
+from policyops.contracts import RunContext
 from policyops.capstone.schemas import (
     CapstoneDecision,
+    CapstoneRunRecord,
+    CapstoneRunStatus,
     CapstoneReleaseDecision,
     CapstoneScorecard,
     GameDayStatus,
     GameDayStepResult,
+    MemoryCorrectionRequest,
+    MemoryDeleteRequest,
+    MemoryEnvelope,
     ReleaseBundle,
+    ReleaseDecisionEnvelope,
+    TicketExecuteRequest,
+    TicketExecutionEnvelope,
+    TicketPreviewRequest,
     TraceabilityClosure,
 )
+from policyops.extensions import EffectPreview, SecuredToolPort, TicketResult, TicketStatus
+from policyops.extensions.schemas import DomainErrorCode
+from policyops.extensions.service import fixture_context
 from policyops.governance import GovernanceVerification
+from policyops.governance.schemas import RightsRequest
+from policyops.governance.service import GovernanceFixture, RightsOrchestrator
+from policyops.memory import (
+    DeletionReceipt,
+    ExportRecord,
+    MemoryAuthorizer,
+    MemoryEvent,
+    MemoryLedger,
+    MemoryProposal,
+    MemoryRecord,
+    MemoryRetriever,
+    MutationDecision,
+    MutationAction,
+    Principal,
+    VersionConflict,
+    build_fixture_memory,
+)
+from policyops.memory.schemas import MemoryKind, MemoryScope, Sensitivity
 from policyops.telemetry import sha_json
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -104,6 +136,282 @@ class GameDayRunner:
                 )
             )
         return results
+
+
+class CapstoneNotFoundError(RuntimeError):
+    pass
+
+
+class CapstoneConflictError(RuntimeError):
+    pass
+
+
+class CapstoneRuntime:
+    def __init__(self, root: Path, tool_port: SecuredToolPort | None = None) -> None:
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.tool_port = tool_port or SecuredToolPort()
+        self.authorizer = MemoryAuthorizer()
+
+    def _runs_path(self) -> Path:
+        path = self.root / "runs.json"
+        return path
+
+    def _memory_path(self) -> Path:
+        return self.root / "memory.json"
+
+    def _load_runs(self) -> dict[str, CapstoneRunRecord]:
+        path = self._runs_path()
+        if not path.exists():
+            return {}
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return {
+            run_id: CapstoneRunRecord.model_validate(record)
+            for run_id, record in payload.items()
+        }
+
+    def _save_runs(self, runs: dict[str, CapstoneRunRecord]) -> None:
+        self._runs_path().write_text(
+            json.dumps(
+                {run_id: run.model_dump(mode="json") for run_id, run in runs.items()},
+                indent=2,
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+
+    def _load_memory(self) -> tuple[MemoryLedger, MemoryRetriever, Principal]:
+        path = self._memory_path()
+        if not path.exists():
+            ledger, retriever, principal = build_fixture_memory()
+            self._save_memory(ledger, principal)
+            return ledger, retriever, principal
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        ledger, _retriever, default_principal = build_fixture_memory()
+        principal = Principal.model_validate(payload.get("principal", default_principal.model_dump(mode="json")))
+        ledger.records = {
+            record_id: MemoryRecord.model_validate(record)
+            for record_id, record in payload["records"].items()
+        }
+        ledger.events = [MemoryEvent.model_validate(event) for event in payload["events"]]
+        ledger.deleted_receipts = {
+            receipt_id: DeletionReceipt.model_validate(receipt)
+            for receipt_id, receipt in payload["deleted_receipts"].items()
+        }
+        return ledger, MemoryRetriever(ledger), principal
+
+    def _save_memory(self, ledger: MemoryLedger, principal: Principal) -> None:
+        self._memory_path().write_text(
+            json.dumps(
+                {
+                    "principal": principal.model_dump(mode="json"),
+                    "records": {
+                        record_id: record.model_dump(mode="json")
+                        for record_id, record in ledger.records.items()
+                    },
+                    "events": [event.model_dump(mode="json") for event in ledger.events],
+                    "deleted_receipts": {
+                        receipt_id: receipt.model_dump(mode="json")
+                        for receipt_id, receipt in ledger.deleted_receipts.items()
+                    },
+                },
+                indent=2,
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+
+    def _preview_result(self, preview: EffectPreview) -> TicketResult:
+        return TicketResult(
+            status=TicketStatus.PREVIEW,
+            effect_hash=preview.effect_hash,
+            evidence_status="not_applicable",
+        )
+
+    def _replayed_execution(
+        self,
+        *,
+        preview: EffectPreview,
+        run: CapstoneRunRecord,
+    ) -> TicketExecutionEnvelope:
+        status = TicketStatus.CREATED if run.ticket_id else TicketStatus.DENIED
+        return TicketExecutionEnvelope(
+            preview=preview,
+            result=TicketResult(
+                status=status,
+                ticket_id=run.ticket_id,
+                effect_hash=run.effect_hash,
+                evidence_status="recorded" if run.ticket_id else "not_applicable",
+                idempotency_key=run.idempotency_key,
+                reason_code=None if run.ticket_id else DomainErrorCode.APPROVAL_REQUIRED,
+            ),
+            run=run,
+        )
+
+    def _find_existing_execution(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+    ) -> CapstoneRunRecord | None:
+        for run in self._load_runs().values():
+            if run.tenant_id == tenant_id and run.idempotency_key == idempotency_key:
+                return run
+        return None
+
+    def preview_ticket(
+        self,
+        request: TicketPreviewRequest,
+        *,
+        context: RunContext | None = None,
+    ) -> TicketExecutionEnvelope:
+        context = context or fixture_context()
+        preview = self.tool_port.preview_policy_ticket(request.ticket, context)
+        run_id = f"caprun_{uuid4().hex[:10]}"
+        run = CapstoneRunRecord(
+            run_id=run_id,
+            tenant_id=context.tenant_id,
+            actor_id=context.actor_id,
+            effect_hash=preview.effect_hash,
+            status=CapstoneRunStatus.PREVIEWED,
+            trace=["preview_policy_ticket"],
+        )
+        runs = self._load_runs()
+        runs[run_id] = run
+        self._save_runs(runs)
+        return TicketExecutionEnvelope(preview=preview, result=self._preview_result(preview), run=run)
+
+    def execute_ticket(
+        self,
+        request: TicketExecuteRequest,
+        *,
+        context: RunContext | None = None,
+    ) -> TicketExecutionEnvelope:
+        context = context or fixture_context()
+        preview = self.tool_port.preview_policy_ticket(request.ticket, context)
+        if preview.effect_hash != request.preview.effect_hash:
+            raise CapstoneConflictError("PREVIEW_EFFECT_MISMATCH")
+        existing = self._find_existing_execution(
+            tenant_id=context.tenant_id,
+            idempotency_key=request.idempotency_key,
+        )
+        if existing is not None:
+            if existing.effect_hash != preview.effect_hash:
+                raise CapstoneConflictError("IDEMPOTENCY_EFFECT_MISMATCH")
+            if existing.ticket_id:
+                return self._replayed_execution(preview=preview, run=existing)
+        approval = self.tool_port.approval_store.issuer.issue(
+            preview,
+            context,
+            nonce=f"{request.idempotency_key}-approval",
+            expires_at=self.tool_port.approval_store.now + 60,
+        )
+        result = self.tool_port.create_policy_ticket(
+            preview,
+            approval,
+            request.idempotency_key,
+            context,
+        )
+        run = CapstoneRunRecord(
+            run_id=f"caprun_{uuid4().hex[:10]}",
+            tenant_id=context.tenant_id,
+            actor_id=context.actor_id,
+            effect_hash=preview.effect_hash,
+            status=CapstoneRunStatus.EXECUTED if result.ticket_id else CapstoneRunStatus.DENIED,
+            ticket_id=result.ticket_id,
+            idempotency_key=request.idempotency_key,
+            trace=["preview_policy_ticket", "create_policy_ticket"],
+        )
+        runs = self._load_runs()
+        runs[run.run_id] = run
+        self._save_runs(runs)
+        return TicketExecutionEnvelope(preview=preview, result=result, run=run)
+
+    def inspect_run(self, run_id: str) -> CapstoneRunRecord:
+        runs = self._load_runs()
+        try:
+            return runs[run_id]
+        except KeyError as exc:
+            raise CapstoneNotFoundError(f"run not found: {run_id}") from exc
+
+    def memory_export(self) -> MemoryEnvelope:
+        ledger, _retriever, principal = self._load_memory()
+        return MemoryEnvelope(records=ledger.export(principal))
+
+    def memory_correct(self, request: MemoryCorrectionRequest) -> MemoryEnvelope:
+        ledger, _retriever, principal = self._load_memory()
+        current = ledger.records.get(request.record_id)
+        if current is None:
+            raise CapstoneNotFoundError(f"memory record not found: {request.record_id}")
+        proposal = MemoryProposal(
+            proposal_id=f"corr-{request.record_id}",
+            tenant_id=current.tenant_id,
+            subject_id=current.subject_id,
+            actor_id=principal.actor_id,
+            kind=current.kind,
+            scope=current.scope,
+            text=request.text,
+            purpose=current.purpose,
+            sensitivity=current.sensitivity,
+            confidence=current.confidence,
+            source_ref=current.source_ref,
+            consent_id=current.consent_id,
+            valid_from=ledger.clock.now(),
+            expires_at=current.expires_at,
+            expected_version=request.expected_version,
+            target_record_id=request.record_id,
+            approval_ref="capstone-correction",
+        )
+        decision = self.authorizer.evaluate(proposal, principal, ledger.clock.now())
+        if decision.action == MutationAction.NOOP:
+            raise CapstoneConflictError("MEMORY_CORRECTION_REJECTED")
+        try:
+            record = ledger.apply(proposal, decision)
+        except VersionConflict as exc:
+            raise CapstoneConflictError(str(exc)) from exc
+        self._save_memory(ledger, principal)
+        return MemoryEnvelope(records=ledger.export(principal), correction=record)
+
+    def memory_delete(self, request: MemoryDeleteRequest) -> MemoryEnvelope:
+        ledger, _retriever, principal = self._load_memory()
+        try:
+            deletion = ledger.delete(
+                request.record_id,
+                principal,
+                expected_version=request.expected_version,
+            )
+        except KeyError as exc:
+            raise CapstoneNotFoundError(f"memory record not found: {request.record_id}") from exc
+        except VersionConflict as exc:
+            raise CapstoneConflictError(str(exc)) from exc
+        self._save_memory(ledger, principal)
+        rights = RightsOrchestrator(GovernanceFixture().inventory()).process(
+            RightsRequest(
+                request_id=f"rights-{request.record_id}",
+                tenant_id=principal.tenant_id.replace("_", "-"),
+                subject_id=principal.subject_id,
+                request_type="deletion",
+                authenticated=True,
+                scope="policyops user records",
+            )
+        )
+        return MemoryEnvelope(
+            records=ledger.export(principal),
+            deletion_receipt=deletion,
+            rights_receipt=rights,
+        )
+
+    def release_decision(self) -> ReleaseDecisionEnvelope:
+        scorecard, evidence = CapstoneVerifier().verify()
+        governance = GovernanceVerification().final_decision()
+        bundle = ReleaseBundle.model_validate(evidence["bundle"])
+        release_decision = CapstoneReleaseDecision.model_validate(evidence["release_decision"])
+        return ReleaseDecisionEnvelope(
+            scorecard=scorecard,
+            release_decision=release_decision,
+            governance_decision=governance,
+            bundle=bundle,
+        )
 
 
 class CapstoneVerifier:

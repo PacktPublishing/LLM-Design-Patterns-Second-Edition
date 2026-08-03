@@ -22,6 +22,9 @@ triage_app = typer.Typer(help="Triage runtime commands (Chapter 10)")
 trace_app = typer.Typer(help="Trace inspection commands (Chapter 12)")
 experiment_app = typer.Typer(help="Experiment commands (Chapter 12)")
 canary_app = typer.Typer(help="Canary commands (Chapter 12)")
+ticket_app = typer.Typer(help="Capstone ticket workflow commands (Chapter 16)")
+memory_app = typer.Typer(help="Capstone memory lifecycle commands (Chapter 16)")
+release_app = typer.Typer(help="Capstone release decision commands (Chapter 16)")
 app.add_typer(env_app, name="env")
 app.add_typer(eval_app, name="eval")
 app.add_typer(session_app, name="session")
@@ -29,6 +32,9 @@ app.add_typer(triage_app, name="triage")
 app.add_typer(trace_app, name="trace")
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(canary_app, name="canary")
+app.add_typer(ticket_app, name="ticket")
+app.add_typer(memory_app, name="memory")
+app.add_typer(release_app, name="release")
 console = Console()
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -65,6 +71,12 @@ def _triage_runtime_root() -> Path:
 
 def _telemetry_runtime_root() -> Path:
     path = _build_dir("ch12") / "runtime"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _capstone_runtime_root() -> Path:
+    path = _build_dir("ch16") / "runtime"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -369,6 +381,169 @@ def triage_cancel(
         run_id,
         TriageControlRequest(expected_version=expected_version),
     )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@ticket_app.command("preview")
+def ticket_preview(
+    title: str = typer.Option("Remote-work exception support", "--title"),
+    description: str = typer.Option(
+        "Create a policy support ticket for a manager-approved remote-work exception.",
+        "--description",
+    ),
+    severity: str = typer.Option("medium", "--severity"),
+    source_ref: list[str] = typer.Option(
+        ["policy_remote:v2:span_remote_approval"],
+        "--source-ref",
+    ),
+    tenant_id: str = typer.Option("tenant_alpha", "--tenant-id"),
+    actor_id: str = typer.Option("actor_reader", "--actor-id"),
+) -> None:
+    from policyops.capstone import CapstoneRuntime, TicketPreviewRequest
+    from policyops.contracts import AuthorizationContext, Budget, RunContext
+    from policyops.extensions import TicketInput
+    from datetime import UTC, datetime
+
+    context = RunContext(
+        request_id="req_capstone_preview",
+        trace_id="trace_capstone_preview",
+        tenant_id=tenant_id,
+        actor_id=actor_id,
+        roles=["policy_support"],
+        purpose="policy_support",
+        configuration_id="cli-capstone-runtime",
+        configuration_versions={"capstone": "1.0.0"},
+        deadline_at=datetime(2030, 1, 1, 0, 0, 5, tzinfo=UTC),
+        budget=Budget(max_input_tokens=2048, max_output_tokens=512),
+        authorization_context=AuthorizationContext(
+            scopes=["ticket:preview", "ticket:create"],
+            decision_id="authz-capstone-cli",
+        ),
+    )
+    envelope = CapstoneRuntime(_capstone_runtime_root()).preview_ticket(
+        TicketPreviewRequest(
+            ticket=TicketInput(
+                tenant_id=tenant_id,
+                title=title,
+                description=description,
+                severity=severity,
+                source_refs=source_ref,
+            )
+        ),
+        context=context,
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@ticket_app.command("execute")
+def ticket_execute(
+    title: str = typer.Option("Remote-work exception support", "--title"),
+    description: str = typer.Option(
+        "Create a policy support ticket for a manager-approved remote-work exception.",
+        "--description",
+    ),
+    severity: str = typer.Option("medium", "--severity"),
+    source_ref: list[str] = typer.Option(
+        ["policy_remote:v2:span_remote_approval"],
+        "--source-ref",
+    ),
+    idempotency_key: str = typer.Option("capstone-cli-1", "--idempotency-key"),
+    tenant_id: str = typer.Option("tenant_alpha", "--tenant-id"),
+    actor_id: str = typer.Option("actor_reader", "--actor-id"),
+) -> None:
+    from policyops.capstone import CapstoneRuntime, TicketExecuteRequest, TicketPreviewRequest
+    from policyops.contracts import AuthorizationContext, Budget, RunContext
+    from policyops.extensions import TicketInput
+    from datetime import UTC, datetime
+
+    runtime = CapstoneRuntime(_capstone_runtime_root())
+    context = RunContext(
+        request_id="req_capstone_execute",
+        trace_id="trace_capstone_execute",
+        tenant_id=tenant_id,
+        actor_id=actor_id,
+        roles=["policy_support"],
+        purpose="policy_support",
+        configuration_id="cli-capstone-runtime",
+        configuration_versions={"capstone": "1.0.0"},
+        deadline_at=datetime(2030, 1, 1, 0, 0, 5, tzinfo=UTC),
+        budget=Budget(max_input_tokens=2048, max_output_tokens=512),
+        authorization_context=AuthorizationContext(
+            scopes=["ticket:preview", "ticket:create"],
+            decision_id="authz-capstone-cli",
+        ),
+    )
+    ticket = TicketInput(
+        tenant_id=tenant_id,
+        title=title,
+        description=description,
+        severity=severity,
+        source_refs=source_ref,
+    )
+    preview = runtime.preview_ticket(TicketPreviewRequest(ticket=ticket), context=context)
+    envelope = runtime.execute_ticket(
+        TicketExecuteRequest(
+            ticket=ticket,
+            preview=preview.preview,
+            idempotency_key=idempotency_key,
+        ),
+        context=context,
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@ticket_app.command("inspect-run")
+def ticket_inspect_run(run_id: str = typer.Argument(...)) -> None:
+    from policyops.capstone import CapstoneRuntime
+
+    run = CapstoneRuntime(_capstone_runtime_root()).inspect_run(run_id)
+    console.print_json(json.dumps(run.model_dump(mode="json")))
+
+
+@memory_app.command("export")
+def memory_export() -> None:
+    from policyops.capstone import CapstoneRuntime
+
+    envelope = CapstoneRuntime(_capstone_runtime_root()).memory_export()
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@memory_app.command("correct")
+def memory_correct(
+    record_id: str = typer.Argument(...),
+    expected_version: int = typer.Option(..., "--expected-version"),
+    text: str = typer.Option(..., "--text"),
+) -> None:
+    from policyops.capstone import CapstoneRuntime, MemoryCorrectionRequest
+
+    envelope = CapstoneRuntime(_capstone_runtime_root()).memory_correct(
+        MemoryCorrectionRequest(
+            record_id=record_id,
+            expected_version=expected_version,
+            text=text,
+        )
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@memory_app.command("delete")
+def memory_delete(
+    record_id: str = typer.Argument(...),
+    expected_version: int = typer.Option(..., "--expected-version"),
+) -> None:
+    from policyops.capstone import CapstoneRuntime, MemoryDeleteRequest
+
+    envelope = CapstoneRuntime(_capstone_runtime_root()).memory_delete(
+        MemoryDeleteRequest(record_id=record_id, expected_version=expected_version)
+    )
+    console.print_json(json.dumps(envelope.model_dump(mode="json")))
+
+
+@release_app.command("decide")
+def release_decide() -> None:
+    from policyops.capstone import CapstoneRuntime
+
+    envelope = CapstoneRuntime(_capstone_runtime_root()).release_decision()
     console.print_json(json.dumps(envelope.model_dump(mode="json")))
 
 

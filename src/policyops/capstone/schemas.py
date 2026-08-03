@@ -7,6 +7,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from policyops.extensions import EffectPreview, TicketInput, TicketResult
+from policyops.governance.schemas import ReleaseDecision, RightsReceipt
+from policyops.memory import DeletionReceipt, ExportRecord, MemoryRecord
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -97,3 +101,62 @@ class CapstoneScorecard(StrictModel):
         ):
             raise ValueError("capstone cannot pass when any mandatory invariant fails")
         return self
+
+
+class CapstoneRunStatus(str, Enum):
+    PREVIEWED = "previewed"
+    EXECUTED = "executed"
+    DENIED = "denied"
+    FAILED = "failed"
+
+
+class TicketPreviewRequest(StrictModel):
+    ticket: TicketInput
+
+
+class TicketExecuteRequest(StrictModel):
+    ticket: TicketInput
+    preview: EffectPreview
+    idempotency_key: str = Field(min_length=4)
+
+
+class CapstoneRunRecord(StrictModel):
+    run_id: str
+    tenant_id: str
+    actor_id: str
+    effect_hash: str
+    status: CapstoneRunStatus
+    ticket_id: str | None = None
+    idempotency_key: str | None = None
+    trace: list[str] = Field(default_factory=list)
+
+
+class TicketExecutionEnvelope(StrictModel):
+    preview: EffectPreview
+    result: TicketResult
+    run: CapstoneRunRecord
+
+
+class MemoryCorrectionRequest(StrictModel):
+    record_id: str
+    expected_version: int = Field(ge=1)
+    text: str = Field(min_length=1)
+
+
+class MemoryDeleteRequest(StrictModel):
+    record_id: str
+    expected_version: int = Field(ge=1)
+
+
+class MemoryEnvelope(StrictModel):
+    records: list[ExportRecord] = Field(default_factory=list)
+    correction: MemoryRecord | None = None
+    deletion_receipt: DeletionReceipt | None = None
+    rights_receipt: RightsReceipt | None = None
+
+
+class ReleaseDecisionEnvelope(StrictModel):
+    scorecard: CapstoneScorecard
+    release_decision: CapstoneReleaseDecision
+    governance_decision: ReleaseDecision
+    bundle: ReleaseBundle

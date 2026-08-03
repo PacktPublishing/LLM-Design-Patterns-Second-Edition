@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from policyops.capstone import (
     CapstoneDecision,
+    CapstoneRuntime,
     CapstoneVerifier,
     GameDayRunner,
     GameDayStatus,
+    TicketExecuteRequest,
+    TicketPreviewRequest,
     TraceabilityValidator,
     run_capstone_faults,
     run_capstone_verification,
 )
+from policyops.extensions import TicketInput
+from policyops.extensions.service import fixture_context
 
 
 def test_traceability_closes_all_chapter_handoffs() -> None:
@@ -74,3 +81,33 @@ def test_capstone_fault_drills_cover_required_scenarios(tmp_path) -> None:
         "seeded_failure": True,
         "traceability": True,
     }
+
+
+def test_preview_remains_side_effect_free_and_execute_replays_idempotently(tmp_path: Path) -> None:
+    runtime = CapstoneRuntime(tmp_path / "runtime")
+    context = fixture_context()
+    ticket = TicketInput(
+        tenant_id="tenant_alpha",
+        title="Remote-work exception support",
+        description="Create a policy support ticket for a manager-approved remote-work exception.",
+        severity="medium",
+        source_refs=["policy_remote:v2:span_remote_approval"],
+    )
+
+    preview = runtime.preview_ticket(TicketPreviewRequest(ticket=ticket), context=context)
+    assert preview.result.status.value == "preview"
+    assert preview.result.ticket_id is None
+
+    executed = runtime.execute_ticket(
+        TicketExecuteRequest(ticket=ticket, preview=preview.preview, idempotency_key="capstone-test-1"),
+        context=context,
+    )
+    assert executed.result.ticket_id is not None
+    assert executed.run.status.value == "executed"
+
+    replayed = CapstoneRuntime(tmp_path / "runtime").execute_ticket(
+        TicketExecuteRequest(ticket=ticket, preview=preview.preview, idempotency_key="capstone-test-1"),
+        context=context,
+    )
+    assert replayed.run.run_id == executed.run.run_id
+    assert replayed.result.ticket_id == executed.result.ticket_id
