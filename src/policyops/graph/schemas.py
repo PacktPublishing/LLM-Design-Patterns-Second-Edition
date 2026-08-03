@@ -99,10 +99,19 @@ class SnapshotManifest(StrictModel):
     active: bool = False
 
 
+class SnapshotActivation(StrictModel):
+    activation_id: str
+    previous_snapshot_id: str | None = None
+    activated_snapshot_id: str
+    reason: str
+    rollback_of: str | None = None
+
+
 class RepairReceipt(StrictModel):
     repair_id: str
     action: Literal["correct", "supersede", "delete"]
     source_id: str
+    activation_id: str
     previous_snapshot_id: str
     candidate_snapshot_id: str
     activated_snapshot_id: str

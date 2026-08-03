@@ -628,18 +628,30 @@ class OutboxDispatcher:
             raise EffectAttemptedDuringReplay("replay adapter rejects external effects")
         message = self.store.get_outbox_message(message_id)
         intent = self.store.get_intent(message.intent_id)
-        preview = self.tool_port.preview_policy_ticket(fixture_ticket(), fixture_context())
+        state = self.store.current_state(intent.session_id)
+        context = fixture_context().model_copy(
+            update={
+                "tenant_id": state.tenant_id,
+                "actor_id": state.actor_id,
+                "request_id": state.request_id,
+                "trace_id": state.trace_id,
+                "configuration_id": state.configuration_id,
+            }
+        )
+        preview = self.tool_port.preview_policy_ticket(fixture_ticket(), context)
+        if preview.effect_hash != intent.effect_hash:
+            raise RuntimeError("effect preview drifted from stored intent")
         approval = self.tool_port.approval_store.issuer.issue(
             preview,
-            fixture_context(),
-            nonce=f"{message.message_id}-approval",
-            expires_at=self.tool_port.approval_store.now + 60,
+            context,
+            nonce=intent.approval_reference,
+            expires_at=intent.approval_expires_at,
         )
         result = self.tool_port.create_policy_ticket(
             preview,
             approval,
             message.idempotency_key,
-            fixture_context(),
+            context,
         )
         self.external_calls += 1
         receipt = EffectReceipt(
@@ -753,6 +765,7 @@ class ResumableLoop:
         state.version = staged_events[-1].sequence
         state.state = SessionPhase.ACTION_READY
         state.pending_action_id = intent.intent_id
+        state.approval_reference = intent.approval_reference
         if fault == FaultScenario.BEFORE_EFFECT:
             return state
         receipt = self.dispatcher.deliver(message.message_id)
@@ -779,6 +792,14 @@ class ResumableLoop:
             state.ticket_id = receipt.external_reference
             self._append(state, EventType.EFFECT_RECEIPT, state.state, SessionPhase.EFFECT_DELIVERED, lease)
             state.state = SessionPhase.EFFECT_DELIVERED
+            state.approval_reference = next(
+                (
+                    intent.approval_reference
+                    for intent in self.store.intents.values()
+                    if intent.session_id == session_id and intent.idempotency_key == message.idempotency_key
+                ),
+                state.approval_reference,
+            )
         if not pending and state.state == SessionPhase.ACTION_READY:
             receipts = [
                 receipt

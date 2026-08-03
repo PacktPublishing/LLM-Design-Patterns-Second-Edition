@@ -21,6 +21,7 @@ from policyops.governance.schemas import (
     ReleaseDecision,
     RightsReceipt,
     RightsRequest,
+    RightsTaskRecord,
     RiskRecord,
     SignatureEnvelope,
     StoreReceipt,
@@ -206,32 +207,83 @@ class EvidenceResolver:
 class RightsOrchestrator:
     def __init__(self, inventory: SystemInventory) -> None:
         self.inventory = inventory
+        self._workflows: dict[str, tuple[RightsRequest, list[RightsTaskRecord]]] = {}
 
     def process(self, request: RightsRequest, *, miss_store: str | None = None) -> RightsReceipt:
-        stores = []
-        for store in self.inventory.stores:
-            verifier = store != miss_store
-            stores.append(
-                StoreReceipt(
+        workflow_id = self._workflow_id(request)
+        prior = self._workflows.get(workflow_id)
+        if prior is None:
+            tasks = [
+                RightsTaskRecord(
+                    task_id=f"{workflow_id}:{store}",
                     store=store,
-                    action=request.request_type,
-                    completed_at=NOW + 300,
-                    verifier_passed=verifier,
-                    exception=None if verifier else "adapter did not confirm derived copy",
-                    retention_basis="backup expiry policy" if store == "backup_retention" else None,
-                    follow_up_at=NOW + 86_400 if store == "backup_retention" else None,
+                    request_type=request.request_type,
+                    status="pending",
+                )
+                for store in self.inventory.stores
+            ]
+        else:
+            _, tasks = prior
+        updated_tasks: list[RightsTaskRecord] = []
+        for task in tasks:
+            verifier = task.store != miss_store
+            updated_tasks.append(
+                task.model_copy(
+                    update={
+                        "status": "completed" if verifier else "failed",
+                        "completed_at": NOW + 300,
+                        "verifier_passed": verifier,
+                        "exception": None if verifier else "adapter did not confirm derived copy",
+                        "retention_basis": "backup expiry policy" if task.store == "backup_retention" else None,
+                        "follow_up_at": NOW + 86_400 if task.store == "backup_retention" else None,
+                    }
                 )
             )
-        complete = request.authenticated and all(store.verifier_passed for store in stores)
-        digest = sha_json([store.model_dump(mode="json") for store in stores])
+        self._workflows[workflow_id] = (request, updated_tasks)
+        stores = [
+            StoreReceipt(
+                store=task.store,
+                action=task.request_type,
+                completed_at=task.completed_at or NOW + 300,
+                verifier_passed=task.verifier_passed,
+                exception=task.exception,
+                retention_basis=task.retention_basis,
+                follow_up_at=task.follow_up_at,
+            )
+            for task in updated_tasks
+        ]
+        complete = request.authenticated and all(task.verifier_passed for task in updated_tasks)
+        digest = sha_json(
+            {
+                "request": request.model_dump(mode="json"),
+                "tasks": [task.model_dump(mode="json") for task in updated_tasks],
+            }
+        )
         return RightsReceipt(
             receipt_id="receipt-" + request.request_id,
             request_id=request.request_id,
             tenant_id=request.tenant_id,
             store_inventory_version=self.inventory.inventory_id,
+            workflow_id=workflow_id,
+            request_digest=workflow_id,
             stores=stores,
             complete=complete,
             signed_hash=digest,
+        )
+
+    def workflow(self, request: RightsRequest) -> list[RightsTaskRecord]:
+        workflow_id = self._workflow_id(request)
+        _, tasks = self._workflows.get(workflow_id, (request, []))
+        return [task.model_copy(deep=True) for task in tasks]
+
+    def _workflow_id(self, request: RightsRequest) -> str:
+        return sha_json(
+            {
+                "tenant_id": request.tenant_id,
+                "subject_id": request.subject_id,
+                "request_type": request.request_type,
+                "scope": request.scope,
+            }
         )
 
 

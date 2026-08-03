@@ -103,6 +103,7 @@ class SessionState(StrictModel):
     configuration_id: str
     budget: BudgetSnapshot = Field(default_factory=BudgetSnapshot)
     pending_action_id: str | None = None
+    approval_reference: str | None = None
     ticket_id: str | None = None
     terminal_reason: FailureClass | None = None
 

@@ -62,6 +62,8 @@ def test_delegated_tasks_are_signed_narrow_and_traceable() -> None:
     assert len(engine.issued_tasks) == 2
     assert engine.transition_events_for(state.run_id)
     assert engine.budget_entries_for(state.run_id)
+    assert state.budget.consumed_tokens == 200
+    assert state.budget.consumed_spend_cents >= 1
     for task in engine.issued_tasks:
         assert task.principal.tenant_id == "tenant_alpha"
         assert "ticket:create" not in task.tool_allowlist

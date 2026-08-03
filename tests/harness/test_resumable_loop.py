@@ -112,6 +112,7 @@ def test_checkpoint_is_recovery_cursor_not_alternate_history() -> None:
     replayed = loop.reducer.replay(loop.store.events[state.session_id])
     assert checkpoint.event_sequence <= replayed.version
     assert checkpoint.state_hash.startswith("sha256:")
+    assert checkpoint.state.approval_reference == "fixture-approval"
 
 
 def test_sqlite_store_persists_session_history_across_fresh_instances(tmp_path: Path) -> None:
@@ -137,6 +138,19 @@ def test_after_checkpoint_fault_resumes_from_durable_checkpoint_without_duplicat
 
     assert resumed.state == SessionPhase.VERIFIED
     assert len(loop.store.receipts) == 1
+
+
+def test_resume_uses_stored_approval_expiry_before_effect_delivery() -> None:
+    loop = ResumableLoop()
+    interrupted = loop.run_once("session-expired-approval", fault=FaultScenario.BEFORE_EFFECT)
+    loop.dispatcher.tool_port.approval_store.now += 120
+
+    resumed = loop.resume(interrupted.session_id)
+
+    receipt = loop.store.receipts[f"{interrupted.session_id}:ticket"]
+    assert resumed.state == SessionPhase.VERIFIED
+    assert receipt.status == "failed"
+    assert resumed.approval_reference == "fixture-approval"
 
 
 def test_fixture_verification_writes_harness_evidence(tmp_path: Path) -> None:

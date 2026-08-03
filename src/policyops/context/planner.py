@@ -301,8 +301,14 @@ class ContextPlanner:
         self.policy_path = policy_path or DEFAULT_POLICY_PATH
         self.policy = self._load_policy(self.policy_path)
         self.policy_hash = self._hash_policy()
+        self._summary_sources: dict[str, ContextSource] = {}
+        self._summary_call_count = 0
+        self._materialization_count = 0
 
     def plan(self, request: ContextRequest) -> tuple[RenderedContext | None, ContextManifest]:
+        self._summary_sources = {}
+        self._summary_call_count = 0
+        self._materialization_count = 0
         summaries = self._summaries(request)
         rejected: list[ManifestDecision] = []
         candidates: list[SourceSummary] = []
@@ -329,7 +335,7 @@ class ContextPlanner:
 
         materialized: list[ContextItem] = []
         compacted: list[CompactionResult] = []
-        source_by_id = self._source_by_item_id(selected, request)
+        source_by_id = self._source_by_item_id(selected)
         materialization_count = 0
         for summary in selected:
             if materialization_count >= self.policy.max_materializations:
@@ -352,6 +358,7 @@ class ContextPlanner:
                 return None, manifest
             item = source_by_id[summary.item_id].materialize(summary.item_id)
             materialization_count += 1
+            self._materialization_count = materialization_count
             item = self._normalize_item(item)
             invalid = self._validate_item(item, summary, request)
             if invalid:
@@ -433,7 +440,11 @@ class ContextPlanner:
         summaries: list[SourceSummary] = []
         max_calls = min(self.source_call_limit, self.policy.max_summary_calls)
         for source in self.sources[:max_calls]:
-            summaries.extend(source.summaries(request))
+            self._summary_call_count += 1
+            source_summaries = source.summaries(request)
+            for summary in source_summaries:
+                self._summary_sources[summary.item_id] = source
+            summaries.extend(source_summaries)
         return summaries
 
     def _validate_summary(
@@ -527,6 +538,7 @@ class ContextPlanner:
                 excluded.append(
                     ManifestDecision(
                         item_id=item_id,
+                        source_id="missing",
                         source_kind=SourceKind.EVIDENCE,
                         authority=AuthorityLevel.VERIFIED_EVIDENCE,
                         trust=TrustLabel.VERIFIED_DATA,
@@ -542,14 +554,8 @@ class ContextPlanner:
             raise ValueError("planner selected duplicate context items")
         return selected, excluded, TerminalReason.READY
 
-    def _source_by_item_id(
-        self, selected: list[SourceSummary], request: ContextRequest
-    ) -> dict[str, ContextSource]:
-        by_id: dict[str, ContextSource] = {}
-        for source in self.sources:
-            for summary in source.summaries(request):
-                by_id[summary.item_id] = source
-        return {summary.item_id: by_id[summary.item_id] for summary in selected}
+    def _source_by_item_id(self, selected: list[SourceSummary]) -> dict[str, ContextSource]:
+        return {summary.item_id: self._summary_sources[summary.item_id] for summary in selected}
 
     def _compact(self, item: ContextItem) -> tuple[ContextItem, CompactionResult]:
         decisions = re.findall(r"Decision:[^.]+\.", item.text)
@@ -691,6 +697,7 @@ class ContextPlanner:
     ) -> ManifestDecision:
         return ManifestDecision(
             item_id=item.item_id,
+            source_id=item.provenance.source_id,
             source_kind=item.source_kind,
             authority=item.authority,
             trust=item.trust,
@@ -728,6 +735,8 @@ class ContextPlanner:
             input_tokens=input_tokens,
             monolith_tokens=monolith_tokens,
             planned_token_reduction=max(0, monolith_tokens - input_tokens),
+            summary_calls=self._summary_call_count,
+            materializations=self._materialization_count,
         )
 
     def _monolith_tokens(self, candidates: list[SourceSummary], request: ContextRequest) -> int:
@@ -837,6 +846,26 @@ def run_context_verification(evidence_dir: Path) -> dict[str, object]:
         "chapter2_gates_preserved": True,
     }
     (evidence_dir / "token_report.json").write_text(json.dumps(token_report, indent=2), encoding="utf-8")
+    stable_prefix_report = {
+        "stable_prefix_hash": manifest.stable_prefix_hash,
+        "full_context_hash": manifest.full_context_hash,
+        "summary_calls": manifest.summary_calls,
+        "materializations": manifest.materializations,
+        "stable_prefix_reused": manifest.stable_prefix_hash is not None,
+    }
+    (evidence_dir / "stable_prefix_report.json").write_text(
+        json.dumps(stable_prefix_report, indent=2), encoding="utf-8"
+    )
+    ab_trace = {
+        "baseline": {"mode": "monolith", "input_tokens": manifest.monolith_tokens},
+        "planned": {
+            "mode": "planned_context",
+            "input_tokens": manifest.input_tokens,
+            "token_reduction": manifest.planned_token_reduction,
+            "terminal_reason": manifest.terminal_reason.value,
+        },
+    }
+    (evidence_dir / "ab_trace.json").write_text(json.dumps(ab_trace, indent=2), encoding="utf-8")
     summary = {"passed": passed, **token_report}
     (evidence_dir / "context_result.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     return summary

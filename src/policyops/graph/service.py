@@ -28,6 +28,7 @@ from policyops.graph.schemas import (
     GraphScorecard,
     PathStatus,
     RepairReceipt,
+    SnapshotActivation,
     SnapshotManifest,
 )
 
@@ -51,19 +52,18 @@ class GraphSnapshot:
         self._conn.execute("PRAGMA synchronous=NORMAL")
         self._init_schema()
         if self._is_empty():
-            self.manifest = SnapshotManifest(
-                snapshot_id=snapshot_id,
-                source_manifest_generation=1,
-                extraction_version="extract-fixture-v1",
-                tenant_ids=["tenant_alpha", "tenant_beta"],
-                content_hash="pending",
-                active=True,
+            self._load_defaults(snapshot_id=snapshot_id)
+            self._persist_version(self._state_payload())
+            self._record_activation(
+                SnapshotActivation(
+                    activation_id=f"activate-{snapshot_id}",
+                    previous_snapshot_id=None,
+                    activated_snapshot_id=snapshot_id,
+                    reason="initial_load",
+                )
             )
-            self._load_defaults()
-            manifest = self.manifest.model_copy(update={"content_hash": self.content_hash()})
-            self.manifest = manifest
         else:
-            self.manifest = self.manifest.model_copy(update={"content_hash": self.content_hash()})
+            self.manifest = self.manifest.model_copy(update={"content_hash": self.content_hash(), "active": True})
 
     def _init_schema(self) -> None:
         with self._conn:
@@ -99,6 +99,21 @@ class GraphSnapshot:
 
                 CREATE TABLE IF NOT EXISTS deleted_claims (
                     claim_id TEXT PRIMARY KEY
+                );
+
+                CREATE TABLE IF NOT EXISTS snapshot_versions (
+                    snapshot_id TEXT PRIMARY KEY,
+                    payload_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS snapshot_activations (
+                    activation_id TEXT PRIMARY KEY,
+                    activation_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS repair_receipts (
+                    repair_id TEXT PRIMARY KEY,
+                    receipt_json TEXT NOT NULL
                 );
                 """
             )
@@ -217,7 +232,7 @@ class GraphSnapshot:
                 [(claim_id,) for claim_id in sorted(payload)],
             )
 
-    def _load_defaults(self) -> None:
+    def _load_defaults(self, *, snapshot_id: str) -> None:
         self.entities = {
             "ent_remote_work": Entity(
                 entity_id="ent_remote_work",
@@ -339,6 +354,188 @@ class GraphSnapshot:
             "travel_policy": ["claim_travel_receipts"],
         }
         self.deleted_claims = set()
+        self.manifest = SnapshotManifest(
+            snapshot_id=snapshot_id,
+            source_manifest_generation=1,
+            extraction_version="extract-fixture-v1",
+            tenant_ids=["tenant_alpha", "tenant_beta"],
+            content_hash="pending",
+            active=True,
+        )
+        self.manifest = self.manifest.model_copy(update={"content_hash": self.content_hash(), "active": True})
+
+    def _state_payload(self) -> dict[str, object]:
+        return {
+            "manifest": self.manifest.model_dump(mode="json"),
+            "entities": {k: v.model_dump(mode="json") for k, v in sorted(self.entities.items())},
+            "claims": {k: v.model_dump(mode="json") for k, v in sorted(self.claims.items())},
+            "edges": {k: list(v) for k, v in sorted(self.edges.items())},
+            "communities": {k: list(v) for k, v in sorted(self.communities.items())},
+            "deleted_claims": sorted(self.deleted_claims),
+        }
+
+    def _expected_content_hash(self, payload: dict[str, object]) -> str:
+        return sha_json(
+            {
+                "entities": payload["entities"],
+                "claims": payload["claims"],
+                "deleted": payload["deleted_claims"],
+            }
+        )
+
+    def _load_state_payload(self, payload: dict[str, object]) -> None:
+        manifest = SnapshotManifest.model_validate(payload["manifest"])
+        entities = {
+            entity_id: Entity.model_validate(entity_payload)
+            for entity_id, entity_payload in dict(payload["entities"]).items()
+        }
+        claims = {
+            claim_id: ClaimRef.model_validate(claim_payload)
+            for claim_id, claim_payload in dict(payload["claims"]).items()
+        }
+        edges = {entity_id: list(claim_ids) for entity_id, claim_ids in dict(payload["edges"]).items()}
+        communities = {
+            community_id: list(claim_ids)
+            for community_id, claim_ids in dict(payload["communities"]).items()
+        }
+        deleted_claims = set(payload["deleted_claims"])
+        expected_hash = self._expected_content_hash(payload)
+        if manifest.content_hash != expected_hash:
+            raise ValueError("tampered snapshot content hash")
+        with self._conn:
+            self._conn.execute("DELETE FROM entities")
+            self._conn.executemany(
+                "INSERT INTO entities(entity_id, tenant_id, entity_json) VALUES (?, ?, ?)",
+                [
+                    (entity_id, entity.tenant_id, self._dump(entity.model_dump(mode="json")))
+                    for entity_id, entity in entities.items()
+                ],
+            )
+            self._conn.execute("DELETE FROM claims")
+            self._conn.executemany(
+                "INSERT INTO claims(claim_id, tenant_id, source_id, claim_json) VALUES (?, ?, ?, ?)",
+                [
+                    (claim_id, claim.tenant_id, claim.source_id, self._dump(claim.model_dump(mode="json")))
+                    for claim_id, claim in claims.items()
+                ],
+            )
+            self._conn.execute("DELETE FROM edges")
+            self._conn.executemany(
+                "INSERT INTO edges(entity_id, edge_json) VALUES (?, ?)",
+                [(entity_id, self._dump(claim_ids)) for entity_id, claim_ids in edges.items()],
+            )
+            self._conn.execute("DELETE FROM communities")
+            self._conn.executemany(
+                "INSERT INTO communities(community_id, community_json) VALUES (?, ?)",
+                [(community_id, self._dump(claim_ids)) for community_id, claim_ids in communities.items()],
+            )
+            self._conn.execute("DELETE FROM deleted_claims")
+            self._conn.executemany(
+                "INSERT INTO deleted_claims(claim_id) VALUES (?)",
+                [(claim_id,) for claim_id in sorted(deleted_claims)],
+            )
+            self._conn.execute(
+                """
+                INSERT INTO snapshot_meta(key, value) VALUES ('manifest', ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """,
+                (self._dump(manifest.model_dump(mode="json")),),
+            )
+
+    def _persist_version(self, payload: dict[str, object]) -> None:
+        manifest = SnapshotManifest.model_validate(payload["manifest"])
+        if manifest.content_hash != self._expected_content_hash(payload):
+            raise ValueError("snapshot manifest hash mismatch")
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO snapshot_versions(snapshot_id, payload_json) VALUES (?, ?)
+                ON CONFLICT(snapshot_id) DO UPDATE SET payload_json = excluded.payload_json
+                """,
+                (manifest.snapshot_id, self._dump(payload)),
+            )
+
+    def list_snapshot_ids(self) -> list[str]:
+        rows = self._conn.execute(
+            "SELECT snapshot_id FROM snapshot_versions ORDER BY snapshot_id"
+        ).fetchall()
+        return [row["snapshot_id"] for row in rows]
+
+    def clone(self, snapshot_id: str) -> GraphSnapshot:
+        payload = self._state_payload()
+        clone = GraphSnapshot(snapshot_id=snapshot_id)
+        manifest = SnapshotManifest.model_validate(payload["manifest"]).model_copy(
+            update={"snapshot_id": snapshot_id, "active": False}
+        )
+        candidate_payload = {**payload, "manifest": manifest.model_dump(mode="json")}
+        candidate_payload["manifest"]["content_hash"] = self._expected_content_hash(candidate_payload)
+        clone._load_state_payload(candidate_payload)
+        clone.manifest = SnapshotManifest.model_validate(candidate_payload["manifest"])
+        return clone
+
+    def store_snapshot(self, snapshot: GraphSnapshot) -> None:
+        self._persist_version(snapshot._state_payload())
+
+    def load_snapshot(self, snapshot_id: str) -> None:
+        row = self._conn.execute(
+            "SELECT payload_json FROM snapshot_versions WHERE snapshot_id = ?",
+            (snapshot_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(snapshot_id)
+        payload = self._load_json(row["payload_json"])
+        payload["manifest"]["active"] = True
+        self._load_state_payload(payload)
+        self.manifest = self.manifest.model_copy(update={"active": True})
+
+    def _record_activation(self, activation: SnapshotActivation) -> None:
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO snapshot_activations(activation_id, activation_json) VALUES (?, ?)",
+                (activation.activation_id, self._dump(activation.model_dump(mode="json"))),
+            )
+
+    def activation_history(self) -> list[SnapshotActivation]:
+        rows = self._conn.execute(
+            "SELECT activation_json FROM snapshot_activations ORDER BY rowid"
+        ).fetchall()
+        return [SnapshotActivation.model_validate(self._load_json(row["activation_json"])) for row in rows]
+
+    def activate_snapshot(
+        self,
+        snapshot_id: str,
+        *,
+        reason: str,
+        activation_id: str,
+        rollback_of: str | None = None,
+    ) -> SnapshotActivation:
+        previous_snapshot_id = self.manifest.snapshot_id
+        self.load_snapshot(snapshot_id)
+        activation = SnapshotActivation(
+            activation_id=activation_id,
+            previous_snapshot_id=previous_snapshot_id,
+            activated_snapshot_id=snapshot_id,
+            reason=reason,
+            rollback_of=rollback_of,
+        )
+        self._record_activation(activation)
+        return activation
+
+    def repair_receipt(self, repair_id: str) -> RepairReceipt | None:
+        row = self._conn.execute(
+            "SELECT receipt_json FROM repair_receipts WHERE repair_id = ?",
+            (repair_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return RepairReceipt.model_validate(self._load_json(row["receipt_json"]))
+
+    def record_repair_receipt(self, receipt: RepairReceipt) -> None:
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO repair_receipts(repair_id, receipt_json) VALUES (?, ?)",
+                (receipt.repair_id, self._dump(receipt.model_dump(mode="json"))),
+            )
 
     def content_hash(self) -> str:
         payload = {
@@ -372,7 +569,6 @@ class GraphSnapshot:
 class GraphService:
     def __init__(self, snapshot: GraphSnapshot | None = None, retriever: HybridRetriever | None = None) -> None:
         self.snapshot = snapshot or GraphSnapshot()
-        self.previous_snapshots: dict[str, GraphSnapshot] = {}
         self.retriever = retriever or HybridRetriever()
 
     def resolve_entity(self, query: str, tenant_id: str) -> tuple[str | None, list[str]]:
@@ -591,9 +787,13 @@ class GraphService:
         )
 
     def repair(self, action: str, source_id: str, repair_id: str) -> RepairReceipt:
+        existing = self.snapshot.repair_receipt(repair_id)
+        if existing is not None:
+            return existing
         before = self.snapshot
+        previous_snapshot_id = before.manifest.snapshot_id
         before_hash = self._unrelated_hash(exclude_source=source_id)
-        candidate = GraphSnapshot(snapshot_id=f"{before.manifest.snapshot_id}-{repair_id}")
+        candidate = before.clone(snapshot_id=f"{previous_snapshot_id}-{repair_id}")
         if action == "correct":
             candidate.update_claim(
                 candidate.claims["claim_remote_days_v2"].model_copy(update={"value": "2", "confidence": 0.99})
@@ -609,20 +809,35 @@ class GraphService:
             affected = ["claim_remote_days_conflict"]
         else:
             raise ValueError(action)
-        candidate.manifest = candidate.manifest.model_copy(update={"content_hash": candidate.content_hash()})
-        self.previous_snapshots[before.manifest.snapshot_id] = before
-        self.snapshot = candidate
+        candidate.manifest = candidate.manifest.model_copy(update={"content_hash": candidate.content_hash(), "active": False})
+        self.snapshot.store_snapshot(candidate)
+        activation = self.snapshot.activate_snapshot(
+            candidate.manifest.snapshot_id,
+            reason=f"repair:{action}",
+            activation_id=f"activate-{repair_id}",
+        )
         after_hash = self._unrelated_hash(exclude_source=source_id)
-        return RepairReceipt(
+        receipt = RepairReceipt(
             repair_id=repair_id,
             action=action,  # type: ignore[arg-type]
             source_id=source_id,
-            previous_snapshot_id=before.manifest.snapshot_id,
+            activation_id=activation.activation_id,
+            previous_snapshot_id=previous_snapshot_id,
             candidate_snapshot_id=candidate.manifest.snapshot_id,
-            activated_snapshot_id=candidate.manifest.snapshot_id,
+            activated_snapshot_id=activation.activated_snapshot_id,
             affected_claim_ids=affected,
             unrelated_region_hash_before=before_hash,
             unrelated_region_hash_after=after_hash,
+        )
+        self.snapshot.record_repair_receipt(receipt)
+        return receipt
+
+    def rollback(self, snapshot_id: str, rollback_id: str) -> SnapshotActivation:
+        return self.snapshot.activate_snapshot(
+            snapshot_id,
+            reason="rollback",
+            activation_id=rollback_id,
+            rollback_of=self.snapshot.manifest.snapshot_id,
         )
 
     def _unrelated_hash(self, *, exclude_source: str) -> str:
@@ -664,6 +879,7 @@ def run_graph_verification(evidence_dir: Path) -> dict[str, object]:
     )
     timeout = service.query(fixture_queries()[1], force_timeout=True)
     repair = service.repair("delete", "policy_conflict", "repair-delete-conflict")
+    rollback = service.rollback(repair.previous_snapshot_id, "rollback-verify")
     lineage_total = sum(len(r.path.claim_refs) for r in results if r.path)
     lineage_ok = 0
     for result in results:
@@ -721,6 +937,24 @@ def run_graph_verification(evidence_dir: Path) -> dict[str, object]:
     )
     (evidence_dir / "graph_scorecard.json").write_text(scorecard.model_dump_json(indent=2), encoding="utf-8")
     (evidence_dir / "repair_receipt.json").write_text(repair.model_dump_json(indent=2), encoding="utf-8")
+    (evidence_dir / "snapshot_activations.json").write_text(
+        json.dumps(
+            [activation.model_dump(mode="json") for activation in service.snapshot.activation_history()],
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (evidence_dir / "snapshot_registry.json").write_text(
+        json.dumps(
+            {
+                "active_snapshot_id": service.snapshot.manifest.snapshot_id,
+                "available_snapshot_ids": service.snapshot.list_snapshot_ids(),
+                "rollback_activation": rollback.model_dump(mode="json"),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     (evidence_dir / "graph_faults.json").write_text(
         json.dumps(
             {

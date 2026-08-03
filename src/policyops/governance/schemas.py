@@ -144,6 +144,18 @@ class RightsRequest(StrictModel):
     scope: str
 
 
+class RightsTaskRecord(StrictModel):
+    task_id: str
+    store: str
+    request_type: Literal["correction", "export", "deletion"]
+    status: Literal["pending", "completed", "failed"]
+    completed_at: int | None = None
+    verifier_passed: bool = False
+    exception: str | None = None
+    retention_basis: str | None = None
+    follow_up_at: int | None = None
+
+
 class StoreReceipt(StrictModel):
     store: str
     action: str
@@ -159,6 +171,8 @@ class RightsReceipt(StrictModel):
     request_id: str
     tenant_id: str
     store_inventory_version: str
+    workflow_id: str | None = None
+    request_digest: str | None = None
     stores: list[StoreReceipt]
     complete: bool
     signed_hash: str

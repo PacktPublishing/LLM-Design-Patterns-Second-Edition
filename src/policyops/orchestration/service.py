@@ -65,11 +65,22 @@ class BudgetManager:
         budget.reserved_workers += workers
         return True
 
-    def consume_and_release(self, budget: BudgetLedger, *, workers: int, model_calls: int = 0, tool_calls: int = 0) -> None:
+    def consume_and_release(
+        self,
+        budget: BudgetLedger,
+        *,
+        workers: int,
+        model_calls: int = 0,
+        tool_calls: int = 0,
+        tokens: int = 0,
+        spend_cents: int = 0,
+    ) -> None:
         budget.reserved_workers = max(0, budget.reserved_workers - workers)
         budget.consumed_workers += workers
         budget.consumed_model_calls += model_calls
         budget.consumed_tool_calls += tool_calls
+        budget.consumed_tokens += tokens
+        budget.consumed_spend_cents += spend_cents
 
     def cancel_release(self, budget: BudgetLedger) -> None:
         budget.reserved_workers = 0
@@ -480,7 +491,15 @@ class TriageEngine:
         self.worker_results.extend(results)
         findings, reason = self.merger.merge(valid_tasks, results)
         state.findings.extend(findings)
-        self.budgets.consume_and_release(state.budget, workers=2, tool_calls=1)
+        consumed_tokens = sum(result.usage_tokens for result in results)
+        consumed_spend_cents = max(1, consumed_tokens // 100)
+        self.budgets.consume_and_release(
+            state.budget,
+            workers=2,
+            tool_calls=1,
+            tokens=consumed_tokens,
+            spend_cents=consumed_spend_cents,
+        )
         self._record_budget_entry(state, "consume")
         if reason:
             self._record_transition(

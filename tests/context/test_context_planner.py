@@ -23,6 +23,16 @@ from policyops.context import (
 )
 
 
+class TrackingFixtureSource(FixtureSource):
+    def __init__(self, source_kind: SourceKind, items: list[ContextItem]) -> None:
+        super().__init__(source_kind, items)
+        self.summary_calls = 0
+
+    def summaries(self, request):  # type: ignore[override]
+        self.summary_calls += 1
+        return super().summaries(request)
+
+
 def test_fixture_plan_is_deterministic_and_reduces_monolith_tokens() -> None:
     first_rendered, first_manifest = ContextPlanner().plan(fixture_request())
     second_rendered, second_manifest = ContextPlanner().plan(fixture_request())
@@ -135,16 +145,25 @@ def test_stable_prefix_precedes_variable_context_and_has_own_fingerprint() -> No
 
 
 def test_lazy_materialization_only_loads_selected_items() -> None:
-    evidence_source = fixture_sources()[2]
     planner = ContextPlanner(sources=fixture_sources())
     rendered, manifest = planner.plan(fixture_request(question="remote days only"))
     assert rendered is not None
     included_ids = {item.item_id for item in manifest.included}
     assert "evidence.stale_policy" not in included_ids
     assert "evidence.remote_work" in included_ids
-    # The separately captured fixture source proves adapter state starts empty;
-    # planner-owned source instances record calls internally without loading all summaries.
-    assert evidence_source.materialized_ids == []
+
+
+def test_source_summaries_are_memoized_for_materialization_lookup() -> None:
+    tracked_sources = [
+        TrackingFixtureSource(source.source_kind, list(source._items.values()))  # type: ignore[attr-defined]
+        for source in fixture_sources()
+    ]
+    planner = ContextPlanner(sources=tracked_sources)
+    rendered, manifest = planner.plan(fixture_request(question="remote days only"))
+    assert rendered is not None
+    assert manifest.summary_calls == len(tracked_sources)
+    assert all(source.summary_calls == 1 for source in tracked_sources)
+    assert manifest.materializations == len(manifest.included)
 
 
 def test_sensitivity_policy_rejects_confidential_item_for_internal_request() -> None:
@@ -239,6 +258,21 @@ def test_verification_writes_redacted_evidence(tmp_path: Path) -> None:
     assert result["passed"] is True
     assert (tmp_path / "context_manifest.json").exists()
     assert (tmp_path / "token_report.json").exists()
+    assert (tmp_path / "stable_prefix_report.json").exists()
+    assert (tmp_path / "ab_trace.json").exists()
     assert "SECRET_DO_NOT_RENDER" not in (tmp_path / "context_manifest.json").read_text(
         encoding="utf-8"
     )
+
+
+def test_manifest_preserves_source_ids_for_included_and_missing_items() -> None:
+    rendered, manifest = ContextPlanner().plan(fixture_request())
+    assert rendered is not None
+    remote_work = next(item for item in manifest.included if item.item_id == "evidence.remote_work")
+    assert remote_work.source_id == "evidence-fixture"
+
+    _, missing_manifest = ContextPlanner(sources=fixture_sources(missing_required=True)).plan(
+        fixture_request()
+    )
+    missing = next(item for item in missing_manifest.excluded if item.item_id == "evidence.remote_work")
+    assert missing.source_id == "missing"

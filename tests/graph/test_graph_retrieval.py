@@ -121,11 +121,46 @@ def test_repair_delete_atomic_swap_preserves_unrelated_region_hash() -> None:
     assert "claim_remote_days_conflict" not in {claim.claim_id for claim in result.path.claim_refs}
 
 
+def test_repair_replay_returns_original_receipt_without_new_activation(tmp_path: Path) -> None:
+    db_path = tmp_path / "graph.sqlite3"
+    service = GraphService(snapshot=GraphSnapshot(db_path=db_path))
+    first = service.repair("delete", "policy_conflict", "repair-replay")
+    second = service.repair("delete", "policy_conflict", "repair-replay")
+
+    assert second == first
+    assert [activation.activation_id for activation in service.snapshot.activation_history()] == [
+        "activate-graph-snapshot-v1",
+        "activate-repair-replay",
+    ]
+
+
+def test_rollback_restores_prior_snapshot_and_persists_activation_history(tmp_path: Path) -> None:
+    db_path = tmp_path / "graph.sqlite3"
+    service = GraphService(snapshot=GraphSnapshot(db_path=db_path))
+    receipt = service.repair("delete", "policy_conflict", "repair-rollback")
+    rollback = service.rollback(receipt.previous_snapshot_id, "rollback-1")
+
+    assert rollback.activated_snapshot_id == receipt.previous_snapshot_id
+    result = service.query(_query("remote days conflict", as_of=date(2025, 6, 1)))
+    assert result.path is not None
+    assert "claim_remote_days_conflict" in {claim.claim_id for claim in result.path.claim_refs}
+
+    reloaded = GraphService(snapshot=GraphSnapshot(db_path=db_path))
+    assert reloaded.snapshot.manifest.snapshot_id == receipt.previous_snapshot_id
+    assert [activation.activation_id for activation in reloaded.snapshot.activation_history()] == [
+        "activate-graph-snapshot-v1",
+        "activate-repair-rollback",
+        "rollback-1",
+    ]
+
+
 def test_fixture_verification_writes_scorecard_and_adr(tmp_path: Path) -> None:
     scorecard = run_graph_verification(tmp_path)
     assert scorecard["gates_passed"] is True
     assert (tmp_path / "graph_scorecard.json").exists()
     assert (tmp_path / "graph_vs_rag_adr.json").exists()
+    assert (tmp_path / "snapshot_activations.json").exists()
+    assert (tmp_path / "snapshot_registry.json").exists()
 
 
 def test_fixture_query_routes_are_deterministic() -> None:
@@ -148,3 +183,13 @@ def test_sqlite_backed_graph_snapshot_persists_repairs_across_fresh_instances(tm
 
     assert "claim_remote_days_conflict" in reloaded.deleted_claims
     assert reloaded.claims["claim_remote_days_v2"].confidence == 0.99
+
+
+def test_sqlite_backed_graph_service_persists_repair_receipts(tmp_path: Path) -> None:
+    db_path = tmp_path / "graph.sqlite3"
+    service = GraphService(snapshot=GraphSnapshot(db_path=db_path))
+    receipt = service.repair("delete", "policy_conflict", "repair-persisted")
+
+    reloaded = GraphService(snapshot=GraphSnapshot(db_path=db_path))
+
+    assert reloaded.snapshot.repair_receipt("repair-persisted") == receipt

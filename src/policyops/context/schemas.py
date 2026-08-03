@@ -157,6 +157,7 @@ class ContextPolicy(StrictModel):
 
 class ManifestDecision(StrictModel):
     item_id: str
+    source_id: str
     source_kind: SourceKind
     authority: AuthorityLevel
     trust: TrustLabel
@@ -212,6 +213,8 @@ class ContextManifest(StrictModel):
     input_tokens: int = 0
     monolith_tokens: int = 0
     planned_token_reduction: int = 0
+    summary_calls: int = 0
+    materializations: int = 0
 
     @model_validator(mode="after")
     def _required_fields_for_ready(self) -> ContextManifest:

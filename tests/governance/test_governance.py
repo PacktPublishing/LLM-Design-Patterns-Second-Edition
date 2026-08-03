@@ -67,6 +67,27 @@ def test_rights_receipt_covers_all_inventory_stores_and_blocks_partial_coverage(
     assert unauthenticated.complete is False
 
 
+def test_rights_requests_reuse_scoped_workflow_and_persist_per_store_task_state() -> None:
+    inventory = GovernanceFixture().inventory()
+    orchestrator = RightsOrchestrator(inventory)
+    request = RightsRequest(
+        request_id="delete-test",
+        tenant_id="tenant-alpha",
+        subject_id="subject-42",
+        request_type="deletion",
+        authenticated=True,
+        scope="policyops user records",
+    )
+    first = orchestrator.process(request, miss_store="trace_store")
+    second = orchestrator.process(request.model_copy(update={"request_id": "delete-test-retry"}))
+    workflow = orchestrator.workflow(request)
+    assert first.workflow_id == second.workflow_id
+    assert first.request_digest == second.request_digest
+    assert len(workflow) == len(inventory.stores)
+    assert all(task.status == "completed" for task in workflow)
+    assert all(task.verifier_passed for task in workflow)
+
+
 def test_signature_role_mismatch_is_rejected() -> None:
     fixture = GovernanceFixture()
     evidence = fixture.evidence()[0]

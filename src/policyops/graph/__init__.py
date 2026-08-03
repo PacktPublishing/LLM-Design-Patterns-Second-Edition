@@ -11,6 +11,7 @@ from policyops.graph.schemas import (
     GraphScorecard,
     PathStatus,
     RepairReceipt,
+    SnapshotActivation,
     SnapshotManifest,
 )
 from policyops.graph.service import (
@@ -34,6 +35,7 @@ __all__ = [
     "GraphSnapshot",
     "PathStatus",
     "RepairReceipt",
+    "SnapshotActivation",
     "SnapshotManifest",
     "fixture_queries",
     "run_graph_verification",
