@@ -485,8 +485,7 @@ class CapstoneVerifier:
         seeded_steps = self.game_day.run(seeded_failure_step=4)
         governance_verification = GovernanceVerification()
         governance = governance_verification.final_decision()
-        correction_receipt, deletion_receipt = governance_verification.rights_receipts()
-        rights_receipts = [correction_receipt, deletion_receipt]
+        rights_receipts = list(governance_verification.rights_receipts())
         bundle = self.bundle(closure, steps, governance, rights_receipts)
         decision = self.decide(closure, steps, bundle, governance, seeded_failure_proven=True)
         seeded_bundle = self.bundle(closure, seeded_steps, governance, rights_receipts)

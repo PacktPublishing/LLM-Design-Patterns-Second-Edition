@@ -536,7 +536,7 @@ class GovernanceVerification:
         self.gate = ReleaseGate(self.fixture)
         self.inventory = self.fixture.inventory()
 
-    def rights_receipts(self) -> tuple[RightsReceipt, RightsReceipt]:
+    def rights_receipts(self) -> tuple[RightsReceipt, RightsReceipt, RightsReceipt]:
         orchestrator = RightsOrchestrator(self.inventory)
         deletion = RightsRequest(
             request_id="rights-delete-001",
@@ -547,7 +547,8 @@ class GovernanceVerification:
             scope="policyops user records",
         )
         correction = deletion.model_copy(update={"request_id": "rights-correct-001", "request_type": "correction"})
-        return orchestrator.process(correction), orchestrator.process(deletion)
+        export = deletion.model_copy(update={"request_id": "rights-export-001", "request_type": "export"})
+        return orchestrator.process(correction), orchestrator.process(export), orchestrator.process(deletion)
 
     def invalid_evidence_decisions(self) -> list[ReleaseDecision]:
         owners = self.fixture.owners()
@@ -573,11 +574,11 @@ class GovernanceVerification:
         ]
 
     def final_decision(self) -> ReleaseDecision:
-        _, deletion = self.rights_receipts()
+        _, _, deletion = self.rights_receipts()
         return self.gate.review(rights_receipt=deletion)
 
     def scorecard(self) -> tuple[GovernanceScorecard, dict[str, Any]]:
-        correction, deletion = self.rights_receipts()
+        correction, export, deletion = self.rights_receipts()
         final_one = self.final_decision()
         final_two = self.final_decision()
         invalid = self.invalid_evidence_decisions()
@@ -594,7 +595,7 @@ class GovernanceVerification:
             high_risk_paths_resolved=final_one.decision == Decision.GO,
             invalid_evidence_cases_blocked=sum(1 for decision in invalid if decision.decision == Decision.NO_GO),
             independent_approver_valid=final_one.approver_id == "owner-release",
-            rights_receipt_complete=deletion.complete and correction.complete,
+            rights_receipt_complete=deletion.complete and correction.complete and export.complete,
             transparency_notice_consistent=set(notice.tools_and_actions).issubset(set(self.inventory.tools)),
             deterministic_digest=final_one.decision_digest == final_two.decision_digest,
             agent_self_approval_denied=self.gate.review(approver_id="agent-policyops", producer_id="agent-policyops").decision == Decision.NO_GO,
@@ -608,7 +609,11 @@ class GovernanceVerification:
             "approval_matrix": [policy.model_dump(mode="json") for policy in self.fixture.approval_policies()],
             "graph": graph,
             "evidence": [item.model_dump(mode="json") for item in self.fixture.evidence()],
-            "rights_receipts": [correction.model_dump(mode="json"), deletion.model_dump(mode="json")],
+            "rights_receipts": [
+                correction.model_dump(mode="json"),
+                export.model_dump(mode="json"),
+                deletion.model_dump(mode="json"),
+            ],
             "notice": notice.model_dump(mode="json"),
             "invalid_decisions": [decision.model_dump(mode="json") for decision in invalid],
             "final_decision": final_one.model_dump(mode="json"),

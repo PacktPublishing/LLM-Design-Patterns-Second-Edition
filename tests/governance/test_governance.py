@@ -126,6 +126,11 @@ def test_governance_scorecard_passes_after_authorized_remediation() -> None:
     assert scorecard.high_risk_paths_resolved is True
     assert scorecard.invalid_evidence_cases_blocked >= 5
     assert scorecard.agent_self_approval_denied is True
+    assert {receipt["request_id"] for receipt in evidence["rights_receipts"]} == {
+        "rights-correct-001",
+        "rights-export-001",
+        "rights-delete-001",
+    }
     assert evidence["graph"]["nodes"]
     assert evidence["graph"]["edges"]
     assert evidence["final_decision"]["decision"] == "GO"
@@ -162,6 +167,12 @@ def test_governance_verifier_writes_required_evidence(tmp_path) -> None:
     ]
     for name in required:
         assert (tmp_path / name).exists(), name
+    receipts = __import__("json").loads((tmp_path / "rights_receipts.json").read_text(encoding="utf-8"))
+    assert {receipt["request_id"] for receipt in receipts} == {
+        "rights-correct-001",
+        "rights-export-001",
+        "rights-delete-001",
+    }
     graph = __import__("json").loads((tmp_path / "control_evidence_graph.json").read_text(encoding="utf-8"))
     assert graph["graph_version"] == "1"
     assert graph["nodes"]
