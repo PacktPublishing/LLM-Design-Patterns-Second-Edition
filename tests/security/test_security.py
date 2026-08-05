@@ -140,6 +140,14 @@ def test_sandbox_and_secret_controls_fail_closed() -> None:
     assert guard.probe(profile, "network") == ReasonCode.EGRESS_DENIED
 
 
+def test_attack_corpus_includes_real_filesystem_probe_case() -> None:
+    harness = AttackHarness()
+    results = {case.attack_id: harness.run_case(case) for case in harness.corpus()}
+    assert "atk-filesystem" in results
+    assert results["atk-filesystem"].reason_code == ReasonCode.SANDBOX_DENIED
+    assert results["atk-filesystem"].unauthorized_effects == 0
+
+
 def test_integrity_and_revocation_fail_closed() -> None:
     verifier = IntegrityVerifier()
     assert (
@@ -192,6 +200,7 @@ def test_attack_corpus_report_holds_security_gates() -> None:
     assert report.revoked_invocations_allowed == 0
     assert report.benign_false_positive_rate == 0.0
     assert report.prohibited_cases_failed_safely == 1
+    assert report.denied_filesystem_probes == 1
     mapped_tests = {
         test_id
         for entry in harness.threat_model()

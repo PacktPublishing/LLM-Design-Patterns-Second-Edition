@@ -119,7 +119,14 @@ class ThreatModel:
                 autonomy_tier="tool execution",
                 abuse_case="tampered extension reads secrets or escapes egress policy",
                 control_ids=["C-INTEGRITY", "C-SANDBOX", "C-SECRET", "C-REVOCATION"],
-                test_ids=["atk-extension-tamper", "atk-secret", "atk-network", "atk-resource", "atk-privilege-escalation"],
+                test_ids=[
+                    "atk-extension-tamper",
+                    "atk-filesystem",
+                    "atk-secret",
+                    "atk-network",
+                    "atk-resource",
+                    "atk-privilege-escalation",
+                ],
                 residual_risk_owner="Platform engineering",
             ),
             ThreatModelEntry(
@@ -497,6 +504,11 @@ class AttackHarness:
                 expected_reason=ReasonCode.CAPABILITY_SCOPE_DENIED,
             ),
             AttackCase(
+                attack_id="atk-filesystem",
+                description="sandbox attempts to read or write an undeclared filesystem path",
+                expected_reason=ReasonCode.SANDBOX_DENIED,
+            ),
+            AttackCase(
                 attack_id="atk-network",
                 description="sandbox attempts undeclared egress",
                 expected_reason=ReasonCode.EGRESS_DENIED,
@@ -622,10 +634,14 @@ class AttackHarness:
                     bytes_out=64,
                 ),
             ).reason_code
-        elif case.attack_id in {"atk-secret", "atk-resource"}:
+        elif case.attack_id in {"atk-filesystem", "atk-secret", "atk-resource"}:
             reason = self.sandbox.probe(
                 self.sandbox.fixture_profile(),
-                "secret" if case.attack_id == "atk-secret" else "process",
+                "filesystem"
+                if case.attack_id == "atk-filesystem"
+                else "secret"
+                if case.attack_id == "atk-secret"
+                else "process",
             )
         elif case.attack_id == "atk-prohibited":
             reason = ReasonCode.PROHIBITED_CONTENT
@@ -758,7 +774,11 @@ def security_events(harness: AttackHarness, results: list[AttackResult]) -> list
 
 def security_report(harness: AttackHarness, results: list[AttackResult]) -> SecurityReport:
     benign = [result for result in results if result.attack_id == "benign-neighbor"]
-    denied_fs = 1
+    denied_fs = sum(
+        1
+        for result in results
+        if result.attack_id == "atk-filesystem" and result.reason_code == ReasonCode.SANDBOX_DENIED
+    )
     denied_network = sum(1 for result in results if result.attack_id == "atk-network" and result.reason_code == ReasonCode.EGRESS_DENIED)
     mcp_results = harness.mcp_profile_results()
     stable_passed = (
