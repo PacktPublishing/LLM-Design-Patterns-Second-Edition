@@ -887,22 +887,10 @@ def verify(
         )
         eval_ok = summary.gates_passed
     elif lab == "ch03" and result.returncode == 0:
-        from policyops.adaptation import run_adaptation_pipeline
+        from policyops.adaptation import run_adaptation_verification
 
-        payload = run_adaptation_pipeline(
-            ROOT / "evals" / "adaptation" / "records.jsonl",
-            ROOT / "evals" / "adaptation" / "adapter_fixture.json",
-            evidence_dir,
-        )
-        eval_ok = payload["contamination"]["clean"] is True
-        # Also prove drills block release
-        blocked = run_adaptation_pipeline(
-            ROOT / "evals" / "adaptation" / "records.jsonl",
-            ROOT / "evals" / "adaptation" / "adapter_fixture.json",
-            evidence_dir / "drill_contamination",
-            inject_contamination=True,
-        )
-        eval_ok = eval_ok and blocked["decision"]["decision"] == "no_ship"
+        payload = run_adaptation_verification(evidence_dir)
+        eval_ok = payload["gates_passed"] is True
     elif lab == "ch04" and result.returncode == 0:
         from policyops.inference import run_gateway_verification
 

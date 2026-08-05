@@ -44,6 +44,8 @@ def evaluate_candidates(
     policy = release_policy or default_release_policy()
     baseline_cpso = cost_per_successful_outcome(baseline_metrics)
     candidate_gate_details: dict[str, dict[str, bool]] = {}
+    candidate_metric_details: dict[str, dict[str, float]] = {}
+    candidate_delta_details: dict[str, dict[str, float]] = {}
     eligible: list[AdaptationCandidate] = []
     for candidate in candidates:
         metrics = candidate.metrics
@@ -64,6 +66,23 @@ def evaluate_candidates(
             "quality_non_regress": metrics.get("quality", 0.0) >= baseline_metrics.get("quality", 0.0),
         }
         candidate_gate_details[candidate.candidate_id] = candidate_gates
+        candidate_metric_details[candidate.candidate_id] = metrics
+        candidate_delta_details[candidate.candidate_id] = {
+            "quality_delta": round(metrics.get("quality", 0.0) - baseline_metrics.get("quality", 0.0), 4),
+            "latency_delta_pct": round(
+                (
+                    (
+                        metrics.get("latency_ms", 0.0) - baseline_metrics.get("latency_ms", 0.0)
+                    )
+                    / max(baseline_metrics.get("latency_ms", 1.0), 1.0)
+                )
+                * 100,
+                4,
+            ),
+            "cost_delta": round(metrics.get("cost", 0.0) - baseline_metrics.get("cost", 0.0), 6),
+            "cpso_delta_pct": round(((cpso - baseline_cpso) / max(baseline_cpso, 1e-6)) * 100, 4),
+            "min_subgroup_pass_rate": round(min_subgroup_rate, 4),
+        }
         if all(candidate_gates.values()):
             eligible.append(candidate)
 
@@ -75,7 +94,12 @@ def evaluate_candidates(
             selected_candidate_kind=baseline.kind.value,
             approver_role="release_reviewer",
             rollback_target=baseline.rollback_target,
-            gate_evidence={"policy": policy, "candidate_gates": candidate_gate_details},
+            gate_evidence={
+                "policy": policy,
+                "candidate_gates": candidate_gate_details,
+                "candidate_metrics": candidate_metric_details,
+                "candidate_deltas": candidate_delta_details,
+            },
             decision_reason="mandatory_gate_failed",
             residual_risks=["no candidate cleared mandatory gates"],
             review_by="next-sprint",
@@ -103,7 +127,12 @@ def evaluate_candidates(
         selected_candidate_kind=winner.kind.value,
         approver_role="release_reviewer",
         rollback_target=winner.rollback_target,
-        gate_evidence={"policy": policy, "candidate_gates": candidate_gate_details},
+        gate_evidence={
+            "policy": policy,
+            "candidate_gates": candidate_gate_details,
+            "candidate_metrics": candidate_metric_details,
+            "candidate_deltas": candidate_delta_details,
+        },
         decision_reason="best_eligible_candidate_selected" if winner.kind != CandidateKind.BASELINE else "baseline_retained",
         residual_risks=[] if winner.kind != CandidateKind.BASELINE else ["simplest candidate retained"],
         review_by="90d",

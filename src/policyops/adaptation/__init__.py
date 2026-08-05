@@ -4,7 +4,7 @@ from policyops.adaptation.admission import admit_adapter, artifact_admission_rep
 from policyops.adaptation.contamination import contamination_report
 from policyops.adaptation.decision import evaluate_candidates, plan_training_run
 from policyops.adaptation.intake import build_dataset_manifest, load_records
-from policyops.adaptation.pipeline import run_adaptation_pipeline
+from policyops.adaptation.pipeline import run_adaptation_pipeline, run_adaptation_verification
 from policyops.adaptation.splits import deterministic_split
 
 __all__ = [
@@ -17,4 +17,5 @@ __all__ = [
     "load_records",
     "plan_training_run",
     "run_adaptation_pipeline",
+    "run_adaptation_verification",
 ]

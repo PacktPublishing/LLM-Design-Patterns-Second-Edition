@@ -16,6 +16,7 @@ from policyops.adaptation import (
     load_records,
     plan_training_run,
     run_adaptation_pipeline,
+    run_adaptation_verification,
 )
 from policyops.adaptation.schemas import ModelArtifact
 
@@ -45,13 +46,16 @@ def test_records_have_provenance() -> None:
 def test_pipeline_ships_or_explicit_no_adapt(tmp_path: Path) -> None:
     payload = run_adaptation_pipeline(RECORDS, ADAPTER, tmp_path / "ok")
     assert payload["contamination"]["clean"] is True
-    assert payload["decision"]["decision"] in {"ship", "no_ship"}
-    assert payload["decision"]["selected_candidate_id"]
+    assert payload["decision"]["decision"] == "ship"
+    assert payload["decision"]["selected_candidate_id"] == "retrieval-replay-v1"
     assert (tmp_path / "ok" / "result.json").exists()
     assert (tmp_path / "ok" / "dataset_card.json").exists()
     assert (tmp_path / "ok" / "model_card.json").exists()
     assert (tmp_path / "ok" / "artifact_admission.json").exists()
+    assert (tmp_path / "ok" / "candidate_reports.json").exists()
+    assert (tmp_path / "ok" / "comparison_report.json").exists()
     assert payload["artifact_admission"]["admitted"] is True
+    assert payload["candidate_matrix"]["retrieval-replay-v1"]["quality"] > payload["candidate_matrix"]["baseline"]["quality"]
 
 
 def test_contamination_blocks_release(tmp_path: Path) -> None:
@@ -70,6 +74,8 @@ def test_safety_regression_blocks_adapter(tmp_path: Path) -> None:
     assert payload["decision"]["decision"] in {"ship", "no_ship"}
     # Unsafe adapter must not be selected
     assert payload["decision"]["selected_candidate_id"] != "adapter-v1"
+    assert payload["decision"]["gate_evidence"]["candidate_gates"]["adapter-v1"]["safety"] is False
+    assert payload["decision"]["gate_evidence"]["candidate_gates"]["adapter-v1"]["authorization_regressions"] is False
 
 
 def test_contamination_detector_exact() -> None:
@@ -167,6 +173,17 @@ def test_baseline_can_win_as_explicit_no_adaptation(tmp_path: Path) -> None:
     # The unsafe adapter is blocked; the surviving winner is a non-adapter candidate.
     assert decision["selected_candidate_id"] != "adapter-v1"
     assert decision["decision"] in {"ship", "no_ship"}
+
+
+def test_adaptation_verification_writes_scorecard_and_drills(tmp_path: Path) -> None:
+    payload = run_adaptation_verification(tmp_path)
+    assert payload["gates_passed"] is True
+    assert (tmp_path / "adaptation_scorecard.json").exists()
+    assert (tmp_path / "safety_drill_report.json").exists()
+    scorecard = __import__("json").loads((tmp_path / "adaptation_scorecard.json").read_text(encoding="utf-8"))
+    assert scorecard["selected_candidate_id"] == "retrieval-replay-v1"
+    assert scorecard["contamination_drill_blocked"] is True
+    assert scorecard["safety_drill_blocked"] is True
 
 
 def test_dataset_manifest_captures_lineage_and_synthetic_breakdown() -> None:
