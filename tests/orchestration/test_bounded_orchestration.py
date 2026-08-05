@@ -177,6 +177,13 @@ def test_topology_comparison_prefers_simpler_path_when_gain_threshold_not_met() 
     comparison = run_topology_comparison(states)
     assert comparison.selected_variant == TopologyVariant.WORKFLOW
     assert "No-use ADR" in comparison.a2a_decision
+    metrics = {metric.variant: metric for metric in comparison.metrics}
+    assert metrics[TopologyVariant.WORKFLOW].risk_events == 0
+    assert metrics[TopologyVariant.SINGLE_AGENT].model_calls == 1
+    assert metrics[TopologyVariant.BROWSER].browser_actions == 2
+    assert metrics[TopologyVariant.ORCHESTRATOR_WORKER].worker_calls == 2
+    assert metrics[TopologyVariant.WORKFLOW].latency_ms < metrics[TopologyVariant.ORCHESTRATOR_WORKER].latency_ms
+    assert metrics[TopologyVariant.WORKFLOW].cost_per_successful_outcome_cents == metrics[TopologyVariant.WORKFLOW].estimated_cost_cents
 
 
 def test_fixture_verification_writes_orchestration_evidence(tmp_path: Path) -> None:
@@ -193,8 +200,14 @@ def test_fixture_verification_writes_orchestration_evidence(tmp_path: Path) -> N
     assert (tmp_path / "orchestration_scorecard.json").exists()
     invalid = __import__("json").loads((tmp_path / "invalid_delegation.json").read_text(encoding="utf-8"))
     scorecard = __import__("json").loads((tmp_path / "orchestration_scorecard.json").read_text(encoding="utf-8"))
+    comparison = __import__("json").loads((tmp_path / "topology_comparison.json").read_text(encoding="utf-8"))
     assert invalid["rejected"] is True
     assert scorecard["invalid_delegations_rejected"] == 1
+    workflow = next(metric for metric in comparison["metrics"] if metric["variant"] == "workflow")
+    worker = next(metric for metric in comparison["metrics"] if metric["variant"] == "orchestrator_worker")
+    assert workflow["risk_events"] == 0
+    assert worker["worker_calls"] == 2
+    assert worker["latency_ms"] > workflow["latency_ms"]
 
 
 def test_triage_runtime_persists_run_snapshots_and_idempotency(tmp_path: Path) -> None:

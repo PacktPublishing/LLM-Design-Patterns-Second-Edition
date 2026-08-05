@@ -869,32 +869,89 @@ class TriageRuntime:
 
 
 def run_topology_comparison(states: list[TaskState]) -> TopologyComparison:
+    return _run_topology_comparison(states)
+
+
+def _transition_elapsed_ms(state: TaskState, transition_events: list[TransitionEvent] | None = None) -> int:
+    run_events = [event for event in (transition_events or []) if event.run_id == state.run_id]
+    trace_steps = max(0, len(state.trace) - 1)
+    if run_events:
+        elapsed_steps = max(0, run_events[-1].occurred_at - run_events[0].occurred_at)
+    else:
+        elapsed_steps = trace_steps
+    return (
+        max(1, elapsed_steps) * 40
+        + state.model_calls * 90
+        + len(state.browser_actions) * 55
+        + state.budget.consumed_workers * 35
+        + max(0, state.budget.consumed_tool_calls - 1) * 20
+    )
+
+
+def _estimated_cost_cents(state: TaskState) -> int:
+    return (
+        state.budget.consumed_spend_cents
+        + state.budget.consumed_model_calls * 2
+        + max(0, state.budget.consumed_tool_calls - 1)
+        + max(0, len(state.browser_actions) - 1)
+    )
+
+
+def _risk_events(state: TaskState) -> int:
+    return int(state.model_calls > 0) + int(bool(state.browser_actions)) + int(state.budget.consumed_workers > 0) + int(
+        state.status != RunStatus.SUCCEEDED
+    )
+
+
+def _run_topology_comparison(
+    states: list[TaskState],
+    transition_events: list[TransitionEvent] | None = None,
+) -> TopologyComparison:
     metrics = [
         TopologyMetrics(
             variant=state.variant,
             task_success=state.status == RunStatus.SUCCEEDED,
-            latency_ms={
-                TopologyVariant.WORKFLOW: 40,
-                TopologyVariant.SINGLE_AGENT: 130,
-                TopologyVariant.BROWSER: 220,
-                TopologyVariant.ORCHESTRATOR_WORKER: 170,
-            }[state.variant],
+            latency_ms=_transition_elapsed_ms(state, transition_events),
             model_calls=state.model_calls,
             tool_calls=state.budget.consumed_tool_calls,
             worker_calls=state.budget.consumed_workers,
             browser_actions=len(state.browser_actions),
-            estimated_cost_cents=state.budget.consumed_model_calls + state.budget.consumed_workers,
-            risk_events=0 if state.status == RunStatus.SUCCEEDED else 1,
+            estimated_cost_cents=_estimated_cost_cents(state),
+            cost_per_successful_outcome_cents=(
+                _estimated_cost_cents(state) if state.status == RunStatus.SUCCEEDED else None
+            ),
+            trace_steps=len(state.trace),
+            risk_events=_risk_events(state),
         )
         for state in states
     ]
+    successful = [metric for metric in metrics if metric.task_success]
+    best_success = max((1 if metric.task_success else 0) for metric in metrics)
+    eligible = [metric for metric in successful if (1 if metric.task_success else 0) >= best_success]
+    selected = sorted(
+        eligible,
+        key=lambda metric: (
+            metric.risk_events,
+            metric.estimated_cost_cents,
+            metric.latency_ms,
+            metric.worker_calls,
+            metric.browser_actions,
+            metric.model_calls,
+        ),
+    )[0]
+    best_alternative_success = max((1 if metric.task_success else 0) for metric in metrics if metric.variant != selected.variant)
+    success_gain_points = (1 if selected.task_success else 0) - best_alternative_success
+    higher_risk_variants = [metric.variant.value for metric in metrics if metric.variant != selected.variant and metric.risk_events > selected.risk_events]
     return TopologyComparison(
         metrics=metrics,
-        selected_variant=TopologyVariant.WORKFLOW,
+        selected_variant=selected.variant,
         adr_decision=(
-            "Use the deterministic workflow for the base PolicyOps triage path; "
-            "browser and worker variants are retained as bounded fixtures because they do not clear "
-            "the 10 percentage point gain threshold for the supplied cases."
+            f"Use the {selected.variant.value} path for the base PolicyOps triage flow because "
+            f"all supplied variants achieved the same task-success outcome, so no topology cleared "
+            f"the required 10 percentage point gain threshold. The selected path keeps the lowest "
+            f"measured risk ({selected.risk_events}), lowest measured cost ({selected.estimated_cost_cents} cents), "
+            f"and lowest measured latency proxy ({selected.latency_ms} ms) among the successful variants; "
+            f"higher-risk alternatives were {higher_risk_variants or ['none']}."
         ),
         a2a_decision="No-use ADR: required fixture has no independent ownership, trust, deployment, or interoperability boundary.",
     )
@@ -926,7 +983,7 @@ def run_orchestration_verification(evidence_dir: Path) -> dict[str, Any]:
     invalid_delegation_rejected = int(
         engine.delegations.verify(invalid_task, expected_run_id="invalid-run", seen_nonces=set()) is False
     )
-    comparison = run_topology_comparison(states)
+    comparison = _run_topology_comparison(states, engine.transition_events)
     scorecard = OrchestrationScorecard(
         deterministic_agreement=len({state.ticket_id is not None for state in states}) == 1,
         approval_bypasses=0,

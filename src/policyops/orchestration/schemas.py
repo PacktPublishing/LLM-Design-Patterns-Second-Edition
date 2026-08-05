@@ -185,6 +185,8 @@ class TopologyMetrics(StrictModel):
     worker_calls: int
     browser_actions: int
     estimated_cost_cents: int
+    cost_per_successful_outcome_cents: int | None = None
+    trace_steps: int = 0
     risk_events: int
 
 
