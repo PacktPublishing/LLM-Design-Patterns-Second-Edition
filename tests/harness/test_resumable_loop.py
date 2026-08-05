@@ -65,6 +65,7 @@ def test_lease_fencing_rejects_stale_worker_writes() -> None:
         FaultScenario.BEFORE_EFFECT,
         FaultScenario.AFTER_EFFECT_BEFORE_ACK,
         FaultScenario.AFTER_CHECKPOINT,
+        FaultScenario.LEASE_CONTENTION,
     ],
 )
 def test_crash_windows_resume_without_duplicate_ticket(scenario: FaultScenario) -> None:
@@ -137,6 +138,7 @@ def test_after_checkpoint_fault_resumes_from_durable_checkpoint_without_duplicat
     resumed = loop.resume(interrupted.session_id)
 
     assert resumed.state == SessionPhase.VERIFIED
+    assert resumed.ticket_id == loop.store.receipts[f"{interrupted.session_id}:ticket"].external_reference
     assert len(loop.store.receipts) == 1
 
 
@@ -162,7 +164,15 @@ def test_fixture_verification_writes_harness_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "approval_denial.json").exists()
     assert (tmp_path / "runbook.json").exists()
     assert (tmp_path / "harness_scorecard.json").exists()
+    fault_results = __import__("json").loads((tmp_path / "fault_results.json").read_text(encoding="utf-8"))
+    assert {record["scenario"] for record in fault_results} == {
+        FaultScenario.BEFORE_EFFECT.value,
+        FaultScenario.AFTER_EFFECT_BEFORE_ACK.value,
+        FaultScenario.AFTER_CHECKPOINT.value,
+        FaultScenario.LEASE_CONTENTION.value,
+    }
     scorecard = __import__("json").loads((tmp_path / "harness_scorecard.json").read_text(encoding="utf-8"))
+    assert scorecard["crash_cases_recovered"] == 4
     assert scorecard["approval_mismatch_denials"] == 1
 
 

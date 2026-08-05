@@ -766,6 +766,9 @@ class ResumableLoop:
         state.state = SessionPhase.ACTION_READY
         state.pending_action_id = intent.intent_id
         state.approval_reference = intent.approval_reference
+        if fault == FaultScenario.LEASE_CONTENTION:
+            self.store.acquire_lease(session_id, "worker-b")
+            return state
         if fault == FaultScenario.BEFORE_EFFECT:
             return state
         receipt = self.dispatcher.deliver(message.message_id)
@@ -785,7 +788,7 @@ class ResumableLoop:
         if not self.store.has_session(session_id):
             raise SessionNotFoundError(f"session not found: {session_id}")
         lease = self.store.acquire_lease(session_id, owner_id)
-        state = self.reducer.replay(self.store.events[session_id])
+        state = self.store.current_state(session_id, self.reducer)
         pending = [msg for msg in self.store.outbox.values() if msg.session_id == session_id and not msg.delivered]
         for message in pending:
             receipt = self.dispatcher.deliver(message.message_id)
@@ -1044,30 +1047,61 @@ def run_harness_verification(evidence_dir: Path) -> dict[str, Any]:
     rejected = review.review(plan, ["src/policyops/extensions/service.py"])
     recovered = 0
     duplicate_tickets = 0
+    stale_rejected = 0
     fault_records: list[dict[str, Any]] = []
     for scenario in [
         FaultScenario.BEFORE_EFFECT,
         FaultScenario.AFTER_EFFECT_BEFORE_ACK,
         FaultScenario.AFTER_CHECKPOINT,
+        FaultScenario.LEASE_CONTENTION,
     ]:
         loop = ResumableLoop()
         state = loop.run_once(f"session-{scenario.value}", fault=scenario)
-        if scenario == FaultScenario.AFTER_CHECKPOINT:
-            state = loop.resume(state.session_id)
+        scenario_record: dict[str, Any] = {"scenario": scenario.value}
+        if scenario == FaultScenario.LEASE_CONTENTION:
+            active_lease = loop.store.leases[state.session_id]
+            stale_lease = Lease(
+                session_id=state.session_id,
+                owner_id="worker-a",
+                fencing_token=max(1, active_lease.fencing_token - 1),
+                expires_at=active_lease.expires_at - 60,
+                renewed_at=active_lease.renewed_at - 60,
+            )
+            try:
+                loop._append(state, EventType.PLAN_RECORDED, state.state, SessionPhase.PLANNED, stale_lease)
+            except FenceError:
+                stale_rejected += 1
+                scenario_record.update(
+                    {
+                        "active_fence": active_lease.fencing_token,
+                        "stale_fence": stale_lease.fencing_token,
+                        "stale_write_rejected": True,
+                    }
+                )
+            else:
+                scenario_record["stale_write_rejected"] = False
+            state = loop.resume(state.session_id, owner_id="worker-c")
+            scenario_record["resumed_owner"] = "worker-c"
         else:
             state = loop.resume(state.session_id)
         receipts = list(loop.store.receipts.values())
         recovered += int(state.state == SessionPhase.VERIFIED)
         duplicate_tickets += max(0, len({receipt.external_reference for receipt in receipts}) - 1)
-        fault_records.append({"scenario": scenario.value, "state": state.model_dump(mode="json"), "receipts": [r.model_dump(mode="json") for r in receipts]})
+        fault_records.append(
+            scenario_record
+            | {
+                "state": state.model_dump(mode="json"),
+                "receipts": [r.model_dump(mode="json") for r in receipts],
+            }
+        )
     loop = ResumableLoop()
     state, old_lease = loop.create_session("lease-contention")
     loop.store.acquire_lease("lease-contention", "worker-b")
-    stale_rejected = 0
+    baseline_stale_rejected = 0
     try:
         loop._append(state, EventType.PLAN_RECORDED, state.state, SessionPhase.PLANNED, old_lease)
     except FenceError:
-        stale_rejected = 1
+        baseline_stale_rejected = 1
     stopped = loop.run_once("budget-stop", budget=BudgetSnapshot(iteration_limit=0))
     replay_state = loop.replay_no_effects("budget-stop")
     approval_loop = ResumableLoop()
@@ -1090,7 +1124,7 @@ def run_harness_verification(evidence_dir: Path) -> dict[str, Any]:
         crash_cases_recovered=recovered,
         duplicate_tickets=duplicate_tickets,
         out_of_scope_changes=0 if accepted.accepted and not rejected.accepted else 1,
-        stale_fence_writes_rejected=stale_rejected,
+        stale_fence_writes_rejected=1 if stale_rejected or baseline_stale_rejected else 0,
         replay_external_calls=replay_external_calls,
         approval_mismatch_denials=approval_mismatch_denials,
         budget_stops=1 if stopped.terminal_reason == FailureClass.BUDGET else 0,
