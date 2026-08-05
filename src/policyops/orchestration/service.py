@@ -914,12 +914,24 @@ def run_orchestration_verification(evidence_dir: Path) -> dict[str, Any]:
         budget=BudgetLedger(worker_limit=1),
     )
     bad_browser = engine.start(TopologyVariant.BROWSER, browser_profile="wrong-profile")
+    invalid_task = engine.delegations.issue(
+        run_id="invalid-run",
+        principal=principal_from_context(fixture_context()),
+        worker_id="retrieve_worker",
+        objective="retrieve scoped policy evidence",
+        evidence_allowlist=["policy_remote:v2:span_remote_approval"],
+        tool_allowlist=["retrieval:read"],
+        nonce="invalid-1",
+    ).model_copy(update={"tool_allowlist": ["retrieval:read", "ticket:create"], "nonce": "invalid-2"})
+    invalid_delegation_rejected = int(
+        engine.delegations.verify(invalid_task, expected_run_id="invalid-run", seen_nonces=set()) is False
+    )
     comparison = run_topology_comparison(states)
     scorecard = OrchestrationScorecard(
         deterministic_agreement=len({state.ticket_id is not None for state in states}) == 1,
         approval_bypasses=0,
         authority_widening=0,
-        invalid_delegations_rejected=1,
+        invalid_delegations_rejected=invalid_delegation_rejected,
         browser_bypass_attempts=1 if bad_browser.terminal_reason == TerminalReason.BROWSER_PROFILE_MISMATCH else 0,
         capacity_partial_spawns=1 if low_capacity.budget.reserved_workers else 0,
         finite_termination=all(state.status in {RunStatus.SUCCEEDED, RunStatus.AWAITING_REVIEW} for state in [*states, low_capacity, bad_browser]),
@@ -935,6 +947,10 @@ def run_orchestration_verification(evidence_dir: Path) -> dict[str, Any]:
         "worker_results.json": [result.model_dump(mode="json") for result in engine.worker_results],
         "transition_events.json": [event.model_dump(mode="json") for event in engine.transition_events],
         "budget_ledger.json": [entry.model_dump(mode="json") for entry in engine.budget_entries],
+        "invalid_delegation.json": {
+            "task": invalid_task.model_dump(mode="json"),
+            "rejected": bool(invalid_delegation_rejected),
+        },
         "a2a_no_use_adr.json": {"decision": comparison.a2a_decision},
         "orchestration_scorecard.json": scorecard.model_dump(mode="json"),
     }

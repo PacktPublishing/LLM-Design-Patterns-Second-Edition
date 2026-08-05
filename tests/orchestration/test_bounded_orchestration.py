@@ -188,8 +188,13 @@ def test_fixture_verification_writes_orchestration_evidence(tmp_path: Path) -> N
     assert (tmp_path / "worker_results.json").exists()
     assert (tmp_path / "transition_events.json").exists()
     assert (tmp_path / "budget_ledger.json").exists()
+    assert (tmp_path / "invalid_delegation.json").exists()
     assert (tmp_path / "a2a_no_use_adr.json").exists()
     assert (tmp_path / "orchestration_scorecard.json").exists()
+    invalid = __import__("json").loads((tmp_path / "invalid_delegation.json").read_text(encoding="utf-8"))
+    scorecard = __import__("json").loads((tmp_path / "orchestration_scorecard.json").read_text(encoding="utf-8"))
+    assert invalid["rejected"] is True
+    assert scorecard["invalid_delegations_rejected"] == 1
 
 
 def test_triage_runtime_persists_run_snapshots_and_idempotency(tmp_path: Path) -> None:
