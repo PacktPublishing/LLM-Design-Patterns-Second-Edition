@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from policyops.context import (
@@ -260,6 +261,11 @@ def test_verification_writes_redacted_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "token_report.json").exists()
     assert (tmp_path / "stable_prefix_report.json").exists()
     assert (tmp_path / "ab_trace.json").exists()
+    token_report = json.loads((tmp_path / "token_report.json").read_text(encoding="utf-8"))
+    assert token_report["chapter2_gates_preserved"] is True
+    stable_prefix_report = json.loads((tmp_path / "stable_prefix_report.json").read_text(encoding="utf-8"))
+    assert stable_prefix_report["stable_prefix_reused"] is True
+    assert stable_prefix_report["deterministic_full_hash"] is True
     assert "SECRET_DO_NOT_RENDER" not in (tmp_path / "context_manifest.json").read_text(
         encoding="utf-8"
     )

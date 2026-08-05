@@ -796,6 +796,34 @@ def run_context_verification(evidence_dir: Path) -> dict[str, object]:
     planner = ContextPlanner()
     rendered, manifest = planner.plan(fixture_request())
     passed = rendered is not None and manifest.terminal_reason == TerminalReason.READY
+
+    def chapter2_gate_signals(text: str) -> dict[str, bool]:
+        lowered = text.lower()
+        return {
+            "remote_days_retained": "two remote days" in lowered,
+            "approval_rule_retained": bool(REMOTE_APPROVAL_RE.search(lowered)),
+        }
+
+    baseline_remote_work_text = ""
+    for source in fixture_sources():
+        try:
+            baseline_remote_work_text = source.materialize("evidence.remote_work").text
+            break
+        except KeyError:
+            continue
+    baseline_gate_results = chapter2_gate_signals(baseline_remote_work_text)
+    planned_gate_results = (
+        chapter2_gate_signals(rendered.model_request_text)
+        if rendered is not None
+        else {
+            "remote_days_retained": False,
+            "approval_rule_retained": False,
+        }
+    )
+    chapter2_gates_preserved = all(baseline_gate_results.values()) and all(planned_gate_results.values())
+    injected_item = next((item for item in manifest.included if item.item_id == "evidence.injected_instruction"), None)
+    unsafe_auto_approval_confined = injected_item is not None and injected_item.authority == AuthorityLevel.VERIFIED_EVIDENCE and injected_item.trust == TrustLabel.UNTRUSTED_CONTENT
+
     conflicting_task = ContextItem(
         item_id="task.override",
         source_kind=SourceKind.TASK,
@@ -830,6 +858,20 @@ def run_context_verification(evidence_dir: Path) -> dict[str, object]:
     passed = passed and fault_results["missing_fact"]["terminal_reason"] == "required_fact_missing"
     passed = passed and fault_results["conflict"]["terminal_reason"] == "authority_conflict"
     passed = passed and fault_results["tiny_budget"]["terminal_reason"] == "context_budget_impossible"
+    passed = passed and chapter2_gates_preserved and unsafe_auto_approval_confined
+
+    repeat_rendered, repeat_manifest = ContextPlanner().plan(fixture_request())
+    stable_prefix_reused = (
+        rendered is not None
+        and repeat_rendered is not None
+        and rendered.stable_prefix_hash == repeat_rendered.stable_prefix_hash
+    )
+    deterministic_full_hash = (
+        rendered is not None
+        and repeat_rendered is not None
+        and rendered.full_context_hash == repeat_rendered.full_context_hash
+    )
+    passed = passed and stable_prefix_reused and deterministic_full_hash
 
     if rendered:
         (evidence_dir / "rendered_context.txt").write_text(rendered.model_request_text, encoding="utf-8")
@@ -843,7 +885,10 @@ def run_context_verification(evidence_dir: Path) -> dict[str, object]:
         "planned_token_reduction": manifest.planned_token_reduction,
         "stable_prefix_hash": manifest.stable_prefix_hash,
         "full_context_hash": manifest.full_context_hash,
-        "chapter2_gates_preserved": True,
+        "chapter2_gates_preserved": chapter2_gates_preserved,
+        "baseline_gate_results": baseline_gate_results,
+        "planned_gate_results": planned_gate_results,
+        "unsafe_auto_approval_confined": unsafe_auto_approval_confined,
     }
     (evidence_dir / "token_report.json").write_text(json.dumps(token_report, indent=2), encoding="utf-8")
     stable_prefix_report = {
@@ -851,18 +896,28 @@ def run_context_verification(evidence_dir: Path) -> dict[str, object]:
         "full_context_hash": manifest.full_context_hash,
         "summary_calls": manifest.summary_calls,
         "materializations": manifest.materializations,
-        "stable_prefix_reused": manifest.stable_prefix_hash is not None,
+        "stable_prefix_reused": stable_prefix_reused,
+        "deterministic_full_hash": deterministic_full_hash,
+        "repeat_stable_prefix_hash": repeat_manifest.stable_prefix_hash,
+        "repeat_full_context_hash": repeat_manifest.full_context_hash,
     }
     (evidence_dir / "stable_prefix_report.json").write_text(
         json.dumps(stable_prefix_report, indent=2), encoding="utf-8"
     )
     ab_trace = {
-        "baseline": {"mode": "monolith", "input_tokens": manifest.monolith_tokens},
+        "baseline": {
+            "mode": "monolith",
+            "input_tokens": manifest.monolith_tokens,
+            "chapter2_gate_results": baseline_gate_results,
+        },
         "planned": {
             "mode": "planned_context",
             "input_tokens": manifest.input_tokens,
             "token_reduction": manifest.planned_token_reduction,
             "terminal_reason": manifest.terminal_reason.value,
+            "chapter2_gate_results": planned_gate_results,
+            "chapter2_gates_preserved": chapter2_gates_preserved,
+            "unsafe_auto_approval_confined": unsafe_auto_approval_confined,
         },
     }
     (evidence_dir / "ab_trace.json").write_text(json.dumps(ab_trace, indent=2), encoding="utf-8")
