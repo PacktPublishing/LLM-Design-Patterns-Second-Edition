@@ -100,6 +100,18 @@ def test_signature_role_mismatch_is_rejected() -> None:
     assert ReasonCode.SIGNATURE_INVALID in reasons
 
 
+def test_non_human_signer_is_rejected_for_release_evidence() -> None:
+    fixture = GovernanceFixture()
+    evidence = fixture.evidence()[0]
+    forged = evidence.model_copy(
+        update={
+            "signature": evidence.signature.model_copy(update={"issuer": "agent-policyops", "issuer_role": "agent"}),
+        }
+    )
+    reasons = EvidenceResolver(fixture.owners()).validate(forged)
+    assert ReasonCode.SIGNATURE_INVALID in reasons
+
+
 def test_transparency_notice_is_generated_from_inventory() -> None:
     inventory = GovernanceFixture().inventory()
     notice = NoticeGenerator().render(inventory)
@@ -114,7 +126,22 @@ def test_governance_scorecard_passes_after_authorized_remediation() -> None:
     assert scorecard.high_risk_paths_resolved is True
     assert scorecard.invalid_evidence_cases_blocked >= 5
     assert scorecard.agent_self_approval_denied is True
+    assert evidence["graph"]["nodes"]
+    assert evidence["graph"]["edges"]
     assert evidence["final_decision"]["decision"] == "GO"
+
+
+def test_control_evidence_graph_contains_mandatory_risk_control_and_evidence_paths() -> None:
+    evidence = GovernanceVerification().scorecard()[1]
+    graph = evidence["graph"]
+    node_ids = {node["node_id"] for node in graph["nodes"]}
+    edges = {(edge["from"], edge["relation"], edge["to"]) for edge in graph["edges"]}
+    assert "risk-high-impact-ticket" in node_ids
+    assert "control-deployment" in node_ids
+    assert "ev-ch14-deploy" in node_ids
+    assert ("risk-high-impact-ticket", "MITIGATED_BY", "control-deployment") in edges
+    assert ("control-deployment", "VERIFIED_BY", "ev-ch14-deploy") in edges
+    assert any(edge[1] == "APPROVED_BY_POLICY" for edge in edges)
 
 
 def test_governance_verifier_writes_required_evidence(tmp_path) -> None:
@@ -135,6 +162,10 @@ def test_governance_verifier_writes_required_evidence(tmp_path) -> None:
     ]
     for name in required:
         assert (tmp_path / name).exists(), name
+    graph = __import__("json").loads((tmp_path / "control_evidence_graph.json").read_text(encoding="utf-8"))
+    assert graph["graph_version"] == "1"
+    assert graph["nodes"]
+    assert graph["edges"]
 
 
 def test_governance_fault_drills_cover_required_scenarios(tmp_path) -> None:

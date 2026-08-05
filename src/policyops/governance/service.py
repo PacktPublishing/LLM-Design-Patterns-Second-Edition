@@ -50,6 +50,116 @@ def sign_payload(payload: dict[str, Any], issuer: str, role: str, *, expires_at:
     return SignatureEnvelope(**envelope, signature=signature)
 
 
+def build_control_evidence_graph(
+    *,
+    inventory: SystemInventory,
+    risks: list[RiskRecord],
+    owners: list[OwnerRecord],
+    controls: list[ControlRecord],
+    evidence: list[EvidenceRef],
+    approval_policies: list[ApprovalPolicy],
+) -> dict[str, Any]:
+    nodes: list[dict[str, Any]] = [
+        {
+            "node_id": inventory.inventory_id,
+            "node_type": "system_inventory",
+            "purpose": inventory.purpose,
+            "stores": inventory.stores,
+            "ai_components": inventory.ai_components,
+        }
+    ]
+    nodes.extend(
+        {
+            "node_id": owner.owner_id,
+            "node_type": "owner",
+            "role": owner.role,
+            "current": owner.current,
+            "backup_owner_id": owner.backup_owner_id,
+        }
+        for owner in owners
+    )
+    nodes.extend(
+        {
+            "node_id": risk.risk_id,
+            "node_type": "risk",
+            "impact": risk.impact,
+            "autonomy_tier": risk.autonomy_tier,
+            "communication_reach": risk.communication_reach,
+            "owner_id": risk.owner_id,
+        }
+        for risk in risks
+    )
+    nodes.extend(
+        {
+            "node_id": control.control_id,
+            "node_type": "control",
+            "risk_id": control.risk_id,
+            "implementation": control.implementation,
+            "test_id": control.test_id,
+            "evidence_id": control.evidence_id,
+            "owner_id": control.owner_id,
+            "mandatory": control.mandatory,
+        }
+        for control in controls
+    )
+    nodes.extend(
+        {
+            "node_id": item.evidence_id,
+            "node_type": "evidence",
+            "control_id": item.control_id,
+            "artifact_uri": item.artifact_uri,
+            "artifact_hash": item.artifact_hash,
+            "configuration_scope": item.configuration_scope,
+            "result": item.result,
+            "issuer": item.signature.issuer,
+            "issuer_role": item.signature.issuer_role,
+            "issued_at": item.signature.issued_at,
+            "expires_at": item.signature.expires_at,
+            "reviewed_by": item.reviewed_by,
+            "review_status": "current" if item.result == "pass" else "failing",
+        }
+        for item in evidence
+    )
+    nodes.extend(
+        {
+            "node_id": policy.policy_id,
+            "node_type": "approval_policy",
+            "change_class": policy.change_class,
+            "required_role": policy.required_role,
+            "separation_of_duties": policy.separation_of_duties,
+            "required_evidence_ids": policy.required_evidence_ids,
+            "high_impact_required": policy.high_impact_required,
+        }
+        for policy in approval_policies
+    )
+
+    edges: list[dict[str, str]] = []
+    for risk in risks:
+        edges.append({"from": inventory.inventory_id, "to": risk.risk_id, "relation": "HAS_RISK"})
+        edges.append({"from": risk.risk_id, "to": risk.owner_id, "relation": "OWNED_BY"})
+    for control in controls:
+        edges.append({"from": control.risk_id, "to": control.control_id, "relation": "MITIGATED_BY"})
+        edges.append({"from": control.control_id, "to": control.owner_id, "relation": "OWNED_BY"})
+        edges.append({"from": control.control_id, "to": control.evidence_id, "relation": "VERIFIED_BY"})
+    for item in evidence:
+        edges.append({"from": item.evidence_id, "to": item.signature.issuer, "relation": "SIGNED_BY"})
+        edges.append({"from": item.evidence_id, "to": item.reviewed_by, "relation": "REVIEWED_BY"})
+    for policy in approval_policies:
+        if policy.high_impact_required:
+            for risk in risks:
+                if risk.impact == "high":
+                    edges.append({"from": risk.risk_id, "to": policy.policy_id, "relation": "APPROVED_BY_POLICY"})
+        for evidence_id in policy.required_evidence_ids:
+            edges.append({"from": policy.policy_id, "to": evidence_id, "relation": "REQUIRES_EVIDENCE"})
+
+    return {
+        "graph_version": "1",
+        "inventory_id": inventory.inventory_id,
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
 class GovernanceFixture:
     def owners(self) -> list[OwnerRecord]:
         return [
@@ -196,9 +306,13 @@ class EvidenceResolver:
             signer = self.owners[evidence.signature.issuer]
             if signer.role != evidence.signature.issuer_role:
                 reasons.append(ReasonCode.SIGNATURE_INVALID)
+            if signer.role in {"agent", "service_account"}:
+                reasons.append(ReasonCode.SIGNATURE_INVALID)
         reviewer = self.owners.get(evidence.reviewed_by)
         if reviewer is None or not reviewer.current:
             reasons.append(ReasonCode.OWNER_MISSING)
+        elif reviewer.role in {"agent", "service_account"}:
+            reasons.append(ReasonCode.SIGNATURE_INVALID)
         if evidence.signature.purpose != "release_evidence":
             reasons.append(ReasonCode.SIGNATURE_INVALID)
         return reasons
@@ -322,6 +436,14 @@ class ReleaseGate:
         risks = self.fixture.risks()
         controls = self.fixture.controls()
         evidence = evidence or self.fixture.evidence()
+        graph = build_control_evidence_graph(
+            inventory=self.fixture.inventory(),
+            risks=risks,
+            owners=owners,
+            controls=controls,
+            evidence=evidence,
+            approval_policies=self.fixture.approval_policies(),
+        )
         evidence_map = {item.evidence_id: item for item in evidence}
         resolver = EvidenceResolver(owners)
         reasons: list[DecisionReason] = []
@@ -391,7 +513,7 @@ class ReleaseGate:
             policy_hash=self.policy_hash,
             manifest_hash=sha_json(self.fixture.inventory().model_dump(mode="json")),
             change_set_hash=sha_json(change_set.model_dump(mode="json")),
-            evidence_graph_hash=sha_json([control.model_dump(mode="json") for control in controls]),
+            evidence_graph_hash=sha_json(graph),
             approver_id=approver_id,
             reasons=ordered,
             decided_at=NOW,
@@ -460,6 +582,14 @@ class GovernanceVerification:
         final_two = self.final_decision()
         invalid = self.invalid_evidence_decisions()
         notice = NoticeGenerator().render(self.inventory)
+        graph = build_control_evidence_graph(
+            inventory=self.inventory,
+            risks=self.fixture.risks(),
+            owners=self.fixture.owners(),
+            controls=self.fixture.controls(),
+            evidence=self.fixture.evidence(),
+            approval_policies=self.fixture.approval_policies(),
+        )
         scorecard = GovernanceScorecard(
             high_risk_paths_resolved=final_one.decision == Decision.GO,
             invalid_evidence_cases_blocked=sum(1 for decision in invalid if decision.decision == Decision.NO_GO),
@@ -476,7 +606,7 @@ class GovernanceVerification:
             "risks": [risk.model_dump(mode="json") for risk in self.fixture.risks()],
             "owners": [owner.model_dump(mode="json") for owner in self.fixture.owners()],
             "approval_matrix": [policy.model_dump(mode="json") for policy in self.fixture.approval_policies()],
-            "controls": [control.model_dump(mode="json") for control in self.fixture.controls()],
+            "graph": graph,
             "evidence": [item.model_dump(mode="json") for item in self.fixture.evidence()],
             "rights_receipts": [correction.model_dump(mode="json"), deletion.model_dump(mode="json")],
             "notice": notice.model_dump(mode="json"),
@@ -498,7 +628,7 @@ def run_governance_verification(evidence_dir: Path) -> dict[str, Any]:
     write_json(evidence_dir / "risk_autonomy_records.json", evidence["risks"])
     write_json(evidence_dir / "ownership_records.json", evidence["owners"])
     write_json(evidence_dir / "approval_matrix.json", evidence["approval_matrix"])
-    write_json(evidence_dir / "control_evidence_graph.json", evidence["controls"])
+    write_json(evidence_dir / "control_evidence_graph.json", evidence["graph"])
     write_json(evidence_dir / "evidence_index.json", evidence["evidence"])
     write_json(evidence_dir / "rights_receipts.json", evidence["rights_receipts"])
     write_json(evidence_dir / "transparency_notice.json", evidence["notice"])
