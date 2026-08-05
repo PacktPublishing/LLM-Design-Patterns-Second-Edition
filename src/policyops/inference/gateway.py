@@ -561,12 +561,74 @@ def benchmark_gateway(evidence_dir: Path | None = None) -> BenchmarkReport:
 def run_gateway_verification(evidence_dir: Path) -> dict[str, Any]:
     report = benchmark_gateway(evidence_dir)
     selected_rows = [row for row in report.rows if row.profile == report.selected_profile]
-    passed = bool(selected_rows) and all(row.success for row in selected_rows)
+    profile_summaries: dict[str, dict[str, Any]] = {}
+    for profile in sorted({row.profile for row in report.rows}):
+        rows = [row for row in report.rows if row.profile == profile]
+        success_rows = [row for row in rows if row.success]
+        total_spend = round(sum(row.spend_units for row in rows), 4)
+        avg_latency = round(sum(row.latency_ms for row in rows) / len(rows), 2)
+        avg_quality = round(sum(row.quality for row in rows) / len(rows), 4)
+        success_rate = round(len(success_rows) / len(rows), 4)
+        cost_per_successful_outcome = (
+            round(total_spend / len(success_rows), 4) if success_rows else None
+        )
+        profile_summaries[profile] = {
+            "success_rate": success_rate,
+            "avg_quality": avg_quality,
+            "avg_latency_ms": avg_latency,
+            "total_spend_units": total_spend,
+            "cost_per_successful_outcome": cost_per_successful_outcome,
+            "clears_quality_floor": success_rate >= 1.0 and avg_quality >= report.quality_floor,
+        }
+
+    selected_summary = profile_summaries[report.selected_profile]
+    objective_improvements: list[str] = []
+    for profile, summary in profile_summaries.items():
+        if profile == report.selected_profile or not summary["clears_quality_floor"]:
+            continue
+        if selected_summary["total_spend_units"] < summary["total_spend_units"]:
+            objective_improvements.append(f"lower_spend_than:{profile}")
+        if selected_summary["avg_latency_ms"] < summary["avg_latency_ms"]:
+            objective_improvements.append(f"lower_latency_than:{profile}")
+        if selected_summary["avg_quality"] > summary["avg_quality"]:
+            objective_improvements.append(f"higher_quality_than:{profile}")
+
+    passed = (
+        bool(selected_rows)
+        and all(row.success for row in selected_rows)
+        and report.selected_profile in report.pareto_profiles
+        and selected_summary["clears_quality_floor"]
+        and bool(objective_improvements)
+    )
     payload = {
         "passed": passed,
         "selected_profile": report.selected_profile,
         "pareto_profiles": report.pareto_profiles,
         "quality_floor": report.quality_floor,
+        "selected_profile_summary": selected_summary,
+        "objective_improvements": objective_improvements,
     }
+    (evidence_dir / "benchmark_summary.json").write_text(
+        json.dumps(
+            {
+                "selected_profile": report.selected_profile,
+                "pareto_profiles": report.pareto_profiles,
+                "quality_floor": report.quality_floor,
+                "profiles": profile_summaries,
+                "objective_improvements": objective_improvements,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    serving_adr = {
+        "decision": f"Use the {report.selected_profile} fixture profile for the mandatory lab gate.",
+        "selected_profile": report.selected_profile,
+        "quality_floor": report.quality_floor,
+        "selected_profile_summary": selected_summary,
+        "objective_improvements": objective_improvements,
+        "note": "Fixture latency and spend are replay evidence, not provider benchmarks.",
+    }
+    (evidence_dir / "serving_adr.json").write_text(json.dumps(serving_adr, indent=2), encoding="utf-8")
     (evidence_dir / "gateway_result.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return payload

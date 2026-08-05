@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import json
 from pathlib import Path
 
 import pytest
@@ -229,6 +230,10 @@ def test_gateway_verification_writes_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "benchmark_rows.jsonl").exists()
     assert (tmp_path / "inference_report.json").exists()
     assert (tmp_path / "serving_adr.json").exists()
+    assert (tmp_path / "benchmark_summary.json").exists()
+    summary = json.loads((tmp_path / "benchmark_summary.json").read_text(encoding="utf-8"))
+    assert summary["selected_profile"] in summary["pareto_profiles"]
+    assert summary["objective_improvements"]
 
 
 @pytest.mark.asyncio
