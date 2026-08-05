@@ -49,7 +49,23 @@ def test_cross_tenant_and_preview_attacks_fail_before_effect() -> None:
     assert results["atk-cross-tenant"].reason_code == ReasonCode.TENANT_MISMATCH
     assert results["atk-preview-swap"].reason_code == ReasonCode.APPROVAL_EXACT_PREVIEW_MISMATCH
     assert results["atk-replay"].reason_code == ReasonCode.APPROVAL_STALE_OR_REPLAYED
-    assert all(results[name].unauthorized_effects == 0 for name in ["atk-cross-tenant", "atk-preview-swap", "atk-replay"])
+    assert results["atk-duplicate-effect"].reason_code == ReasonCode.APPROVAL_STALE_OR_REPLAYED
+    assert all(
+        results[name].unauthorized_effects == 0
+        for name in ["atk-cross-tenant", "atk-preview-swap", "atk-replay", "atk-duplicate-effect"]
+    )
+
+
+def test_web_memory_and_privilege_escalation_attacks_are_covered_by_the_corpus() -> None:
+    harness = AttackHarness()
+    results = {case.attack_id: harness.run_case(case) for case in harness.corpus()}
+    assert results["atk-web-observation"].reason_code == ReasonCode.APPROVAL_REQUIRED
+    assert results["atk-memory-poison"].reason_code == ReasonCode.APPROVAL_REQUIRED
+    assert results["atk-privilege-escalation"].reason_code == ReasonCode.CAPABILITY_SCOPE_DENIED
+    assert all(
+        results[name].unauthorized_effects == 0
+        for name in ["atk-web-observation", "atk-memory-poison", "atk-privilege-escalation"]
+    )
 
 
 def test_destination_scope_and_expired_grant_fail_closed() -> None:
@@ -176,6 +192,12 @@ def test_attack_corpus_report_holds_security_gates() -> None:
     assert report.revoked_invocations_allowed == 0
     assert report.benign_false_positive_rate == 0.0
     assert report.prohibited_cases_failed_safely == 1
+    mapped_tests = {
+        test_id
+        for entry in harness.threat_model()
+        for test_id in entry.test_ids
+    }
+    assert {case.attack_id for case in harness.corpus()}.issubset(mapped_tests | {"benign-neighbor"})
 
 
 def test_incident_workflow_quarantines_revokes_and_preserves_redacted_evidence() -> None:
@@ -208,6 +230,12 @@ def test_security_verifier_writes_required_evidence(tmp_path) -> None:
     ]
     for name in required:
         assert (tmp_path / name).exists(), name
+    events = __import__("json").loads((tmp_path / "security_events.json").read_text(encoding="utf-8"))
+    assert events
+    for event in events:
+        assert {"trace_id", "actor_id", "tenant_id", "decision_stage", "authorization_decision", "reason_code", "evidence_ref"} <= set(event)
+        assert event["redacted"] is True
+        assert event["secret_fingerprint_only"] is True
 
 
 def test_security_fault_drills_cover_required_scenarios(tmp_path) -> None:

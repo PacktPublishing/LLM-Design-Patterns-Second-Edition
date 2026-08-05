@@ -1,6 +1,6 @@
 # Chapter 13 Lab: Defend Against Indirect Prompt Injection
 
-This lab attacks the composed PolicyOps system with malicious documents, malicious web/tool observations, approval attacks, egress probes, sandbox probes, revoked extensions, MCP authorization mistakes, and benign near-neighbors.
+This lab attacks the composed PolicyOps system with malicious documents, malicious web/tool observations, poisoned memory, approval attacks, egress probes, sandbox probes, revoked extensions, MCP authorization mistakes, and benign near-neighbors.
 
 ## GitHub evidence
 
@@ -34,6 +34,7 @@ The verification command writes:
 - `threat_model.json`
 - `attack_corpus.json`
 - `authorization_policy.json`
+- `security_policy_bundle.json`
 - `sandbox_profile.json`
 - `sbom.json`
 - `integrity_allowlist.json`
