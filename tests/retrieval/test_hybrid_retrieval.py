@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from policyops.context import ContextPlanner, fixture_request
@@ -152,6 +153,10 @@ def test_gold_requests_clear_retrieval_metrics(tmp_path: Path) -> None:
     assert scorecard["recall_at_10"] >= 0.85
     assert scorecard["ndcg_at_10"] >= 0.75
     assert (tmp_path / "scorecard.json").exists()
+    assert (tmp_path / "query_report.json").exists()
+    query_report = json.loads((tmp_path / "query_report.json").read_text(encoding="utf-8"))
+    assert query_report["p95_latency_ms"] >= 1
+    assert query_report["abstention_accuracy"] == 1.0
 
 
 def test_evidence_pack_can_feed_chapter_five_context_source() -> None:

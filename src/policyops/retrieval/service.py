@@ -7,8 +7,8 @@ import json
 import math
 import re
 import sqlite3
+import time
 from pathlib import Path
-from statistics import quantiles
 
 from policyops.context import (
     AuthorityLevel,
@@ -809,7 +809,30 @@ def run_retrieval_verification(evidence_dir: Path) -> dict[str, object]:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     retriever = HybridRetriever()
     requests = gold_requests()
-    results = [retriever.query(request) for request in requests]
+    results: list[EvidencePack] = []
+    evaluation_rows: list[dict[str, object]] = []
+    latencies_ms: list[int] = []
+    for request in requests:
+        started = time.perf_counter_ns()
+        pack = retriever.query(request)
+        elapsed_ms = max(1, int((time.perf_counter_ns() - started) / 1_000_000))
+        results.append(pack)
+        latencies_ms.append(elapsed_ms)
+        found_spans = {item.citation.span_id for item in pack.items}
+        expected_spans = set(request.expected_span_ids)
+        evaluation_rows.append(
+            {
+                "query_id": request.query_id,
+                "query": request.query,
+                "expected_spans": sorted(expected_spans),
+                "found_spans": sorted(found_spans),
+                "sufficiency": pack.sufficiency.value,
+                "packed_tokens": pack.packed_tokens,
+                "estimated_cost_token_proxy": pack.packed_tokens,
+                "elapsed_ms": elapsed_ms,
+                "meets_expected_spans": expected_spans.issubset(found_spans) if expected_spans else pack.sufficiency == Sufficiency.INSUFFICIENT,
+            }
+        )
     citation_ok = 0
     citation_total = 0
     for request, pack in zip(requests, results, strict=True):
@@ -826,23 +849,32 @@ def run_retrieval_verification(evidence_dir: Path) -> dict[str, object]:
             allowed_labels=["policy:read"],
         ),
     )
+    cross_started = time.perf_counter_ns()
     cross_pack = retriever.query(cross_tenant)
+    cross_elapsed_ms = max(1, int((time.perf_counter_ns() - cross_started) / 1_000_000))
     authorization_violations = sum(
         1 for item in cross_pack.items if item.citation.source_id == "policy_beta"
     )
     deleted_receipt = retriever.corpus.delete_source("policy_remote", "v2", "delete-remote-v2")
+    deleted_started = time.perf_counter_ns()
     deleted_pack = retriever.query(requests[0])
+    deleted_elapsed_ms = max(1, int((time.perf_counter_ns() - deleted_started) / 1_000_000))
+    timeout_started = time.perf_counter_ns()
     timeout_pack = retriever.query(requests[0], timeout_stage="vector")
-    latencies = [80, 95, 110, 125, 140]
-    p95 = int(quantiles(latencies, n=20)[18])
+    timeout_elapsed_ms = max(1, int((time.perf_counter_ns() - timeout_started) / 1_000_000))
+    latencies_ms.extend([cross_elapsed_ms, deleted_elapsed_ms, timeout_elapsed_ms])
+    p95 = max(latencies_ms)
+    abstention_cases = [
+        results[-1].sufficiency == Sufficiency.INSUFFICIENT and "out_of_scope" in results[-1].reason_codes,
+        timeout_pack.sufficiency == Sufficiency.INSUFFICIENT and "vector_timeout" in timeout_pack.reason_codes,
+        deleted_pack.sufficiency == Sufficiency.INSUFFICIENT and "EVIDENCE_INSUFFICIENT" in deleted_pack.reason_codes,
+    ]
+    abstention_accuracy = sum(1 for case in abstention_cases if case) / len(abstention_cases)
     scorecard = RetrievalScorecard(
         recall_at_10=round(_recall_at_10(results, requests), 4),
         ndcg_at_10=round(_ndcg_at_10(results, requests), 4),
         citation_resolution_rate=round(citation_ok / max(1, citation_total), 4),
-        abstention_accuracy=1.0
-        if results[-1].sufficiency == Sufficiency.INSUFFICIENT
-        and timeout_pack.sufficiency == Sufficiency.INSUFFICIENT
-        else 0.0,
+        abstention_accuracy=round(abstention_accuracy, 4),
         authorization_violations=authorization_violations,
         p95_latency_ms=p95,
         gates_passed=False,
@@ -861,6 +893,21 @@ def run_retrieval_verification(evidence_dir: Path) -> dict[str, object]:
         encoding="utf-8",
     )
     (evidence_dir / "scorecard.json").write_text(scorecard.model_dump_json(indent=2), encoding="utf-8")
+    (evidence_dir / "query_report.json").write_text(
+        json.dumps(
+            {
+                "queries": evaluation_rows,
+                "cross_tenant_elapsed_ms": cross_elapsed_ms,
+                "deleted_elapsed_ms": deleted_elapsed_ms,
+                "timeout_elapsed_ms": timeout_elapsed_ms,
+                "p95_latency_ms": p95,
+                "abstention_accuracy": round(abstention_accuracy, 4),
+            },
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
     (evidence_dir / "freshness_receipts.json").write_text(
         json.dumps([deleted_receipt.model_dump(mode="json")], indent=2), encoding="utf-8"
     )
