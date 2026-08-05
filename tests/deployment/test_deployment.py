@@ -132,6 +132,8 @@ def test_load_and_chaos_scorecard_passes_hard_gates() -> None:
     assert scorecard.duplicate_tickets == 0
     assert scorecard.bad_image_rolled_back is True
     assert scorecard.runbook_coverage == 1.0
+    assert evidence["load_samples"]["offers"]
+    assert evidence["chaos_measurements"]["scenarios"]
     assert all(item["duplicate_effects"] == 0 for item in evidence["chaos"])
 
 
@@ -187,7 +189,9 @@ def test_deployment_verifier_writes_required_evidence(tmp_path) -> None:
         "backup_catalogs.json",
         "restore_reports.json",
         "load_report.json",
+        "load_samples.json",
         "chaos_results.json",
+        "chaos_measurements.json",
         "operator_runbooks.json",
         "deployment_scorecard.json",
     ]
