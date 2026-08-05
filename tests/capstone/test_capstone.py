@@ -18,6 +18,8 @@ from policyops.capstone import (
 )
 from policyops.extensions import TicketInput
 from policyops.extensions.service import fixture_context
+from policyops.governance import Decision as GovernanceDecision
+from policyops.governance import GovernanceVerification
 
 
 def test_traceability_closes_all_chapter_handoffs() -> None:
@@ -43,7 +45,15 @@ def test_seeded_mandatory_failure_returns_no_go() -> None:
     verifier = CapstoneVerifier()
     closure = verifier.traceability.validate()
     steps = verifier.game_day.run(seeded_failure_step=4)
-    decision = verifier.decide(closure, steps, verifier.bundle(closure, steps), seeded_failure_proven=True)
+    governance = GovernanceVerification().final_decision()
+    rights_receipts = list(GovernanceVerification().rights_receipts())
+    decision = verifier.decide(
+        closure,
+        steps,
+        verifier.bundle(closure, steps, governance, rights_receipts),
+        governance,
+        seeded_failure_proven=True,
+    )
     assert decision.decision == CapstoneDecision.NO_GO
     assert "GAME_DAY_STEP_4_FAILED" in decision.reasons
     assert steps[3].mandatory_gate_decision == "fail"
@@ -53,9 +63,34 @@ def test_missing_seeded_failure_proof_forces_no_go() -> None:
     verifier = CapstoneVerifier()
     closure = verifier.traceability.validate()
     steps = verifier.game_day.run()
-    decision = verifier.decide(closure, steps, verifier.bundle(closure, steps), seeded_failure_proven=False)
+    governance = GovernanceVerification().final_decision()
+    rights_receipts = list(GovernanceVerification().rights_receipts())
+    decision = verifier.decide(
+        closure,
+        steps,
+        verifier.bundle(closure, steps, governance, rights_receipts),
+        governance,
+        seeded_failure_proven=False,
+    )
     assert decision.decision == CapstoneDecision.NO_GO
     assert "SEEDED_FAILURE_PROOF_MISSING" in decision.reasons
+
+
+def test_governance_no_go_forces_capstone_no_go() -> None:
+    verifier = CapstoneVerifier()
+    closure = verifier.traceability.validate()
+    steps = verifier.game_day.run()
+    governance = GovernanceVerification().final_decision().model_copy(update={"decision": GovernanceDecision.NO_GO})
+    rights_receipts = list(GovernanceVerification().rights_receipts())
+    decision = verifier.decide(
+        closure,
+        steps,
+        verifier.bundle(closure, steps, governance, rights_receipts),
+        governance,
+        seeded_failure_proven=True,
+    )
+    assert decision.decision == CapstoneDecision.NO_GO
+    assert "GOVERNANCE_NO_GO" in decision.reasons
 
 
 def test_clean_capstone_release_returns_go_with_signed_bundle() -> None:
@@ -64,7 +99,9 @@ def test_clean_capstone_release_returns_go_with_signed_bundle() -> None:
     assert scorecard.release_go is True
     assert scorecard.game_day_steps_passed == 16
     assert scorecard.seeded_failure_returns_no_go is True
+    assert scorecard.rights_receipt_complete is True
     assert evidence["bundle"]["signature"].startswith("sha256:")
+    assert evidence["governance_decision"]["decision"] == "GO"
     assert evidence["release_decision"]["decision"] == "GO"
 
 
@@ -75,6 +112,8 @@ def test_capstone_verifier_writes_required_evidence(tmp_path) -> None:
         "traceability_closure.json",
         "game_day_results.json",
         "seeded_failure_game_day.json",
+        "governance_decision.json",
+        "rights_receipts.json",
         "release_bundle.json",
         "release_decision.json",
         "seeded_failure_decision.json",

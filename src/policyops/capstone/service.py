@@ -30,7 +30,9 @@ from policyops.capstone.schemas import (
 from policyops.extensions import EffectPreview, SecuredToolPort, TicketResult, TicketStatus
 from policyops.extensions.schemas import DomainErrorCode
 from policyops.extensions.service import fixture_context
+from policyops.governance import Decision as GovernanceDecision
 from policyops.governance import GovernanceVerification
+from policyops.governance.schemas import ReleaseDecision, RightsReceipt
 from policyops.governance.schemas import RightsRequest
 from policyops.governance.service import GovernanceFixture, RightsOrchestrator
 from policyops.memory import (
@@ -422,12 +424,18 @@ class CapstoneVerifier:
         self.traceability = TraceabilityValidator()
         self.game_day = GameDayRunner()
 
-    def bundle(self, closure: TraceabilityClosure, steps: list[GameDayStepResult]) -> ReleaseBundle:
-        governance = GovernanceVerification().final_decision()
+    def bundle(
+        self,
+        closure: TraceabilityClosure,
+        steps: list[GameDayStepResult],
+        governance: ReleaseDecision,
+        rights_receipts: list[RightsReceipt],
+    ) -> ReleaseBundle:
         payload = {
             "closure": closure.model_dump(mode="json"),
             "steps": [step.model_dump(mode="json") for step in steps],
             "governance": governance.model_dump(mode="json"),
+            "rights_receipts": [receipt.model_dump(mode="json") for receipt in rights_receipts],
         }
         evidence_hash = sha_json(payload)
         signature = sha_json({"evidence": evidence_hash, "signed_by": "owner-release"})
@@ -446,6 +454,7 @@ class CapstoneVerifier:
         closure: TraceabilityClosure,
         steps: list[GameDayStepResult],
         bundle: ReleaseBundle,
+        governance: ReleaseDecision,
         *,
         seeded_failure_proven: bool,
     ) -> CapstoneReleaseDecision:
@@ -455,8 +464,12 @@ class CapstoneVerifier:
         failed = [step for step in steps if step.status == GameDayStatus.FAILED and step.mandatory]
         if failed:
             reasons.extend([f"GAME_DAY_STEP_{step.step}_FAILED" for step in failed])
+        if governance.decision != GovernanceDecision.GO:
+            reasons.append("GOVERNANCE_NO_GO")
         if not seeded_failure_proven:
             reasons.append("SEEDED_FAILURE_PROOF_MISSING")
+        if not bundle.signature.startswith("sha256:"):
+            reasons.append("BUNDLE_SIGNATURE_INVALID")
         decision = CapstoneDecision.NO_GO if reasons else CapstoneDecision.GO
         return CapstoneReleaseDecision(
             decision_id="release-ch16",
@@ -470,13 +483,18 @@ class CapstoneVerifier:
         closure = self.traceability.validate()
         steps = self.game_day.run()
         seeded_steps = self.game_day.run(seeded_failure_step=4)
-        bundle = self.bundle(closure, steps)
-        decision = self.decide(closure, steps, bundle, seeded_failure_proven=True)
-        seeded_bundle = self.bundle(closure, seeded_steps)
+        governance_verification = GovernanceVerification()
+        governance = governance_verification.final_decision()
+        correction_receipt, deletion_receipt = governance_verification.rights_receipts()
+        rights_receipts = [correction_receipt, deletion_receipt]
+        bundle = self.bundle(closure, steps, governance, rights_receipts)
+        decision = self.decide(closure, steps, bundle, governance, seeded_failure_proven=True)
+        seeded_bundle = self.bundle(closure, seeded_steps, governance, rights_receipts)
         seeded_decision = self.decide(
             closure,
             seeded_steps,
             seeded_bundle,
+            governance,
             seeded_failure_proven=True,
         )
         mandatory_failures = sum(1 for step in steps if step.status == GameDayStatus.FAILED and step.mandatory)
@@ -491,7 +509,7 @@ class CapstoneVerifier:
             unauthorized_effects=0,
             cross_tenant_leaks=0,
             secret_leaks=0,
-            rights_receipt_complete=True,
+            rights_receipt_complete=all(receipt.complete for receipt in rights_receipts),
             evidence_signed=bundle.signature.startswith("sha256:"),
             gates_passed=True,
         )
@@ -499,6 +517,8 @@ class CapstoneVerifier:
             "traceability": closure.model_dump(mode="json"),
             "game_day": [step.model_dump(mode="json") for step in steps],
             "seeded_failure_game_day": [step.model_dump(mode="json") for step in seeded_steps],
+            "governance_decision": governance.model_dump(mode="json"),
+            "rights_receipts": [receipt.model_dump(mode="json") for receipt in rights_receipts],
             "bundle": bundle.model_dump(mode="json"),
             "release_decision": decision.model_dump(mode="json"),
             "seeded_failure_decision": seeded_decision.model_dump(mode="json"),
@@ -516,6 +536,8 @@ def run_capstone_verification(evidence_dir: Path) -> dict[str, Any]:
     write_json(evidence_dir / "traceability_closure.json", evidence["traceability"])
     write_json(evidence_dir / "game_day_results.json", evidence["game_day"])
     write_json(evidence_dir / "seeded_failure_game_day.json", evidence["seeded_failure_game_day"])
+    write_json(evidence_dir / "governance_decision.json", evidence["governance_decision"])
+    write_json(evidence_dir / "rights_receipts.json", evidence["rights_receipts"])
     write_json(evidence_dir / "release_bundle.json", evidence["bundle"])
     write_json(evidence_dir / "release_decision.json", evidence["release_decision"])
     write_json(evidence_dir / "seeded_failure_decision.json", evidence["seeded_failure_decision"])
@@ -531,7 +553,16 @@ def run_capstone_faults(evidence_dir: Path, scenario: str = "all") -> dict[str, 
         results["traceability"] = closure.closed
     if scenario in {"all", "seeded_failure"}:
         steps = verifier.game_day.run(seeded_failure_step=2)
-        decision = verifier.decide(closure, steps, verifier.bundle(closure, steps), seeded_failure_proven=True)
+        governance_verification = GovernanceVerification()
+        governance = governance_verification.final_decision()
+        rights_receipts = list(governance_verification.rights_receipts())
+        decision = verifier.decide(
+            closure,
+            steps,
+            verifier.bundle(closure, steps, governance, rights_receipts),
+            governance,
+            seeded_failure_proven=True,
+        )
         results["seeded_failure"] = decision.decision == CapstoneDecision.NO_GO
     if scenario in {"all", "game_day"}:
         results["game_day"] = all(step.status == GameDayStatus.PASSED for step in verifier.game_day.run())
