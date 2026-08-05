@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from policyops.adapters.replay import ReplayModelClient
 from policyops.api import create_app
+from policyops.api.verification import run_foundation_verification
 from policyops.capstone import CapstoneRuntime
 from policyops.composition import AppContainer
 from policyops.config import Settings
@@ -257,6 +258,18 @@ def test_answer_success_with_local_adapter(tmp_path: Path) -> None:
     body = r.json()
     assert body["answer"]["text"].startswith("Employees may work remotely")
     assert body["usage"]["adapter"] == "local"
+
+
+def test_foundation_verification_writes_measured_scorecard(tmp_path: Path) -> None:
+    payload = run_foundation_verification(tmp_path)
+    assert payload["gates_passed"] is True
+    assert (tmp_path / "foundation_scorecard.json").exists()
+    assert (tmp_path / "request_report.json").exists()
+    scorecard = json.loads((tmp_path / "foundation_scorecard.json").read_text(encoding="utf-8"))
+    assert scorecard["zero_model_call_rejections"] == 2
+    assert scorecard["p95_latency_ms"] >= scorecard["p50_latency_ms"] >= 1
+    assert "http.request" in scorecard["required_spans_present"]
+    assert scorecard["redaction_safe"] is True
 
 
 def test_triage_run_create_inspect_and_idempotency(client: TestClient) -> None:

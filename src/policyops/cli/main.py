@@ -826,6 +826,8 @@ def verify(
     evidence_dir = Path(evidence) if evidence else _build_dir(lab)
     evidence_dir.mkdir(parents=True, exist_ok=True)
     junit_path = Path(junit) if junit else evidence_dir / "junit.xml"
+    custom_scorecard: dict[str, object] | None = None
+    custom_trace_payload: dict[str, object] | None = None
 
     env = os.environ.copy()
     env["POLICYOPS_PROFILE"] = profile
@@ -874,7 +876,14 @@ def verify(
     result = subprocess.run(cmd, cwd=ROOT, env=env, check=False)
 
     eval_ok = True
-    if lab == "ch02" and result.returncode == 0:
+    if lab == "ch01" and result.returncode == 0:
+        from policyops.api.verification import run_foundation_verification
+
+        payload = run_foundation_verification(evidence_dir, ROOT / "labs" / "ch01" / "fixtures")
+        eval_ok = payload["gates_passed"] is True
+        custom_scorecard = payload["scorecard"]
+        custom_trace_payload = payload["trace_redaction"]
+    elif lab == "ch02" and result.returncode == 0:
         from policyops.eval.runner import run_suite
 
         summary = asyncio.run(
@@ -992,7 +1001,7 @@ def verify(
     ):
         pass
 
-    trace_payload = {
+    trace_payload = custom_trace_payload or {
         "lab": lab,
         "profile": profile,
         "redaction": "allowlist",
@@ -1042,7 +1051,7 @@ def verify(
         "passed": result.returncode == 0 and eval_ok,
     }
     (evidence_dir / "result.json").write_text(json.dumps(gates, indent=2), encoding="utf-8")
-    scorecard = {
+    scorecard = custom_scorecard or {
         "lab": lab,
         "profile": profile,
         "note": "fixture latency is not provider performance",
