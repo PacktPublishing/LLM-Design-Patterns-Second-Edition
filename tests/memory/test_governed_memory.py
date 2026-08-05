@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -308,7 +309,13 @@ def test_fixture_verification_writes_memory_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "recall_report.json").exists()
     assert (tmp_path / "deletion_receipt.json").exists()
     assert (tmp_path / "export_jobs.json").exists()
+    assert (tmp_path / "decision_report.json").exists()
+    assert (tmp_path / "benchmark_report.json").exists()
     assert (tmp_path / "memory_scorecard.json").exists()
+    benchmark = json.loads((tmp_path / "benchmark_report.json").read_text(encoding="utf-8"))
+    assert benchmark["governed_memory_success_rate"] - benchmark["no_memory_success_rate"] >= 0.15
+    decisions = json.loads((tmp_path / "decision_report.json").read_text(encoding="utf-8"))
+    assert all(case["matched"] for case in decisions)
 
 
 def test_sqlite_backed_memory_ledger_persists_records_events_and_receipts(tmp_path: Path) -> None:
