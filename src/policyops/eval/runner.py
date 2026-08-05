@@ -32,6 +32,21 @@ def _hash_obj(obj: Any) -> str:
     return f"sha256:{digest}"
 
 
+def _derive_trial_cost(record: TrialRecord) -> tuple[float | None, str, dict[str, int]]:
+    usage = record.usage or {}
+    input_tokens = int(usage.get("input_tokens", 0) or 0)
+    output_tokens = int(usage.get("output_tokens", 0) or 0)
+    token_totals = {"input_tokens": input_tokens, "output_tokens": output_tokens}
+    if record.cost_usd is not None and record.cost_usd > 0:
+        return record.cost_usd, "explicit_cost", token_totals
+    total_tokens = input_tokens + output_tokens
+    if total_tokens > 0:
+        return round((total_tokens / 1000.0) * 0.15, 6), "token_proxy", token_totals
+    if not record.model_invoked:
+        return 0.0, "no_model_call", token_totals
+    return None, "unavailable", token_totals
+
+
 def load_cases(root: Path) -> list[TaskCase]:
     cases: list[TaskCase] = []
     for path in sorted(root.rglob("*.jsonl")):
@@ -130,6 +145,7 @@ async def run_suite(
     candidate = PolicyOpsCandidate()
     pool = BoundedPool(PoolBudget(concurrency=4, max_retries=3))
     outcomes: list[Outcome] = []
+    cost_rows: list[dict[str, Any]] = []
     trial_lines: list[str] = []
     grade_lines: list[str] = []
     taxonomy: Counter[str] = Counter()
@@ -188,6 +204,18 @@ async def run_suite(
                     grader_results=grader_results,
                 )
             )
+            derived_cost_usd, cost_source, token_totals = _derive_trial_cost(record)
+            cost_rows.append(
+                {
+                    "trial_id": trial.trial_id,
+                    "task_id": case.task_id,
+                    "passed": passed,
+                    "model_invoked": record.model_invoked,
+                    "cost_source": cost_source,
+                    "derived_cost_usd": derived_cost_usd,
+                    **token_totals,
+                }
+            )
 
     passed_trials = sum(1 for o in outcomes if o.passed)
     total_trials = len(outcomes)
@@ -208,8 +236,10 @@ async def run_suite(
             pass_hat_k = sum(1 for flags in by_task.values() if all(flags)) / len(by_task)
 
     success_count = sum(1 for o in outcomes if o.passed)
-    if success_count:
-        cpso: float | None = 0.0
+    successful_cost_rows = [row for row in cost_rows if row["passed"]]
+    successful_costs = [row["derived_cost_usd"] for row in successful_cost_rows if row["derived_cost_usd"] is not None]
+    if success_count and len(successful_costs) == success_count:
+        cpso = round(sum(successful_costs) / success_count, 6)
         cost_status = "available"
     else:
         cpso = None
@@ -269,6 +299,20 @@ async def run_suite(
     (evidence_dir / "calibration_report.json").write_text(
         canonical_json(calibration_report), encoding="utf-8"
     )
+    cost_report = {
+        "schema_version": "1",
+        "suite": suite,
+        "cost_status": cost_status,
+        "cost_per_successful_outcome": cpso,
+        "successful_trial_count": success_count,
+        "successful_known_cost_trials": len(successful_costs),
+        "successful_total_cost_usd": round(sum(successful_costs), 6) if successful_costs else None,
+        "trials": cost_rows,
+    }
+    (evidence_dir / "cost_report.json").write_text(
+        canonical_json(cost_report),
+        encoding="utf-8",
+    )
     (evidence_dir / "result.json").write_text(
         json.dumps(
             {
@@ -292,6 +336,7 @@ async def run_suite(
             "summary": "summary.json",
             "failure_taxonomy": "failure_taxonomy.json",
             "calibration_report": "calibration_report.json",
+            "cost_report": "cost_report.json",
             "holdout_hashes": "holdout_hashes.json",
             "result": "result.json",
         },

@@ -67,9 +67,11 @@ async def test_regression_suite_gates(tmp_path: Path) -> None:
     )
     assert summary.gates_passed
     assert summary.cost_status == "available"
+    assert summary.cost_per_successful_outcome and summary.cost_per_successful_outcome > 0
     assert (tmp_path / "regression" / "summary.json").exists()
     assert (tmp_path / "regression" / "failure_taxonomy.json").exists()
     assert (tmp_path / "regression" / "calibration_report.json").exists()
+    assert (tmp_path / "regression" / "cost_report.json").exists()
     assert (tmp_path / "regression" / "evidence_index.json").exists()
 
 
@@ -193,6 +195,22 @@ async def test_cpso_labeled_unavailable_when_no_successes(tmp_path: Path) -> Non
     assert summary.passed_trials == 0
     assert summary.cost_status == "unavailable"
     assert summary.cost_per_successful_outcome is None
+
+
+@pytest.mark.asyncio
+async def test_cpso_is_measured_from_trial_cost_inputs(tmp_path: Path) -> None:
+    summary = await run_suite(
+        cases_root=CASES,
+        suite="regression",
+        evidence_dir=tmp_path / "ev",
+        profile="fixture",
+    )
+    report = json.loads((tmp_path / "ev" / "cost_report.json").read_text(encoding="utf-8"))
+    assert summary.cost_status == "available"
+    assert summary.cost_per_successful_outcome == report["cost_per_successful_outcome"]
+    assert report["successful_trial_count"] == summary.passed_trials
+    assert report["successful_known_cost_trials"] == summary.passed_trials
+    assert any(row["cost_source"] == "token_proxy" for row in report["trials"] if row["passed"])
 
 
 @pytest.mark.asyncio
