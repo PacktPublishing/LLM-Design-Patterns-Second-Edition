@@ -867,7 +867,8 @@ def fixture_queries() -> list[GraphQuery]:
 def run_graph_verification(evidence_dir: Path) -> dict[str, object]:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     service = GraphService()
-    results = [service.query(q) for q in fixture_queries()]
+    queries = fixture_queries()
+    results = [service.query(q) for q in queries]
     cross = service.query(
         GraphQuery(
             query_id="g_cross",
@@ -880,6 +881,52 @@ def run_graph_verification(evidence_dir: Path) -> dict[str, object]:
     timeout = service.query(fixture_queries()[1], force_timeout=True)
     repair = service.repair("delete", "policy_conflict", "repair-delete-conflict")
     rollback = service.rollback(repair.previous_snapshot_id, "rollback-verify")
+
+    graph_benchmark_cases = {
+        "g_local": {"required_spans": {"span_remote_days"}},
+        "g_multi": {"required_spans": {"span_remote_days", "span_remote_approval"}},
+        "g_temporal": {"required_spans": {"span_remote_days"}, "requires_conflict": True},
+        "g_hybrid": {"required_spans": {"span_remote_days"}},
+    }
+
+    benchmark_rows: list[dict[str, object]] = []
+    graph_successes = 0
+    rag_successes = 0
+    graph_token_total = 0
+    rag_token_total = 0
+    for query, result in zip(queries, results, strict=True):
+        if query.query_id not in graph_benchmark_cases:
+            continue
+        case = graph_benchmark_cases[query.query_id]
+        graph_pack = EvidencePack.model_validate(result.evidence_pack)
+        rag_pack = service._standard_rag(query)
+        graph_spans = {item.citation.span_id for item in graph_pack.items}
+        rag_spans = {item.citation.span_id for item in rag_pack.items}
+        required_spans = set(case["required_spans"])
+        graph_success = required_spans.issubset(graph_spans)
+        rag_success = required_spans.issubset(rag_spans)
+        if case.get("requires_conflict"):
+            graph_values = {claim.value for claim in result.path.claim_refs} if result.path else set()
+            graph_success = graph_success and result.path is not None and result.path.status == PathStatus.CONFLICTING and len(graph_values) > 1
+            rag_success = False
+        graph_successes += int(graph_success)
+        rag_successes += int(rag_success)
+        graph_token_total += graph_pack.packed_tokens
+        rag_token_total += rag_pack.packed_tokens
+        benchmark_rows.append(
+            {
+                "query_id": query.query_id,
+                "query": query.query,
+                "graph_route": result.route.value,
+                "graph_success": graph_success,
+                "rag_success": rag_success,
+                "graph_spans": sorted(graph_spans),
+                "rag_spans": sorted(rag_spans),
+                "graph_tokens": graph_pack.packed_tokens,
+                "rag_tokens": rag_pack.packed_tokens,
+            }
+        )
+
     lineage_total = sum(len(r.path.claim_refs) for r in results if r.path)
     lineage_ok = 0
     for result in results:
@@ -909,8 +956,9 @@ def run_graph_verification(evidence_dir: Path) -> dict[str, object]:
     tenant_violations = 0
     if cross.path:
         tenant_violations = sum(1 for claim in cross.path.claim_refs if claim.tenant_id != "tenant_alpha")
-    graph_success = sum(1 for r in results if r.route != GraphRoute.STANDARD_RAG and r.path and r.path.status in {PathStatus.SUPPORTED, PathStatus.CONFLICTING})
-    task_success_gain = round(graph_success / 4 - 0.50, 2)
+    graph_success_rate = graph_successes / max(1, len(benchmark_rows))
+    rag_success_rate = rag_successes / max(1, len(benchmark_rows))
+    task_success_gain = round(graph_success_rate - rag_success_rate, 2)
     scorecard = GraphScorecard(
         task_success_gain=task_success_gain,
         router_accuracy=route_ok / len(results),
@@ -969,7 +1017,25 @@ def run_graph_verification(evidence_dir: Path) -> dict[str, object]:
     adr = {
         "decision": scorecard.decision,
         "task_success_gain": scorecard.task_success_gain,
+        "graph_success_rate": round(graph_success_rate, 4),
+        "rag_success_rate": round(rag_success_rate, 4),
+        "graph_cost_per_success_token_proxy": round(graph_token_total / max(1, graph_successes), 2),
+        "rag_cost_per_success_token_proxy": round(rag_token_total / max(1, rag_successes), 2),
         "note": "Use graph routes only for graph-suitable query classes; ordinary facts stay on Chapter 6 retrieval.",
     }
     (evidence_dir / "graph_vs_rag_adr.json").write_text(json.dumps(adr, indent=2), encoding="utf-8")
+    (evidence_dir / "graph_benchmark_report.json").write_text(
+        json.dumps(
+            {
+                "cases": benchmark_rows,
+                "graph_success_rate": round(graph_success_rate, 4),
+                "rag_success_rate": round(rag_success_rate, 4),
+                "task_success_gain": task_success_gain,
+                "graph_cost_per_success_token_proxy": round(graph_token_total / max(1, graph_successes), 2),
+                "rag_cost_per_success_token_proxy": round(rag_token_total / max(1, rag_successes), 2),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     return scorecard.model_dump(mode="json")

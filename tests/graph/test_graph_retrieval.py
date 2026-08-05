@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+import json
 from pathlib import Path
 
 from policyops.graph import (
@@ -159,8 +160,12 @@ def test_fixture_verification_writes_scorecard_and_adr(tmp_path: Path) -> None:
     assert scorecard["gates_passed"] is True
     assert (tmp_path / "graph_scorecard.json").exists()
     assert (tmp_path / "graph_vs_rag_adr.json").exists()
+    assert (tmp_path / "graph_benchmark_report.json").exists()
     assert (tmp_path / "snapshot_activations.json").exists()
     assert (tmp_path / "snapshot_registry.json").exists()
+    benchmark = json.loads((tmp_path / "graph_benchmark_report.json").read_text(encoding="utf-8"))
+    assert benchmark["task_success_gain"] >= 0.15
+    assert benchmark["graph_success_rate"] > benchmark["rag_success_rate"]
 
 
 def test_fixture_query_routes_are_deterministic() -> None:
