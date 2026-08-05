@@ -108,6 +108,30 @@ def test_good_candidate_reports_cost_per_successful_outcome() -> None:
     assert all(result.candidate_cost_per_success > 0 for result in ledger.results)
 
 
+def test_slo_records_cover_required_prd_areas_and_have_owners_and_windows() -> None:
+    slos = TraceImprovementPipeline().slo_records()
+    by_name = {record.name: record for record in slos}
+    assert set(by_name) >= {
+        "outcome_quality",
+        "p95_latency",
+        "error_rate",
+        "cost_budget",
+        "cost_per_successful_outcome",
+        "recovery",
+        "high_impact_action_success",
+    }
+    assert all(record.owner for record in slos)
+    assert all(record.window for record in slos)
+    assert all(record.measurement_query for record in slos)
+
+
+def test_harness_retirement_adr_records_measured_benefit_and_rollback_path() -> None:
+    adr = TraceImprovementPipeline().harness_retirement_adr()
+    assert adr.measured_benefit
+    assert adr.rollback_path
+    assert adr.decision in {"keep", "retire"}
+
+
 def test_behavior_canary_rolls_back_seeded_bad_release() -> None:
     report = TraceImprovementPipeline().simulate_canary(bad_release=True)
     assert report.decision.value == "rollback"
