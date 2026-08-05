@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -300,3 +301,15 @@ def test_fixture_verification_writes_extension_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "lifecycle_controls.json").exists()
     assert (tmp_path / "explicit_state_store.json").exists()
     assert (tmp_path / "extension_scorecard.json").exists()
+    explicit_state = json.loads((tmp_path / "explicit_state_store.json").read_text(encoding="utf-8"))
+    assert "approval_nonces" in explicit_state
+    assert "idempotency_results" in explicit_state
+    assert explicit_state["approval_nonces"]
+    assert explicit_state["idempotency_results"]
+    compatibility = json.loads((tmp_path / "compatibility_report.json").read_text(encoding="utf-8"))
+    assert compatibility["rc_opt_in"] is True
+    assert compatibility["unsupported_features_fail_closed"] is True
+    assert "package entrypoint layout" in compatibility["second_host_gaps"]
+    lifecycle = json.loads((tmp_path / "lifecycle_controls.json").read_text(encoding="utf-8"))
+    assert lifecycle["rolled_back"]["version"] == "1.0.0"
+    assert lifecycle["revoked"]["status"] == "revoked"

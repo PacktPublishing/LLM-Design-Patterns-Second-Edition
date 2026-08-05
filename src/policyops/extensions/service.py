@@ -358,6 +358,26 @@ class ApprovalStore:
             )
         return True, None
 
+    @property
+    def approval_nonces(self) -> dict[str, dict[str, Any]]:
+        rows = self.conn.execute(
+            """
+            SELECT nonce, effect_hash, actor_id, tenant_id, consumed_at
+            FROM approval_nonces
+            ORDER BY nonce
+            """
+        ).fetchall()
+        return {
+            row["nonce"]: {
+                "nonce": row["nonce"],
+                "effect_hash": row["effect_hash"],
+                "actor_id": row["actor_id"],
+                "tenant_id": row["tenant_id"],
+                "consumed_at": row["consumed_at"],
+            }
+            for row in rows
+        }
+
 
 class TicketRepository:
     operation = "create_policy_ticket"
@@ -370,6 +390,27 @@ class TicketRepository:
         rows = self.conn.execute("SELECT ticket_id, result_json FROM tickets ORDER BY ticket_id").fetchall()
         return {
             row["ticket_id"]: TicketResult.model_validate(json.loads(row["result_json"]))
+            for row in rows
+        }
+
+    @property
+    def idempotency_results(self) -> dict[str, dict[str, Any]]:
+        rows = self.conn.execute(
+            """
+            SELECT tenant_id, operation, idempotency_key, request_hash, ticket_id, result_json
+            FROM idempotency_results
+            ORDER BY tenant_id, operation, idempotency_key
+            """
+        ).fetchall()
+        return {
+            f"{row['tenant_id']}:{row['operation']}:{row['idempotency_key']}": {
+                "tenant_id": row["tenant_id"],
+                "operation": row["operation"],
+                "idempotency_key": row["idempotency_key"],
+                "request_hash": row["request_hash"],
+                "ticket_id": row["ticket_id"],
+                "result": json.loads(row["result_json"]),
+            }
             for row in rows
         }
 
@@ -1466,6 +1507,13 @@ def run_extension_verification(evidence_dir: Path) -> dict[str, Any]:
         expires_at=mcp_runtime.port.approval_store.now + 60,
     )
     mcp_result = mcp.create(mcp_preview, mcp_approval, "idem-mcp", context)
+    stable_profile_passed = mcp.negotiate(McpProfile.STABLE_2025_11_25)
+    rc_profile = McpAdapter(mcp_runtime.port, profile=McpProfile.RC_2026_07_28)
+    rc_profile_fail_closed = False
+    try:
+        rc_profile.preview(ticket, context)
+    except RuntimeError:
+        rc_profile_fail_closed = True
 
     missing_approval = port.create_policy_ticket(preview, None, "idem-denied", context)
     duplicate = port.repository.create_once(preview, context, "idem-1")
@@ -1483,17 +1531,17 @@ def run_extension_verification(evidence_dir: Path) -> dict[str, Any]:
         predecessor="1.0.0",
     )
     staged = loader.stage(update_manifest, update_files)
-    activated = loader.activate(DEFAULT_EXTENSION_ID, "1.1.0")
-    rolled_back = loader.rollback(DEFAULT_EXTENSION_ID)
+    activated = runtime.activate_extension(DEFAULT_EXTENSION_ID, "1.1.0")
+    rolled_back = runtime.rollback_extension(DEFAULT_EXTENSION_ID)
     tampered_manifest, tampered_files = fixture_manifest(loader, tampered=True)
     tampered = loader.verify(tampered_manifest, tampered_files)
-    loader.revoke(DEFAULT_EXTENSION_ID)
+    revoked_version = runtime.revoke_extension(DEFAULT_EXTENSION_ID)
     revoked = loader.verify(manifest, files)
     compatibility = CompatibilityReport(
         stable_profile=McpProfile.STABLE_2025_11_25,
         rc_profile=McpProfile.RC_2026_07_28,
-        rc_opt_in=True,
-        unsupported_features_fail_closed=True,
+        rc_opt_in=rc_profile_fail_closed,
+        unsupported_features_fail_closed=rc_profile_fail_closed,
         explicit_state_stores=[
             "workflow_state",
             "approval_nonces",
@@ -1502,20 +1550,47 @@ def run_extension_verification(evidence_dir: Path) -> dict[str, Any]:
             "resumable_results",
             "audit_events",
         ],
-        second_host_gaps=["activation metadata", "hook contract", "permission labels"],
+        second_host_gaps=[
+            "activation metadata",
+            "package entrypoint layout",
+            "hook contract",
+            "permission labels",
+        ],
+    )
+    direct_contract_pass_rate = 1.0 if direct.status == TicketStatus.CREATED else 0.0
+    mcp_contract_pass_rate = 1.0 if mcp_result.status == TicketStatus.CREATED else 0.0
+    unauthorized_tickets = 0 if missing_approval.status == TicketStatus.DENIED else 1
+    idempotency_violations = 0 if duplicate.ticket_id == direct.ticket_id else 1
+    tampered_or_revoked_loads = int(tampered.accepted) + int(revoked.accepted)
+    hook_timeout_denials = 1 if timeout.reason_code == DomainErrorCode.HOOK_TIMEOUT else 0
+    rollback_success = rolled_back.version == "1.0.0" and rolled_back.status == ExtensionStatus.ACTIVE
+    gates_passed = all(
+        [
+            stable_profile_passed,
+            rc_profile_fail_closed,
+            direct_contract_pass_rate == 1.0,
+            mcp_contract_pass_rate == 1.0,
+            activations.gates_passed,
+            unauthorized_tickets == 0,
+            idempotency_violations == 0,
+            tampered_or_revoked_loads == 0,
+            hook_timeout_denials == 1,
+            rollback_success,
+            revoked_version.status == ExtensionStatus.REVOKED,
+        ]
     )
     scorecard = ExtensionScorecard(
-        direct_contract_pass_rate=1.0 if direct.status == TicketStatus.CREATED else 0.0,
-        mcp_contract_pass_rate=1.0 if mcp_result.status == TicketStatus.CREATED else 0.0,
+        direct_contract_pass_rate=direct_contract_pass_rate,
+        mcp_contract_pass_rate=mcp_contract_pass_rate,
         activation_precision=activations.precision,
         activation_recall=activations.recall,
-        unauthorized_tickets=0 if missing_approval.status == TicketStatus.DENIED else 1,
-        idempotency_violations=0 if duplicate.ticket_id == direct.ticket_id else 1,
+        unauthorized_tickets=unauthorized_tickets,
+        idempotency_violations=idempotency_violations,
         secret_exposure=0,
-        tampered_or_revoked_loads=int(tampered.accepted) + int(revoked.accepted),
-        hook_timeout_denials=1 if timeout.reason_code == DomainErrorCode.HOOK_TIMEOUT else 0,
-        rollback_success=rolled_back and activated.version == "1.1.0",
-        gates_passed=True,
+        tampered_or_revoked_loads=tampered_or_revoked_loads,
+        hook_timeout_denials=hook_timeout_denials,
+        rollback_success=rollback_success,
+        gates_passed=gates_passed,
     )
     artifacts = {
         "tool_contract.json": [direct.model_dump(mode="json"), mcp_result.model_dump(mode="json")],
@@ -1530,13 +1605,18 @@ def run_extension_verification(evidence_dir: Path) -> dict[str, Any]:
         "extension_scorecard.json": scorecard.model_dump(mode="json"),
         "lifecycle_controls.json": {
             "activated": activated.model_dump(mode="json"),
-            "rollback_success": rolled_back,
+            "rolled_back": rolled_back.model_dump(mode="json"),
+            "rollback_success": rollback_success,
+            "revoked": revoked_version.model_dump(mode="json"),
             "versions": [item.model_dump(mode="json") for item in loader.list_extensions()],
         },
         "explicit_state_store.json": {
             "workflow_state": port.state_store.workflow_state,
+            "approval_nonces": port.approval_store.approval_nonces,
+            "idempotency_results": port.repository.idempotency_results,
             "mcp_subscriptions": mcp.state_store.subscriptions,
             "resumable_results": mcp.state_store.resumable_results,
+            "audit_events": [event.model_dump(mode="json") for event in port.audit_store.events],
         },
         "audit_events.jsonl": [event.model_dump(mode="json") for event in port.audit_store.events],
     }
