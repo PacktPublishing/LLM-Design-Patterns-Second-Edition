@@ -1070,13 +1070,29 @@ def run_harness_verification(evidence_dir: Path) -> dict[str, Any]:
         stale_rejected = 1
     stopped = loop.run_once("budget-stop", budget=BudgetSnapshot(iteration_limit=0))
     replay_state = loop.replay_no_effects("budget-stop")
+    approval_loop = ResumableLoop()
+    interrupted = approval_loop.run_once("approval-expired", fault=FaultScenario.BEFORE_EFFECT)
+    approval_loop.dispatcher.tool_port.approval_store.now += 120
+    approval_resumed = approval_loop.resume(interrupted.session_id)
+    approval_receipt = approval_loop.store.receipts[f"{interrupted.session_id}:ticket"]
+    approval_mismatch_denials = int(
+        approval_receipt.status == "failed"
+        and approval_receipt.observed_postcondition["ticket_count_delta"] == 0
+        and approval_resumed.state == SessionPhase.VERIFIED
+    )
+    replay_guard = OutboxDispatcher(EventStore(), replay=True)
+    replay_external_calls = 0
+    try:
+        replay_guard.deliver("missing")
+    except EffectAttemptedDuringReplay:
+        replay_external_calls = replay_guard.external_calls
     scorecard = HarnessScorecard(
         crash_cases_recovered=recovered,
         duplicate_tickets=duplicate_tickets,
         out_of_scope_changes=0 if accepted.accepted and not rejected.accepted else 1,
         stale_fence_writes_rejected=stale_rejected,
-        replay_external_calls=0,
-        approval_mismatch_denials=1,
+        replay_external_calls=replay_external_calls,
+        approval_mismatch_denials=approval_mismatch_denials,
         budget_stops=1 if stopped.terminal_reason == FailureClass.BUDGET else 0,
         gates_passed=True,
     )
@@ -1084,6 +1100,10 @@ def run_harness_verification(evidence_dir: Path) -> dict[str, Any]:
         "review_bundle.json": [accepted.model_dump(mode="json"), rejected.model_dump(mode="json")],
         "fault_results.json": fault_records,
         "replay_result.json": replay_state.model_dump(mode="json"),
+        "approval_denial.json": {
+            "state": approval_resumed.model_dump(mode="json"),
+            "receipt": approval_receipt.model_dump(mode="json"),
+        },
         "runbook.json": {"reconcile": "resume from event stream, dispatch pending outbox with same idempotency key"},
         "harness_scorecard.json": scorecard.model_dump(mode="json"),
     }

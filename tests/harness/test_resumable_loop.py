@@ -159,8 +159,11 @@ def test_fixture_verification_writes_harness_evidence(tmp_path: Path) -> None:
     assert (tmp_path / "review_bundle.json").exists()
     assert (tmp_path / "fault_results.json").exists()
     assert (tmp_path / "replay_result.json").exists()
+    assert (tmp_path / "approval_denial.json").exists()
     assert (tmp_path / "runbook.json").exists()
     assert (tmp_path / "harness_scorecard.json").exists()
+    scorecard = __import__("json").loads((tmp_path / "harness_scorecard.json").read_text(encoding="utf-8"))
+    assert scorecard["approval_mismatch_denials"] == 1
 
 
 def test_session_runtime_uses_durable_sqlite_database(tmp_path: Path) -> None:
