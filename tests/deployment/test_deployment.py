@@ -48,6 +48,34 @@ def test_worker_claim_and_ack_use_fencing() -> None:
     assert queue.acknowledge(stale) is False
 
 
+def test_admission_rejects_when_global_or_tenant_concurrency_is_exhausted() -> None:
+    queue = DurableWorkQueue()
+    queue.offer(WorkItem(item_id="alpha-a", envelope=fixture_envelope(session_id="alpha-a"), priority=0, payload_bytes=128))
+    queue.offer(WorkItem(item_id="beta-a", envelope=fixture_envelope(tenant_id="tenant-beta", session_id="beta-a"), priority=1, payload_bytes=128))
+    lease_a = queue.claim("worker-a")
+    lease_b = queue.claim("worker-b")
+    assert lease_a is not None
+    assert lease_b is not None
+
+    global_reject = queue.offer(
+        WorkItem(item_id="alpha-b", envelope=fixture_envelope(session_id="alpha-b"), priority=2, payload_bytes=128)
+    )
+    assert global_reject.status.value == "rejected_429"
+    assert global_reject.reason == "global concurrency exhausted"
+    assert global_reject.enqueued is False
+
+    queue = DurableWorkQueue()
+    queue.offer(WorkItem(item_id="alpha-c", envelope=fixture_envelope(session_id="alpha-c"), priority=0, payload_bytes=128))
+    lease_c = queue.claim("worker-a")
+    assert lease_c is not None
+    tenant_reject = queue.offer(
+        WorkItem(item_id="alpha-d", envelope=fixture_envelope(session_id="alpha-d"), priority=1, payload_bytes=128)
+    )
+    assert tenant_reject.status.value == "rejected_429"
+    assert tenant_reject.reason == "tenant concurrency exhausted"
+    assert tenant_reject.enqueued is False
+
+
 def test_idempotency_preserves_one_business_effect() -> None:
     service = IdempotentTicketService()
     assert service.create_ticket("idem-1") == service.create_ticket("idem-1")
@@ -103,6 +131,7 @@ def test_load_and_chaos_scorecard_passes_hard_gates() -> None:
     assert scorecard.queue_bound_held is True
     assert scorecard.duplicate_tickets == 0
     assert scorecard.bad_image_rolled_back is True
+    assert scorecard.runbook_coverage == 1.0
     assert all(item["duplicate_effects"] == 0 for item in evidence["chaos"])
 
 

@@ -71,6 +71,15 @@ class DurableWorkQueue:
         self.items: dict[str, WorkItem] = {}
         self.fences: dict[str, int] = {}
 
+    def _active_claims(self, *, now_ms: int) -> list[WorkItem]:
+        return [
+            item
+            for item in self.items.values()
+            if item.state == WorkState.CLAIMED
+            and item.claim_expires_at_ms is not None
+            and item.claim_expires_at_ms > now_ms
+        ]
+
     def offer(self, item: WorkItem, *, now_ms: int = NOW_MS) -> OfferResult:
         if item.payload_bytes > self.limits.max_payload_bytes:
             return OfferResult(status=OfferStatus.REJECTED_PAYLOAD, reason="payload too large", enqueued=False)
@@ -78,6 +87,26 @@ class DurableWorkQueue:
             return OfferResult(
                 status=OfferStatus.REJECTED_DEADLINE,
                 reason="deadline cannot survive expected queue delay",
+                enqueued=False,
+            )
+        active_claims = self._active_claims(now_ms=now_ms)
+        if len(active_claims) >= self.limits.global_concurrency:
+            return OfferResult(
+                status=OfferStatus.REJECTED_429,
+                retry_after_ms=250,
+                reason="global concurrency exhausted",
+                enqueued=False,
+            )
+        tenant_claims = [
+            claimed
+            for claimed in active_claims
+            if claimed.envelope.tenant_id == item.envelope.tenant_id
+        ]
+        if len(tenant_claims) >= self.limits.per_tenant_concurrency:
+            return OfferResult(
+                status=OfferStatus.REJECTED_429,
+                retry_after_ms=250,
+                reason="tenant concurrency exhausted",
                 enqueued=False,
             )
         if len([queued for queued in self.items.values() if queued.state == WorkState.QUEUED]) >= self.limits.max_queue_depth:
@@ -716,6 +745,12 @@ class DeploymentVerification:
             self.reliability.breaker_after_failures("ticket", 1),
         ]
         runbooks = self.driver.runbooks()
+        covered_runbooks = {
+            chaos_result.runbook_ref
+            for chaos_result in chaos
+            if chaos_result.runbook_ref in {runbook.runbook_id for runbook in runbooks}
+        }
+        runbook_coverage = len(covered_runbooks) / len(chaos) if chaos else 1.0
         scorecard = DeploymentScorecard(
             queue_bound_held=load.queue_depth_max <= load.queue_depth_limit,
             duplicate_tickets=int(queue["duplicate_tickets"]),
@@ -733,9 +768,7 @@ class DeploymentVerification:
             error_slo_met=load.error_rate <= load.error_threshold,
             network_probe_denied=True,
             secret_leaks=0,
-            runbook_coverage=1.0
-            if {item.scenario for item in chaos} == {book.runbook_id.replace("RB-14-", "") for book in []}
-            else 1.0,
+            runbook_coverage=runbook_coverage,
             gates_passed=True,
         )
         evidence = {
