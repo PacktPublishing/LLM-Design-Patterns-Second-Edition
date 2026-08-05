@@ -94,18 +94,26 @@ def test_only_expert_adjudicated_product_failure_can_graduate_to_eval_case() -> 
 
 
 def test_overfit_candidate_is_reverted_and_protected_hashes_are_unchanged() -> None:
-    ledger = TraceImprovementPipeline().run_experiment(overfit=True)
+    pipeline = TraceImprovementPipeline()
+    trial_report = pipeline.experiment_trial_report(overfit=True)
+    ledger = pipeline.run_experiment(overfit=True)
     assert ledger.decision == ExperimentDecision.REVERT
     assert ledger.protected_hashes_before == ledger.protected_hashes_after
+    assert ledger.protected_hashes_before == trial_report["protected_hashes_before"]
     by_suite = {result.suite: result for result in ledger.results}
     assert by_suite["target"].candidate_score > by_suite["target"].baseline_score
     assert by_suite["holdout"].candidate_score < by_suite["holdout"].baseline_score
+    assert len(trial_report["trials"]) == 18
 
 
 def test_good_candidate_reports_cost_per_successful_outcome() -> None:
-    ledger = TraceImprovementPipeline().run_experiment(overfit=False)
+    pipeline = TraceImprovementPipeline()
+    trial_report = pipeline.experiment_trial_report(overfit=False)
+    ledger = pipeline.run_experiment(overfit=False)
     assert ledger.decision == ExperimentDecision.KEEP
     assert all(result.candidate_cost_per_success > 0 for result in ledger.results)
+    assert ledger.manifest.candidate_hash == trial_report["candidate_hash"]
+    assert all(result.candidate_score >= result.baseline_score for result in ledger.results)
 
 
 def test_slo_records_cover_required_prd_areas_and_have_owners_and_windows() -> None:
@@ -133,10 +141,15 @@ def test_harness_retirement_adr_records_measured_benefit_and_rollback_path() -> 
 
 
 def test_behavior_canary_rolls_back_seeded_bad_release() -> None:
-    report = TraceImprovementPipeline().simulate_canary(bad_release=True)
+    pipeline = TraceImprovementPipeline()
+    trial_report = pipeline.canary_trial_report(bad_release=True)
+    report = pipeline.simulate_canary(bad_release=True)
     assert report.decision.value == "rollback"
     assert report.accepted_alias_after == report.baseline_alias_before
     assert report.metrics.safety_incidents == 1
+    assert len(trial_report["requests"]) == 20
+    assert report.metrics.p95_latency_ms > 2500
+    assert report.metrics.candidate_success_rate < report.metrics.baseline_success_rate
 
 
 def test_reconstruction_and_backend_outage_do_not_repeat_effects_or_fail_request() -> None:
@@ -163,8 +176,11 @@ def test_observability_verifier_writes_required_evidence(tmp_path) -> None:
         "adjudication.json",
         "eval_case_from_trace.json",
         "experiment_ledger.json",
+        "experiment_trial_report.json",
         "accepted_candidate_ledger.json",
+        "accepted_candidate_trial_report.json",
         "canary_report.json",
+        "canary_trial_report.json",
         "reconstruction_report.json",
         "telemetry_outage.json",
         "harness_event_spans.json",

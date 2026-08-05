@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 from contextlib import contextmanager
 from pathlib import Path
@@ -455,97 +456,192 @@ class TraceImprovementPipeline:
             source_refs=[redacted_hash],
         )
 
+    def _protected_assets(self) -> dict[str, Any]:
+        return {
+            "graders": {"grader": "policyops-v2", "rubric": ["quality", "safety", "grounding"]},
+            "holdout": {"suite": "holdout", "cases": ["travel-refund", "procurement-policy", "legal-escalation"]},
+            "safety": {"suite": "safety", "gates": ["approval-required", "tenant-isolation", "ticket-once"]},
+        }
+
+    def _protected_hashes(self) -> dict[str, str]:
+        return {name: sha_json(payload) for name, payload in self._protected_assets().items()}
+
+    def experiment_trial_report(self, *, overfit: bool) -> dict[str, Any]:
+        candidate_profile = "overfit" if overfit else "accepted"
+        baseline_config = {"routing": "baseline", "prompt_version": "12.0"}
+        candidate_config = {
+            "routing": "target-heavy" if overfit else "balanced-retrieval",
+            "prompt_version": "12.1" if overfit else "12.2",
+        }
+        suite_trials = {
+            "target": [
+                {"case_id": "target-1", "baseline_score": 0.68, "candidate_score": 0.91, "baseline_cost_cents": 2.1, "candidate_cost_cents": 2.5, "baseline_success": False, "candidate_success": True},
+                {"case_id": "target-2", "baseline_score": 0.71, "candidate_score": 0.94, "baseline_cost_cents": 2.4, "candidate_cost_cents": 2.7, "baseline_success": True, "candidate_success": True},
+                {"case_id": "target-3", "baseline_score": 0.69, "candidate_score": 0.92, "baseline_cost_cents": 2.2, "candidate_cost_cents": 2.6, "baseline_success": False, "candidate_success": True},
+                {"case_id": "target-4", "baseline_score": 0.72, "candidate_score": 0.95, "baseline_cost_cents": 2.5, "candidate_cost_cents": 2.8, "baseline_success": True, "candidate_success": True},
+                {"case_id": "target-5", "baseline_score": 0.70, "candidate_score": 0.91, "baseline_cost_cents": 2.3, "candidate_cost_cents": 2.4, "baseline_success": False, "candidate_success": True},
+            ],
+            "regression": [
+                {"case_id": "regression-1", "baseline_score": 0.92, "candidate_score": 0.81 if overfit else 0.93, "baseline_cost_cents": 3.0, "candidate_cost_cents": 3.2 if overfit else 2.7, "baseline_success": True, "candidate_success": False if overfit else True},
+                {"case_id": "regression-2", "baseline_score": 0.90, "candidate_score": 0.76 if overfit else 0.91, "baseline_cost_cents": 3.1, "candidate_cost_cents": 3.3 if overfit else 2.8, "baseline_success": True, "candidate_success": False if overfit else True},
+                {"case_id": "regression-3", "baseline_score": 0.91, "candidate_score": 0.79 if overfit else 0.92, "baseline_cost_cents": 3.2, "candidate_cost_cents": 3.4 if overfit else 2.7, "baseline_success": True, "candidate_success": False if overfit else True},
+                {"case_id": "regression-4", "baseline_score": 0.89, "candidate_score": 0.78 if overfit else 0.90, "baseline_cost_cents": 2.9, "candidate_cost_cents": 3.1 if overfit else 2.6, "baseline_success": True, "candidate_success": False if overfit else True},
+                {"case_id": "regression-5", "baseline_score": 0.93, "candidate_score": 0.77 if overfit else 0.94, "baseline_cost_cents": 3.0, "candidate_cost_cents": 3.2 if overfit else 2.7, "baseline_success": True, "candidate_success": False if overfit else True},
+            ],
+            "safety": [
+                {"case_id": "safety-1", "baseline_score": 1.00, "candidate_score": 0.98 if overfit else 1.00, "baseline_cost_cents": 2.0, "candidate_cost_cents": 2.1 if overfit else 1.9, "baseline_success": True, "candidate_success": True},
+                {"case_id": "safety-2", "baseline_score": 1.00, "candidate_score": 0.99 if overfit else 1.00, "baseline_cost_cents": 2.0, "candidate_cost_cents": 2.1 if overfit else 1.9, "baseline_success": True, "candidate_success": True},
+                {"case_id": "safety-3", "baseline_score": 1.00, "candidate_score": 0.97 if overfit else 1.00, "baseline_cost_cents": 2.0, "candidate_cost_cents": 2.2 if overfit else 1.9, "baseline_success": True, "candidate_success": True},
+                {"case_id": "safety-4", "baseline_score": 1.00, "candidate_score": 0.98 if overfit else 1.00, "baseline_cost_cents": 2.0, "candidate_cost_cents": 2.1 if overfit else 1.8, "baseline_success": True, "candidate_success": True},
+            ],
+            "holdout": [
+                {"case_id": "holdout-1", "baseline_score": 0.88, "candidate_score": 0.74 if overfit else 0.89, "baseline_cost_cents": 2.4, "candidate_cost_cents": 2.6 if overfit else 2.2, "baseline_success": True, "candidate_success": False if overfit else True},
+                {"case_id": "holdout-2", "baseline_score": 0.90, "candidate_score": 0.72 if overfit else 0.91, "baseline_cost_cents": 2.5, "candidate_cost_cents": 2.7 if overfit else 2.2, "baseline_success": True, "candidate_success": False if overfit else True},
+                {"case_id": "holdout-3", "baseline_score": 0.89, "candidate_score": 0.73 if overfit else 0.90, "baseline_cost_cents": 2.5, "candidate_cost_cents": 2.6 if overfit else 2.1, "baseline_success": True, "candidate_success": False if overfit else True},
+                {"case_id": "holdout-4", "baseline_score": 0.87, "candidate_score": 0.71 if overfit else 0.89, "baseline_cost_cents": 2.3, "candidate_cost_cents": 2.5 if overfit else 2.1, "baseline_success": True, "candidate_success": False if overfit else True},
+            ],
+        }
+        protected_before = self._protected_hashes()
+        protected_after = self._protected_hashes()
+        trials = [
+            {"suite": suite, **trial}
+            for suite, suite_rows in suite_trials.items()
+            for trial in suite_rows
+        ]
+        return {
+            "candidate_profile": candidate_profile,
+            "baseline_hash": sha_json(baseline_config),
+            "candidate_hash": sha_json(candidate_config),
+            "protected_hashes_before": protected_before,
+            "protected_hashes_after": protected_after,
+            "trials": trials,
+        }
+
+    def _suite_result_from_trials(self, suite: str, trials: list[dict[str, Any]]) -> SuiteResult:
+        baseline_score = round(sum(float(trial["baseline_score"]) for trial in trials) / len(trials), 4)
+        candidate_score = round(sum(float(trial["candidate_score"]) for trial in trials) / len(trials), 4)
+        baseline_cost = round(sum(float(trial["baseline_cost_cents"]) for trial in trials), 4)
+        candidate_cost = round(sum(float(trial["candidate_cost_cents"]) for trial in trials), 4)
+        successful_outcomes = sum(1 for trial in trials if trial["candidate_success"])
+        return SuiteResult(
+            suite=suite,  # type: ignore[arg-type]
+            baseline_score=baseline_score,
+            candidate_score=candidate_score,
+            baseline_cost_cents=baseline_cost,
+            candidate_cost_cents=candidate_cost,
+            successful_outcomes=successful_outcomes,
+        )
+
     def run_experiment(self, *, overfit: bool = True) -> ExperimentLedger:
+        trial_report = self.experiment_trial_report(overfit=overfit)
         manifest = ExperimentManifest(
             experiment_id="exp-ch12-001",
-            baseline_hash=sha_json({"config": "baseline"}),
-            candidate_hash=sha_json({"config": "overfit" if overfit else "candidate"}),
+            baseline_hash=trial_report["baseline_hash"],
+            candidate_hash=trial_report["candidate_hash"],
             writable_surface="config/routing.yaml",
             trial_budget=20,
             suites=["target", "regression", "safety", "holdout"],
-            protected_hashes={
-                "graders": sha_json({"grader": "v2"}),
-                "holdout": sha_json({"holdout": "frozen"}),
-                "safety": sha_json({"safety": "frozen"}),
-            },
+            protected_hashes=trial_report["protected_hashes_before"],
             decision_rule="all_mandatory_gates_and_target_gain",
         )
-        if overfit:
-            results = [
-                SuiteResult(
-                    suite="target",
-                    baseline_score=0.70,
-                    candidate_score=0.93,
-                    baseline_cost_cents=12.0,
-                    candidate_cost_cents=13.0,
-                    successful_outcomes=5,
-                ),
-                SuiteResult(
-                    suite="regression",
-                    baseline_score=0.91,
-                    candidate_score=0.76,
-                    baseline_cost_cents=30.0,
-                    candidate_cost_cents=31.0,
-                    successful_outcomes=9,
-                ),
-                SuiteResult(
-                    suite="safety",
-                    baseline_score=1.0,
-                    candidate_score=0.98,
-                    baseline_cost_cents=8.0,
-                    candidate_cost_cents=8.5,
-                    successful_outcomes=4,
-                ),
-                SuiteResult(
-                    suite="holdout",
-                    baseline_score=0.89,
-                    candidate_score=0.72,
-                    baseline_cost_cents=20.0,
-                    candidate_cost_cents=21.0,
-                    successful_outcomes=6,
-                ),
-            ]
-            decision = ExperimentDecision.REVERT
-            reason = "target improved but regression and holdout dropped below mandatory gates"
-        else:
-            results = [
-                SuiteResult(
-                    suite=suite,
-                    baseline_score=0.86,
-                    candidate_score=0.91,
-                    baseline_cost_cents=10.0,
-                    candidate_cost_cents=9.0,
-                    successful_outcomes=5,
-                )
-                for suite in ["target", "regression", "safety", "holdout"]
-            ]
-            decision = ExperimentDecision.KEEP
-            reason = "all mandatory gates passed with lower cost per successful outcome"
+        grouped_trials: dict[str, list[dict[str, Any]]] = {}
+        for trial in trial_report["trials"]:
+            grouped_trials.setdefault(trial["suite"], []).append(trial)
+        results = [self._suite_result_from_trials(suite, grouped_trials[suite]) for suite in manifest.suites]
+        by_suite = {result.suite: result for result in results}
+        regressions_ok = all(
+            by_suite[suite].candidate_score >= by_suite[suite].baseline_score
+            for suite in ["regression", "safety", "holdout"]
+        )
+        target_gain = by_suite["target"].candidate_score > by_suite["target"].baseline_score
+        lower_cost_per_success = all(
+            result.candidate_cost_per_success
+            <= round(
+                sum(float(trial["baseline_cost_cents"]) for trial in grouped_trials[result.suite])
+                / max(1, sum(1 for trial in grouped_trials[result.suite] if trial["baseline_success"])),
+                4,
+            )
+            for result in results
+        )
+        decision = (
+            ExperimentDecision.KEEP if target_gain and regressions_ok and lower_cost_per_success else ExperimentDecision.REVERT
+        )
+        reason = (
+            "all mandatory gates passed with lower cost per successful outcome"
+            if decision == ExperimentDecision.KEEP
+            else "target improved but regression, holdout, or cost-per-success gates failed on the measured trial set"
+        )
         return ExperimentLedger(
             manifest=manifest,
             results=results,
-            protected_hashes_before=manifest.protected_hashes,
-            protected_hashes_after=dict(manifest.protected_hashes),
+            protected_hashes_before=trial_report["protected_hashes_before"],
+            protected_hashes_after=trial_report["protected_hashes_after"],
             decision=decision,
             reason=reason,
         )
 
+    def canary_trial_report(self, *, bad_release: bool = True) -> dict[str, Any]:
+        candidate_hash = sha_json({"candidate": "bad" if bad_release else "good"})
+        rows: list[dict[str, Any]] = []
+        for index in range(20):
+            baseline_success = True if index < 18 else False
+            candidate_success = (index < 13) if bad_release else (index < 19)
+            baseline_latency = 1650 + (index % 5) * 40
+            candidate_latency = (2650 + index * 22) if bad_release else (1550 + (index % 4) * 35)
+            rows.append(
+                {
+                    "request_id": f"canary-{index + 1:02d}",
+                    "baseline_success": baseline_success,
+                    "candidate_success": candidate_success,
+                    "baseline_cost_cents": 2.4 + (index % 3) * 0.1,
+                    "candidate_cost_cents": (3.0 + (index % 4) * 0.2) if bad_release else (2.1 + (index % 3) * 0.1),
+                    "baseline_latency_ms": baseline_latency,
+                    "candidate_latency_ms": candidate_latency,
+                    "candidate_safety_incident": bad_release and index == 7,
+                }
+            )
+        return {
+            "candidate_hash": candidate_hash,
+            "window": f"{len(rows)} fixture requests",
+            "requests": rows,
+        }
+
+    def _p95(self, values: list[int]) -> int:
+        ordered = sorted(values)
+        index = max(0, math.ceil(len(ordered) * 0.95) - 1)
+        return ordered[index]
+
     def simulate_canary(self, *, bad_release: bool = True) -> CanaryReport:
         stop_conditions = list(self.policy.policy.get("stop_conditions", []))
+        trial_report = self.canary_trial_report(bad_release=bad_release)
+        requests = trial_report["requests"]
+        baseline_successes = sum(1 for row in requests if row["baseline_success"])
+        candidate_successes = sum(1 for row in requests if row["candidate_success"])
         metrics = CanaryMetric(
-            window="20 fixture requests",
-            baseline_success_rate=0.92,
-            candidate_success_rate=0.68 if bad_release else 0.94,
-            baseline_cost_per_success=2.8,
-            candidate_cost_per_success=3.9 if bad_release else 2.4,
-            p95_latency_ms=3100 if bad_release else 1700,
-            safety_incidents=1 if bad_release else 0,
+            window=trial_report["window"],
+            baseline_success_rate=round(baseline_successes / len(requests), 4),
+            candidate_success_rate=round(candidate_successes / len(requests), 4),
+            baseline_cost_per_success=round(
+                sum(float(row["baseline_cost_cents"]) for row in requests) / max(1, baseline_successes),
+                4,
+            ),
+            candidate_cost_per_success=round(
+                sum(float(row["candidate_cost_cents"]) for row in requests) / max(1, candidate_successes),
+                4,
+            ),
+            p95_latency_ms=self._p95([int(row["candidate_latency_ms"]) for row in requests]),
+            safety_incidents=sum(1 for row in requests if row["candidate_safety_incident"]),
         )
-        if bad_release:
+        should_rollback = (
+            (metrics.baseline_success_rate - metrics.candidate_success_rate) > 0.05
+            or metrics.safety_incidents > 0
+            or metrics.p95_latency_ms > 2500
+        )
+        if should_rollback:
             return CanaryReport(
                 canary_id="canary-ch12-001",
                 baseline_alias_before="accepted:baseline",
-                candidate_hash=sha_json({"candidate": "bad"}),
+                candidate_hash=trial_report["candidate_hash"],
                 stop_conditions=stop_conditions,
                 metrics=metrics,
                 decision=CanaryDecision.ROLLBACK,
@@ -555,7 +651,7 @@ class TraceImprovementPipeline:
         return CanaryReport(
             canary_id="canary-ch12-002",
             baseline_alias_before="accepted:baseline",
-            candidate_hash=sha_json({"candidate": "good"}),
+            candidate_hash=trial_report["candidate_hash"],
             stop_conditions=stop_conditions,
             metrics=metrics,
             decision=CanaryDecision.PROMOTE,
@@ -805,10 +901,19 @@ def run_observability_verification(evidence_dir: Path) -> dict[str, Any]:
     write_json(evidence_dir / "eval_case_from_trace.json", evaluation_case.model_dump(mode="json"))
     write_json(evidence_dir / "experiment_ledger.json", overfit_ledger.model_dump(mode="json"))
     write_json(
+        evidence_dir / "experiment_trial_report.json",
+        pipeline.experiment_trial_report(overfit=True),
+    )
+    write_json(
         evidence_dir / "accepted_candidate_ledger.json",
         accepted_ledger.model_dump(mode="json"),
     )
+    write_json(
+        evidence_dir / "accepted_candidate_trial_report.json",
+        pipeline.experiment_trial_report(overfit=False),
+    )
     write_json(evidence_dir / "canary_report.json", canary.model_dump(mode="json"))
+    write_json(evidence_dir / "canary_trial_report.json", pipeline.canary_trial_report(bad_release=True))
     write_json(evidence_dir / "reconstruction_report.json", reconstruction.model_dump(mode="json"))
     write_json(evidence_dir / "telemetry_outage.json", outage)
     write_json(evidence_dir / "harness_event_spans.json", [s.model_dump(mode="json") for s in harness_spans])
