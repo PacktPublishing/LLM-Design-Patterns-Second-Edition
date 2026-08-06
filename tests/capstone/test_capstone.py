@@ -50,7 +50,7 @@ def test_seeded_mandatory_failure_returns_no_go() -> None:
     decision = verifier.decide(
         closure,
         steps,
-        verifier.bundle(closure, steps, governance, rights_receipts),
+        verifier.bundle(closure, steps, [], governance, rights_receipts),
         governance,
         seeded_failure_proven=True,
     )
@@ -68,7 +68,7 @@ def test_missing_seeded_failure_proof_forces_no_go() -> None:
     decision = verifier.decide(
         closure,
         steps,
-        verifier.bundle(closure, steps, governance, rights_receipts),
+        verifier.bundle(closure, steps, [], governance, rights_receipts),
         governance,
         seeded_failure_proven=False,
     )
@@ -85,7 +85,7 @@ def test_governance_no_go_forces_capstone_no_go() -> None:
     decision = verifier.decide(
         closure,
         steps,
-        verifier.bundle(closure, steps, governance, rights_receipts),
+        verifier.bundle(closure, steps, [], governance, rights_receipts),
         governance,
         seeded_failure_proven=True,
     )
@@ -103,6 +103,11 @@ def test_clean_capstone_release_returns_go_with_signed_bundle() -> None:
     assert evidence["bundle"]["signature"].startswith("sha256:")
     assert evidence["governance_decision"]["decision"] == "GO"
     assert evidence["release_decision"]["decision"] == "GO"
+    assert evidence["game_day_measurements"][3]["payload"]["ticket_id"] is not None
+    assert evidence["game_day_measurements"][4]["payload"]["duplicate_tickets"] == 0
+    assert evidence["game_day_measurements"][10]["payload"]["decision"] == "revert"
+    assert evidence["game_day_measurements"][11]["payload"]["behavior_canary"]["decision"] == "rollback"
+    assert evidence["game_day_measurements"][12]["payload"]["corrupt_rejected"] is True
 
 
 def test_capstone_verifier_writes_required_evidence(tmp_path) -> None:
@@ -111,7 +116,9 @@ def test_capstone_verifier_writes_required_evidence(tmp_path) -> None:
     required = [
         "traceability_closure.json",
         "game_day_results.json",
+        "game_day_measurements.json",
         "seeded_failure_game_day.json",
+        "seeded_failure_measurements.json",
         "governance_decision.json",
         "rights_receipts.json",
         "release_bundle.json",
@@ -132,6 +139,18 @@ def test_capstone_fault_drills_cover_required_scenarios(tmp_path) -> None:
         "seeded_failure": True,
         "traceability": True,
     }
+
+
+def test_game_day_measurements_prove_integrated_chapter_behaviors() -> None:
+    _steps, measurements = GameDayRunner().run_with_measurements()
+    by_step = {item["step"]: item for item in measurements}
+    assert by_step[2]["payload"]["multi_route"] == "multi_hop_graph"
+    assert by_step[2]["payload"]["scanned_citation"]["page"] == 3
+    assert by_step[5]["payload"]["duplicate_tickets"] == 0
+    assert by_step[7]["payload"]["deleted_absent"] is True
+    assert by_step[10]["payload"]["p95_latency_ms"] <= by_step[10]["payload"]["p95_threshold_ms"]
+    assert by_step[12]["payload"]["image_canary"]["decision"] == "rollback"
+    assert by_step[16]["payload"]["prior_steps_passed"] is True
 
 
 def test_preview_remains_side_effect_free_and_execute_replays_idempotently(tmp_path: Path) -> None:
