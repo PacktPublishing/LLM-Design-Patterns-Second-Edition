@@ -1,0 +1,15 @@
+{
+  "repair_id": "repair-delete-conflict",
+  "action": "delete",
+  "source_id": "policy_conflict",
+  "activation_id": "activate-repair-delete-conflict",
+  "previous_snapshot_id": "graph-snapshot-v1",
+  "candidate_snapshot_id": "graph-snapshot-v1-repair-delete-conflict",
+  "activated_snapshot_id": "graph-snapshot-v1-repair-delete-conflict",
+  "affected_claim_ids": [
+    "claim_remote_days_conflict"
+  ],
+  "unrelated_region_hash_before": "sha256:091f755ee0a0730970fbbe689355969d2682294393b2780be474389f47f76961",
+  "unrelated_region_hash_after": "sha256:091f755ee0a0730970fbbe689355969d2682294393b2780be474389f47f76961",
+  "atomic": true
+}

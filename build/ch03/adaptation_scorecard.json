@@ -1,0 +1,12 @@
+{
+  "selected_candidate_id": "retrieval-replay-v1",
+  "selected_candidate_kind": "retrieval_replay",
+  "baseline_quality": 0.6667,
+  "retrieval_quality": 1.0,
+  "adapter_quality": 1.0,
+  "retrieval_gain_vs_baseline": 0.3333,
+  "adapter_blocked_by_gates": true,
+  "contamination_drill_blocked": true,
+  "safety_drill_blocked": true,
+  "gates_passed": true
+}

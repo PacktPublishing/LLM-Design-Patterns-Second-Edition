@@ -1,0 +1,3 @@
+{
+  "reconcile": "resume from event stream, dispatch pending outbox with same idempotency key"
+}

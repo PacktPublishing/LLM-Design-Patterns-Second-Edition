@@ -1,0 +1,1 @@
+{"cost_per_successful_outcome":0.003336,"cost_status":"available","failure_taxonomy":{},"first_try_pass_rate":1.0,"gates_passed":true,"generated_at":"2026-08-13T20:13:54.326013Z","pass_at_k":1.0,"pass_hat_k":1.0,"pass_rate":1.0,"passed_trials":33,"profile":"fixture","runtime_ms":18.332999999984168,"schema_version":"1","suite_id":"all","total_cases":31,"total_trials":33}

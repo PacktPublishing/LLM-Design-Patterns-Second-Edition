@@ -1,0 +1,7 @@
+{
+  "adr_id": "ADR-12-RETIRE-HARNESS-SCAFFOLD",
+  "decision": "retire",
+  "measured_benefit": "deterministic trace adapter gives complete correlation and safer redaction",
+  "rollback_path": "restore spreadsheet export from archived ch11 event stream",
+  "scaffold": "manual trace spreadsheet"
+}

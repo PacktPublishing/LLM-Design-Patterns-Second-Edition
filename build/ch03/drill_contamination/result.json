@@ -1,0 +1,8 @@
+{
+  "lab": "ch03",
+  "passed": false,
+  "decision": "no_ship",
+  "selected": "baseline",
+  "contamination_blocked": true,
+  "safety_regression_injected": false
+}

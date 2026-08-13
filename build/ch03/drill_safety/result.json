@@ -1,0 +1,8 @@
+{
+  "lab": "ch03",
+  "passed": true,
+  "decision": "ship",
+  "selected": "retrieval-replay-v1",
+  "contamination_blocked": false,
+  "safety_regression_injected": true
+}

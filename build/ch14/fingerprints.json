@@ -1,0 +1,8 @@
+{
+  "lab": "ch14",
+  "profile": "fixture",
+  "configuration_id": "sha256:496a55473df9f06a5bfa0872cbb5787d045a8cc1aa765a7a6d0f9ad7a59e7194",
+  "fixture_pack_hash": "sha256:30b426c253f4b794711536eccab63b4c008a27adbbaa01ddaac0a36265ee7249",
+  "dependency_lock_hash": "sha256:4e4a800ec869f5fba495b9806a843b6821c5f268b3cf6253b34c1788e0c526d3",
+  "python_version": "3.14.4"
+}

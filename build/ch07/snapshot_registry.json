@@ -1,0 +1,14 @@
+{
+  "active_snapshot_id": "graph-snapshot-v1",
+  "available_snapshot_ids": [
+    "graph-snapshot-v1",
+    "graph-snapshot-v1-repair-delete-conflict"
+  ],
+  "rollback_activation": {
+    "activation_id": "rollback-verify",
+    "previous_snapshot_id": "graph-snapshot-v1-repair-delete-conflict",
+    "activated_snapshot_id": "graph-snapshot-v1",
+    "reason": "rollback",
+    "rollback_of": "graph-snapshot-v1-repair-delete-conflict"
+  }
+}

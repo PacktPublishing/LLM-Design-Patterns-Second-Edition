@@ -1,0 +1,16 @@
+{
+  "clean": false,
+  "exact_hits": [
+    {
+      "eval_index": "2",
+      "train_record_id": "rec-002"
+    }
+  ],
+  "normalized_hits": [
+    {
+      "eval_index": "2",
+      "train_record_id": "rec-002"
+    }
+  ],
+  "near_duplicate_hits": []
+}

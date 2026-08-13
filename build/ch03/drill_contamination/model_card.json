@@ -1,0 +1,14 @@
+{
+  "artifact_id": "adapter-fixture-v1",
+  "base_model": "policyops-replay-v1",
+  "license": "Apache-2.0",
+  "format": "fixture-adapter",
+  "candidates": [
+    "baseline",
+    "prompt-v1",
+    "retrieval-replay-v1",
+    "adapter-v1"
+  ],
+  "intended_use": "compare baseline, prompt, retrieval replay, and lightweight adapter",
+  "rollback_target": "baseline"
+}

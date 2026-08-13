@@ -1,0 +1,8 @@
+{
+  "correlation_id": "corr-policyops-1201",
+  "external_calls_attempted": 0,
+  "model_calls_attempted": 0,
+  "reconstructed_span_count": 14,
+  "safe": true,
+  "tool_calls_attempted": 0
+}

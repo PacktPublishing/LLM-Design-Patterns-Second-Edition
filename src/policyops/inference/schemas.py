@@ -36,6 +36,8 @@ class FailureReason(str, Enum):
     BUDGET_EXHAUSTED = "budget_exhausted"
     NO_VERIFIED_CANDIDATE = "no_verified_candidate"
     INVALID_CACHE_ENTRY = "invalid_cache_entry"
+    AUTHORIZATION_DENIED = "authorization_denied"
+    HARD_GATE_FAILED = "hard_gate_failed"
 
 
 class InferenceBudget(StrictModel):
@@ -60,6 +62,7 @@ class InferenceRequest(StrictModel):
     risk_tier: RiskTier = RiskTier.MEDIUM
     data_classification: Literal["public", "internal", "confidential"] = "internal"
     require_citations: bool = True
+    authorized: bool = True
     cacheable: bool = True
     source_freshness: str = "fixture-v1"
     budget: InferenceBudget = Field(default_factory=InferenceBudget)
@@ -91,6 +94,11 @@ class VerificationResult(StrictModel):
     passed: bool
     quality_score: float = Field(ge=0.0, le=1.0)
     reasons: list[str] = Field(default_factory=list)
+    # Which gate produced this result. Hard-gate failures are never recoverable: they stop
+    # the request outright. Quality-gate failures may be recoverable: they escalate to the
+    # next model in the route sequence if budget remains.
+    gate: Literal["hard", "quality"] = "quality"
+    recoverable: bool = True
 
 
 class CandidateResult(StrictModel):
@@ -136,15 +144,39 @@ class CacheEntry(StrictModel):
 
 
 class BenchmarkRow(StrictModel):
+    """One (request, route profile, cache state) measurement. Raw rows are never compared
+    for dominance across different `request_id`s — see `ProfileAggregate` and
+    `gateway._dominance`, which operate only on per-profile aggregates."""
+
     request_id: str
     profile: str
-    cache_state: Literal["cold", "warm", "bypass"]
+    cache_state: Literal["cold", "warm"]
     success: bool
     quality: float
     latency_ms: int
     spend_units: float
     cost_per_successful_outcome: float | None
     selected_profile: str | None
+    failure_reason: FailureReason = FailureReason.NONE
+
+
+class ProfileAggregate(StrictModel):
+    """Per-route-profile aggregate over ALL of that profile's rows (both cache states).
+    This is the only level at which dominance / Pareto-frontier membership is computed —
+    never on individual per-request rows (see `gateway._dominance`)."""
+
+    profile: str
+    row_count: int = Field(ge=1)
+    success_count: int = Field(ge=0)
+    success_rate: float = Field(ge=0.0, le=1.0)
+    avg_quality: float = Field(ge=0.0, le=1.0)
+    avg_latency_ms: float = Field(ge=0.0)
+    p50_latency_ms: float = Field(ge=0.0)
+    p95_latency_ms: float = Field(ge=0.0)
+    p99_latency_ms: float = Field(ge=0.0)
+    total_spend_units: float = Field(ge=0.0)
+    cost_per_successful_outcome: float | None
+    clears_quality_floor: bool
     dominated: bool = False
 
 
@@ -153,5 +185,29 @@ class BenchmarkReport(StrictModel):
     workload_id: str
     quality_floor: float
     rows: list[BenchmarkRow]
+    aggregates: list[ProfileAggregate]
     selected_profile: str
     pareto_profiles: list[str]
+
+
+class MatchedPairOutcome(StrictModel):
+    """One (request, unordered pair of route profiles) comparison. See `gateway._verdict`
+    for the precise definition of "verdict" and `gateway._classify_pair` for the
+    agreement/disagreement/reversal taxonomy."""
+
+    request_id: str
+    profile_a: str
+    profile_b: str
+    verdict_a: str
+    verdict_b: str
+    classification: Literal["agreement", "disagreement", "reversal"]
+
+
+class MatchedPairComparison(StrictModel):
+    schema_version: Literal["1"] = "1"
+    workload_id: str
+    outcomes: list[MatchedPairOutcome]
+    agreement_count: int = Field(ge=0)
+    disagreement_count: int = Field(ge=0)
+    reversal_count: int = Field(ge=0)
+    reversals: list[MatchedPairOutcome]

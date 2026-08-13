@@ -1,0 +1,101 @@
+[
+  {
+    "automatic_response": "expired lease recycled to replacement worker",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 1,
+    "runbook_ref": "RB-14-01",
+    "scenario": "worker_kill"
+  },
+  {
+    "automatic_response": "readiness blocks unsafe worker participation",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 2,
+    "runbook_ref": "RB-14-02",
+    "scenario": "sandbox_kill"
+  },
+  {
+    "automatic_response": "idempotency receipt reused instead of creating a second effect",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 1,
+    "runbook_ref": "RB-14-03",
+    "scenario": "duplicate_effect"
+  },
+  {
+    "automatic_response": "breaker opened and approved degraded route selected",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 3,
+    "runbook_ref": "RB-14-04",
+    "scenario": "model_brownout"
+  },
+  {
+    "automatic_response": "retry budget capped and reconcile path preserved",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 3,
+    "runbook_ref": "RB-14-05",
+    "scenario": "ticket_service_loss"
+  },
+  {
+    "automatic_response": "readiness turned off before unsafe resume",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 2,
+    "runbook_ref": "RB-14-06",
+    "scenario": "database_latency"
+  },
+  {
+    "automatic_response": "dependency isolation limited retry amplification",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 3,
+    "runbook_ref": "RB-14-07",
+    "scenario": "network_loss"
+  },
+  {
+    "automatic_response": "service-entry 429s rejected work before enqueue",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 1,
+    "runbook_ref": "RB-14-08",
+    "scenario": "queue_overload"
+  },
+  {
+    "automatic_response": "config/startup failure disabled readiness and invoked operator runbook",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 2,
+    "runbook_ref": "RB-14-09",
+    "scenario": "disk_pressure"
+  },
+  {
+    "automatic_response": "compatible schema window kept old and new binaries safe",
+    "data_loss_events": 0,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 2,
+    "runbook_ref": "RB-14-10",
+    "scenario": "overlapping_binary"
+  },
+  {
+    "automatic_response": "isolated restore reconciled revocations and deletion state",
+    "data_loss_events": 5,
+    "detected": true,
+    "duplicate_effects": 0,
+    "recovery_seconds": 45,
+    "runbook_ref": "RB-14-11",
+    "scenario": "restore_reconciliation"
+  }
+]

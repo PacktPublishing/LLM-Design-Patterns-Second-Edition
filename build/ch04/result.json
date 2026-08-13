@@ -1,0 +1,9 @@
+{
+  "lab": "ch04",
+  "profile": "fixture",
+  "exit_code": 0,
+  "junit": "build/ch04/junit.xml",
+  "trace_redaction": "build/ch04/trace_redaction.json",
+  "fingerprints": "build/ch04/fingerprints.json",
+  "passed": true
+}

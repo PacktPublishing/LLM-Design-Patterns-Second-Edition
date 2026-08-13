@@ -1,0 +1,29 @@
+[
+  {
+    "change_class": "autonomy",
+    "escalation_path": "system owner",
+    "evidence_expiry_seconds": 86400,
+    "high_impact_required": true,
+    "policy_id": "approval-high-impact",
+    "required_evidence_ids": [
+      "ev-ch11-approval",
+      "ev-ch14-deploy"
+    ],
+    "required_role": "release_approver",
+    "separation_of_duties": true
+  },
+  {
+    "change_class": "deployment",
+    "escalation_path": "platform owner",
+    "evidence_expiry_seconds": 86400,
+    "high_impact_required": false,
+    "policy_id": "approval-deployment",
+    "required_evidence_ids": [
+      "ev-ch14-deploy",
+      "ev-ch13-security",
+      "ev-ch12-observability"
+    ],
+    "required_role": "release_approver",
+    "separation_of_duties": true
+  }
+]

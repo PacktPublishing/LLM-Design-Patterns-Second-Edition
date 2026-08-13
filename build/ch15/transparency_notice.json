@@ -1,0 +1,28 @@
+{
+  "ai_involvement": "PolicyOps uses AI to draft policy answers and propose ticket actions.",
+  "human_oversight": "Human owners approve high-impact actions, exceptions, appeals, and release.",
+  "limits": [
+    "AI may be wrong",
+    "High-impact ticket creation requires human approval",
+    "PolicyOps does not provide legal advice"
+  ],
+  "memory_use": "Memory is governed by consent, scope, correction, export, and deletion controls.",
+  "notice_id": "notice-policyops-v1",
+  "rights_channels": [
+    "correction",
+    "export",
+    "deletion",
+    "appeal"
+  ],
+  "sources": [
+    "versioned policy corpus",
+    "retrieval index",
+    "graph snapshot",
+    "governed memory"
+  ],
+  "tools_and_actions": [
+    "ticket.create",
+    "browser fixture",
+    "egress proxy"
+  ]
+}

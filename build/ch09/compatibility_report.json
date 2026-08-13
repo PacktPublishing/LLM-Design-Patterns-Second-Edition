@@ -1,0 +1,20 @@
+{
+  "explicit_state_stores": [
+    "workflow_state",
+    "approval_nonces",
+    "idempotency_results",
+    "mcp_subscriptions",
+    "resumable_results",
+    "audit_events"
+  ],
+  "rc_opt_in": true,
+  "rc_profile": "2026-07-28-rc",
+  "second_host_gaps": [
+    "activation metadata",
+    "package entrypoint layout",
+    "hook contract",
+    "permission labels"
+  ],
+  "stable_profile": "2025-11-25",
+  "unsupported_features_fail_closed": true
+}

@@ -1,0 +1,77 @@
+{
+  "artifact_set_id": "artifact-set-ch12-fixture",
+  "artifacts": [
+    {
+      "artifact_type": "data",
+      "digest": "sha256:8c7f2337bd4af6c36361cbeae40f2105da701400d10989117efde6dc704121c1",
+      "name": "policy-corpus",
+      "version": "2026.07"
+    },
+    {
+      "artifact_type": "prompt",
+      "digest": "sha256:6cb7c6f0b9b5cdddf944c1d1c2161847ebb83ea11f5a946df3ec0b321578f560",
+      "name": "answer-contract",
+      "version": "12.0"
+    },
+    {
+      "artifact_type": "context_policy",
+      "digest": "sha256:d1210b279888baff26efb773f40db2e8eec429b37a8e2df92f7ba3ab80698488",
+      "name": "authority-ranked-context",
+      "version": "5.0"
+    },
+    {
+      "artifact_type": "model_adapter",
+      "digest": "sha256:ab5400d60f2e9ad78ba100ec3d7f2a292c2bc836b300e85affdbb5e65c3048f2",
+      "name": "replay-model",
+      "version": "4.0"
+    },
+    {
+      "artifact_type": "index",
+      "digest": "sha256:21ca457e7b3492bab1da185d11c6bc9c546a35ca3dfef2405a09fdfa77f364bc",
+      "name": "hybrid-index",
+      "version": "6.0"
+    },
+    {
+      "artifact_type": "memory_policy",
+      "digest": "sha256:dc6a4f0a6959c44d6735ad81b523c194d2df39a4e8d3be925d74f44557e05f94",
+      "name": "governed-memory",
+      "version": "8.0"
+    },
+    {
+      "artifact_type": "tool",
+      "digest": "sha256:b689374db9237769239a3f1e7c3a4a73ff2a6190b24f438f5c5976cafa45e03f",
+      "name": "ticket-tool",
+      "version": "9.0"
+    },
+    {
+      "artifact_type": "skill",
+      "digest": "sha256:fbb1303fc583eac63b79c26e912705fdbb5123693ac0c333a66045c7ea03879d",
+      "name": "policy-skill",
+      "version": "9.0"
+    },
+    {
+      "artifact_type": "protocol",
+      "digest": "sha256:b15796848e7c7fe07b671a9f3c4ba55702c10b3644b8ff3c16bda36b1cfcd7c1",
+      "name": "mcp-stable-profile",
+      "version": "2025-11-25"
+    },
+    {
+      "artifact_type": "grader",
+      "digest": "sha256:abed7fba6193a06f865d89fcea5ab750d0e36848e068f74faefb96adb278e7a4",
+      "name": "policyops-grader",
+      "version": "2.0"
+    },
+    {
+      "artifact_type": "security_policy",
+      "digest": "sha256:2b40e32bdc460bb57b1be18532ad35f8876aec17f701a4fcda3cd29b79e583f3",
+      "name": "prompt-injection-baseline",
+      "version": "13-preview"
+    },
+    {
+      "artifact_type": "deployment_profile",
+      "digest": "sha256:208f7a713c80cc483eddb3760a9686832e43fa3063ae72afc5cf94e10452b87e",
+      "name": "fixture",
+      "version": "12.0"
+    }
+  ]
+}

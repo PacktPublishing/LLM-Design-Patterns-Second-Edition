@@ -1,0 +1,19 @@
+{
+  "bad_image_rolled_back": true,
+  "compliant_model_fallback": true,
+  "corrupt_backup_rejected": true,
+  "duplicate_tickets": 0,
+  "error_slo_met": true,
+  "gates_passed": true,
+  "network_probe_denied": true,
+  "p95_met": true,
+  "queue_bound_held": true,
+  "readiness_distinguishes_safe_resume": true,
+  "retry_budget_violations": 0,
+  "rpo_met": true,
+  "rto_met": true,
+  "runbook_coverage": 1.0,
+  "schema_version": "1",
+  "secret_leaks": 0,
+  "valid_restore_integrity": true
+}

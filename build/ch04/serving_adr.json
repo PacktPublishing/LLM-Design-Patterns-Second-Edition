@@ -1,0 +1,47 @@
+{
+  "schema_version": "1",
+  "decision": "Use the 'routed-with-escalation' route profile for the mandatory lab gate.",
+  "selected_profile": "routed-with-escalation",
+  "quality_floor": 0.8,
+  "pareto_profiles": [
+    "direct-baseline",
+    "routed-with-escalation"
+  ],
+  "selected_profile_aggregate": {
+    "profile": "routed-with-escalation",
+    "row_count": 62,
+    "success_count": 62,
+    "success_rate": 1.0,
+    "avg_quality": 0.8787,
+    "avg_latency_ms": 10.65,
+    "p50_latency_ms": 1.0,
+    "p95_latency_ms": 45.0,
+    "p99_latency_ms": 80.1,
+    "total_spend_units": 4.5,
+    "cost_per_successful_outcome": 0.0726,
+    "clears_quality_floor": true,
+    "dominated": false
+  },
+  "conditions_for_choice": [
+    "Workload matches the locked Chapter 2 fixture mix ('ch04-fixture-v1'): the 31 checked-in capability/regression/adversarial cases, not production traffic.",
+    "The profile's success rate is 100% and average quality stays at or above the 0.8 quality floor across BOTH cold and warm cache states.",
+    "'routed-with-escalation' is not Pareto-dominated on p95 latency (45.0ms), cost per successful outcome (0.0726), and success rate (1.0) relative to the other two route profiles.",
+    "Model profile characteristics (quality/latency/cost in `fixture_profiles()`) and route definitions (`route_policy.route_profiles()`) are unchanged from this run."
+  ],
+  "rollback_plan": [
+    "Route selection is fully data-driven: `AdaptiveInferenceGateway.select_route_profile` maps request shape to one of the three named `RouteProfile`s defined in `route_policy.py`. Rolling back means changing that mapping (or pinning a route via the `forced_route` constructor override) to a previously-approved profile id \u2014 no route profile is ever deleted, so the prior profile remains fully defined.",
+    "No data migration is required: `ResponseCache` entries are keyed by (tenant, authorization, semantic request, model profile, configuration, policy), so switching route profiles only changes future cache population, not existing entries' validity.",
+    "After rollback, re-run `run_gateway_verification` and check `gateway_result.json`'s `passed` flag and `matched_pair_comparison.json`'s reversal set for regressions before promoting the rollback."
+  ],
+  "not_proven_by_this_benchmark": [
+    "This is NOT a hosted-provider latency/cost benchmark: `latency_ms` and `cost_per_1k_tokens` on each fixture `ModelProfile` are hand-authored constants, not measurements against any real model API.",
+    "The workload is the 31 locked Chapter 2 fixture cases, not production traffic volume or its distribution; a different case mix could favor a different profile.",
+    "Roughly a third of the workload (10 of 31 cases) is `authorization`-risk and is expected to be denied by the hard gate before any model is ever called, so route choice cannot affect those cases' outcome \u2014 the comparison is only informative for the remaining ~21 authorized cases.",
+    "Cost units are synthetic fixture constants, not real provider billing rates.",
+    "The warm-cache measurement uses one deterministic warm-up pass per request, not a realistic cache hit-rate distribution under concurrent, mixed production traffic."
+  ],
+  "objective_improvements": [
+    "lower_spend_than:enhanced-with-candidates",
+    "lower_p95_latency_than:enhanced-with-candidates"
+  ]
+}

@@ -5,6 +5,19 @@ test-time compute by request risk, verifies candidates deterministically, escala
 from small to stronger profiles only when needed, enforces spend/time/candidate
 budgets, and uses a tenant-safe response cache.
 
+### Route profiles
+
+Routing is a named, reviewable policy layer (`src/policyops/inference/route_policy.py`)
+over the underlying model profiles, not an ad-hoc per-request choice. The benchmark
+compares exactly three route profiles:
+
+- **`direct-baseline`** — a single `small-fast` call, no escalation. Cheapest and fastest,
+  but has no fallback if that one candidate fails verification.
+- **`enhanced-with-candidates`** — up to three `standard`-tier candidates sampled at one
+  tier, with no escalation across tiers.
+- **`routed-with-escalation`** — an escalating `small-fast` → `standard` → `reasoned`
+  sequence with early exit on the first verified candidate.
+
 Run it with:
 
 ```powershell
@@ -12,8 +25,24 @@ uv run policyops verify ch04 --profile fixture --junit build/ch04/junit.xml --ev
 uv run policyops fault ch04 --scenario all
 ```
 
-Evidence is written under `build/ch04/`, including raw benchmark rows, an inference
-report, a serving ADR, fingerprints, JUnit, and the standard redacted trace sample.
+Evidence is written under `build/ch04/`, including:
+
+- `benchmark_rows.jsonl` — raw per-(request, route profile, cache state) rows.
+- `inference_report.json` — the full benchmark report: raw rows plus per-profile
+  aggregates (p50/p95/p99 latency, cost per successful outcome, success rate, Pareto
+  dominance) for the 3 route profiles x {cold, warm} cache-state matrix.
+- `benchmark_summary.json` — per-profile summary and the objective-improvement reasons
+  behind the selected profile.
+- `matched_pair_comparison.json` — for every fixture case, every pair of route profiles is
+  classified as agreement / disagreement / reversal, with the full reversal set listed
+  explicitly (not just counted).
+- `serving_adr.json` — the decision record: chosen route profile, the conditions under
+  which that choice holds, a rollback plan, and an explicit statement of what this
+  benchmark does NOT prove.
+- `route_policy_manifest.json` — the three route profiles' definitions and budgets.
+- `gateway_result.json`, `fingerprints.json`, `junit.xml`, and the standard redacted trace
+  sample.
+
 Fixture latency and spend are learning evidence, not hosted-provider performance
 claims.
 

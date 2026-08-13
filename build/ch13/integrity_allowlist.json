@@ -1,0 +1,10 @@
+[
+  {
+    "allowlisted": true,
+    "artifact_id": "policyops-ticket-pack",
+    "digest": "sha256:bda4a45fd825e1f38110aef4660ec629cbe60753e51e87d41a73366c5f31b0a8",
+    "revoked": false,
+    "signature_valid": true,
+    "version": "1.0.0"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "lab": "ch05",
+  "profile": "fixture",
+  "exit_code": 0,
+  "junit": "build/ch05/junit.xml",
+  "trace_redaction": "build/ch05/trace_redaction.json",
+  "fingerprints": "build/ch05/fingerprints.json",
+  "passed": true
+}

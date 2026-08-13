@@ -1,0 +1,13 @@
+{
+  "dropped_fields": [
+    "authorization_token",
+    "raw_prompt",
+    "untrusted_label"
+  ],
+  "pii_leaks": 0,
+  "redacted_fields": [],
+  "secret_leaks": 0,
+  "tenant_hashes": [
+    "tenant_f190acafb33b568a"
+  ]
+}

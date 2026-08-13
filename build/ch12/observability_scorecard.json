@@ -1,0 +1,15 @@
+{
+  "bad_canary_rolled_back": true,
+  "cardinality_violations": 0,
+  "correlation_coverage": 1.0,
+  "cost_per_success_reported": true,
+  "gates_passed": true,
+  "graduated_cases_with_provenance": 1,
+  "overfit_rejected": true,
+  "pii_leaks": 0,
+  "reconstruction_external_calls": 0,
+  "schema_version": "1",
+  "secret_leaks": 0,
+  "slo_owner_coverage": 1.0,
+  "telemetry_outage_request_failures": 0
+}

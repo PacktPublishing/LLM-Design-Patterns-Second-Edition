@@ -1,0 +1,22 @@
+[
+  {
+    "backup_id": "backup-corrupt",
+    "corrupt_rejected": true,
+    "deletion_receipts_preserved": false,
+    "integrity_passed": false,
+    "restored_to_isolation": false,
+    "revocations_current": false,
+    "rpo_seconds": 0,
+    "rto_seconds": 0
+  },
+  {
+    "backup_id": "backup-valid",
+    "corrupt_rejected": false,
+    "deletion_receipts_preserved": true,
+    "integrity_passed": true,
+    "restored_to_isolation": true,
+    "revocations_current": true,
+    "rpo_seconds": 5,
+    "rto_seconds": 45
+  }
+]

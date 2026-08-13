@@ -1,0 +1,32 @@
+{
+  "secret": {
+    "rendered": true,
+    "terminal_reason": "ready",
+    "rejected": [
+      "rejected_stale",
+      "rejected_secret"
+    ]
+  },
+  "missing_fact": {
+    "rendered": false,
+    "terminal_reason": "required_fact_missing",
+    "rejected": [
+      "rejected_stale"
+    ]
+  },
+  "conflict": {
+    "rendered": false,
+    "terminal_reason": "authority_conflict",
+    "rejected": [
+      "rejected_stale",
+      "rejected_conflict"
+    ]
+  },
+  "tiny_budget": {
+    "rendered": false,
+    "terminal_reason": "context_budget_impossible",
+    "rejected": [
+      "rejected_stale"
+    ]
+  }
+}

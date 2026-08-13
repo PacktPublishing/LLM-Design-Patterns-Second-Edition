@@ -1,0 +1,7 @@
+{
+  "corpus_hash": "sha256:14976f6efd0a7946a7f440f5f7cef9c92f00191ceb181d148e36f02c46e6ea76",
+  "false_sensitive_auto_activations": 0,
+  "gates_passed": true,
+  "precision": 1.0,
+  "recall": 1.0
+}

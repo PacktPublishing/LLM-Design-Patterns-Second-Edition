@@ -1,0 +1,20 @@
+{
+  "safe": {
+    "clean_database_verified": true,
+    "compatible_with_current_binary": true,
+    "migration_id": "mig-ch14-expand-001",
+    "phase": "expand",
+    "preflight_passed": true,
+    "rollback_or_rollforward": "roll forward with additive column drop deferred",
+    "transactional": true
+  },
+  "unsafe": {
+    "clean_database_verified": false,
+    "compatible_with_current_binary": false,
+    "migration_id": "mig-ch14-expand-001",
+    "phase": "expand",
+    "preflight_passed": false,
+    "rollback_or_rollforward": "roll forward with additive column drop deferred",
+    "transactional": true
+  }
+}

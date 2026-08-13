@@ -1,0 +1,206 @@
+{
+  "candidate_hash": "sha256:c953797a782853a9da8d9c70633c15b234a7d670b22653bf1144675ab0b644b8",
+  "requests": [
+    {
+      "baseline_cost_cents": 2.4,
+      "baseline_latency_ms": 1650,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.0,
+      "candidate_latency_ms": 2650,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-01"
+    },
+    {
+      "baseline_cost_cents": 2.5,
+      "baseline_latency_ms": 1690,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.2,
+      "candidate_latency_ms": 2672,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-02"
+    },
+    {
+      "baseline_cost_cents": 2.6,
+      "baseline_latency_ms": 1730,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.4,
+      "candidate_latency_ms": 2694,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-03"
+    },
+    {
+      "baseline_cost_cents": 2.4,
+      "baseline_latency_ms": 1770,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.6,
+      "candidate_latency_ms": 2716,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-04"
+    },
+    {
+      "baseline_cost_cents": 2.5,
+      "baseline_latency_ms": 1810,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.0,
+      "candidate_latency_ms": 2738,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-05"
+    },
+    {
+      "baseline_cost_cents": 2.6,
+      "baseline_latency_ms": 1650,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.2,
+      "candidate_latency_ms": 2760,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-06"
+    },
+    {
+      "baseline_cost_cents": 2.4,
+      "baseline_latency_ms": 1690,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.4,
+      "candidate_latency_ms": 2782,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-07"
+    },
+    {
+      "baseline_cost_cents": 2.5,
+      "baseline_latency_ms": 1730,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.6,
+      "candidate_latency_ms": 2804,
+      "candidate_safety_incident": true,
+      "candidate_success": true,
+      "request_id": "canary-08"
+    },
+    {
+      "baseline_cost_cents": 2.6,
+      "baseline_latency_ms": 1770,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.0,
+      "candidate_latency_ms": 2826,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-09"
+    },
+    {
+      "baseline_cost_cents": 2.4,
+      "baseline_latency_ms": 1810,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.2,
+      "candidate_latency_ms": 2848,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-10"
+    },
+    {
+      "baseline_cost_cents": 2.5,
+      "baseline_latency_ms": 1650,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.4,
+      "candidate_latency_ms": 2870,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-11"
+    },
+    {
+      "baseline_cost_cents": 2.6,
+      "baseline_latency_ms": 1690,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.6,
+      "candidate_latency_ms": 2892,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-12"
+    },
+    {
+      "baseline_cost_cents": 2.4,
+      "baseline_latency_ms": 1730,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.0,
+      "candidate_latency_ms": 2914,
+      "candidate_safety_incident": false,
+      "candidate_success": true,
+      "request_id": "canary-13"
+    },
+    {
+      "baseline_cost_cents": 2.5,
+      "baseline_latency_ms": 1770,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.2,
+      "candidate_latency_ms": 2936,
+      "candidate_safety_incident": false,
+      "candidate_success": false,
+      "request_id": "canary-14"
+    },
+    {
+      "baseline_cost_cents": 2.6,
+      "baseline_latency_ms": 1810,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.4,
+      "candidate_latency_ms": 2958,
+      "candidate_safety_incident": false,
+      "candidate_success": false,
+      "request_id": "canary-15"
+    },
+    {
+      "baseline_cost_cents": 2.4,
+      "baseline_latency_ms": 1650,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.6,
+      "candidate_latency_ms": 2980,
+      "candidate_safety_incident": false,
+      "candidate_success": false,
+      "request_id": "canary-16"
+    },
+    {
+      "baseline_cost_cents": 2.5,
+      "baseline_latency_ms": 1690,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.0,
+      "candidate_latency_ms": 3002,
+      "candidate_safety_incident": false,
+      "candidate_success": false,
+      "request_id": "canary-17"
+    },
+    {
+      "baseline_cost_cents": 2.6,
+      "baseline_latency_ms": 1730,
+      "baseline_success": true,
+      "candidate_cost_cents": 3.2,
+      "candidate_latency_ms": 3024,
+      "candidate_safety_incident": false,
+      "candidate_success": false,
+      "request_id": "canary-18"
+    },
+    {
+      "baseline_cost_cents": 2.4,
+      "baseline_latency_ms": 1770,
+      "baseline_success": false,
+      "candidate_cost_cents": 3.4,
+      "candidate_latency_ms": 3046,
+      "candidate_safety_incident": false,
+      "candidate_success": false,
+      "request_id": "canary-19"
+    },
+    {
+      "baseline_cost_cents": 2.5,
+      "baseline_latency_ms": 1810,
+      "baseline_success": false,
+      "candidate_cost_cents": 3.6,
+      "candidate_latency_ms": 3068,
+      "candidate_safety_incident": false,
+      "candidate_success": false,
+      "request_id": "canary-20"
+    }
+  ],
+  "window": "20 fixture requests"
+}

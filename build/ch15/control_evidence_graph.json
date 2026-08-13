@@ -1,0 +1,416 @@
+{
+  "edges": [
+    {
+      "from": "inventory-ch15-v1",
+      "relation": "HAS_RISK",
+      "to": "risk-high-impact-ticket"
+    },
+    {
+      "from": "risk-high-impact-ticket",
+      "relation": "OWNED_BY",
+      "to": "owner-risk"
+    },
+    {
+      "from": "inventory-ch15-v1",
+      "relation": "HAS_RISK",
+      "to": "risk-data-rights"
+    },
+    {
+      "from": "risk-data-rights",
+      "relation": "OWNED_BY",
+      "to": "owner-privacy"
+    },
+    {
+      "from": "risk-high-impact-ticket",
+      "relation": "MITIGATED_BY",
+      "to": "control-deployment"
+    },
+    {
+      "from": "control-deployment",
+      "relation": "OWNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "control-deployment",
+      "relation": "VERIFIED_BY",
+      "to": "ev-ch14-deploy"
+    },
+    {
+      "from": "risk-high-impact-ticket",
+      "relation": "MITIGATED_BY",
+      "to": "control-security"
+    },
+    {
+      "from": "control-security",
+      "relation": "OWNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "control-security",
+      "relation": "VERIFIED_BY",
+      "to": "ev-ch13-security"
+    },
+    {
+      "from": "risk-high-impact-ticket",
+      "relation": "MITIGATED_BY",
+      "to": "control-observability"
+    },
+    {
+      "from": "control-observability",
+      "relation": "OWNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "control-observability",
+      "relation": "VERIFIED_BY",
+      "to": "ev-ch12-observability"
+    },
+    {
+      "from": "risk-data-rights",
+      "relation": "MITIGATED_BY",
+      "to": "control-rights"
+    },
+    {
+      "from": "control-rights",
+      "relation": "OWNED_BY",
+      "to": "owner-privacy"
+    },
+    {
+      "from": "control-rights",
+      "relation": "VERIFIED_BY",
+      "to": "ev-ch08-rights"
+    },
+    {
+      "from": "risk-high-impact-ticket",
+      "relation": "MITIGATED_BY",
+      "to": "control-approval"
+    },
+    {
+      "from": "control-approval",
+      "relation": "OWNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "control-approval",
+      "relation": "VERIFIED_BY",
+      "to": "ev-ch11-approval"
+    },
+    {
+      "from": "ev-ch14-deploy",
+      "relation": "SIGNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch14-deploy",
+      "relation": "REVIEWED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch13-security",
+      "relation": "SIGNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch13-security",
+      "relation": "REVIEWED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch12-observability",
+      "relation": "SIGNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch12-observability",
+      "relation": "REVIEWED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch08-rights",
+      "relation": "SIGNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch08-rights",
+      "relation": "REVIEWED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch11-approval",
+      "relation": "SIGNED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "ev-ch11-approval",
+      "relation": "REVIEWED_BY",
+      "to": "owner-control"
+    },
+    {
+      "from": "risk-high-impact-ticket",
+      "relation": "APPROVED_BY_POLICY",
+      "to": "approval-high-impact"
+    },
+    {
+      "from": "risk-data-rights",
+      "relation": "APPROVED_BY_POLICY",
+      "to": "approval-high-impact"
+    },
+    {
+      "from": "approval-high-impact",
+      "relation": "REQUIRES_EVIDENCE",
+      "to": "ev-ch11-approval"
+    },
+    {
+      "from": "approval-high-impact",
+      "relation": "REQUIRES_EVIDENCE",
+      "to": "ev-ch14-deploy"
+    },
+    {
+      "from": "approval-deployment",
+      "relation": "REQUIRES_EVIDENCE",
+      "to": "ev-ch14-deploy"
+    },
+    {
+      "from": "approval-deployment",
+      "relation": "REQUIRES_EVIDENCE",
+      "to": "ev-ch13-security"
+    },
+    {
+      "from": "approval-deployment",
+      "relation": "REQUIRES_EVIDENCE",
+      "to": "ev-ch12-observability"
+    }
+  ],
+  "graph_version": "1",
+  "inventory_id": "inventory-ch15-v1",
+  "nodes": [
+    {
+      "ai_components": [
+        "replay model gateway",
+        "context planner",
+        "agent loop"
+      ],
+      "node_id": "inventory-ch15-v1",
+      "node_type": "system_inventory",
+      "purpose": "PolicyOps answers policy questions and creates approved support tickets.",
+      "stores": [
+        "primary_db",
+        "retrieval_index",
+        "graph_snapshot",
+        "memory_ledger",
+        "cache",
+        "trace_store",
+        "export_package",
+        "backup_retention"
+      ]
+    },
+    {
+      "backup_owner_id": "owner-risk",
+      "current": true,
+      "node_id": "owner-system",
+      "node_type": "owner",
+      "role": "system_owner"
+    },
+    {
+      "backup_owner_id": "owner-control",
+      "current": true,
+      "node_id": "owner-risk",
+      "node_type": "owner",
+      "role": "risk_owner"
+    },
+    {
+      "backup_owner_id": "owner-system",
+      "current": true,
+      "node_id": "owner-control",
+      "node_type": "owner",
+      "role": "control_owner"
+    },
+    {
+      "backup_owner_id": "owner-system",
+      "current": true,
+      "node_id": "owner-privacy",
+      "node_type": "owner",
+      "role": "privacy_lead"
+    },
+    {
+      "backup_owner_id": "owner-risk",
+      "current": true,
+      "node_id": "owner-release",
+      "node_type": "owner",
+      "role": "release_approver"
+    },
+    {
+      "backup_owner_id": null,
+      "current": true,
+      "node_id": "agent-policyops",
+      "node_type": "owner",
+      "role": "agent"
+    },
+    {
+      "autonomy_tier": "agentic_with_approval",
+      "communication_reach": "internal",
+      "impact": "high",
+      "node_id": "risk-high-impact-ticket",
+      "node_type": "risk",
+      "owner_id": "owner-risk"
+    },
+    {
+      "autonomy_tier": "assistive",
+      "communication_reach": "none",
+      "impact": "high",
+      "node_id": "risk-data-rights",
+      "node_type": "risk",
+      "owner_id": "owner-privacy"
+    },
+    {
+      "evidence_id": "ev-ch14-deploy",
+      "implementation": "policyops.deployment",
+      "mandatory": true,
+      "node_id": "control-deployment",
+      "node_type": "control",
+      "owner_id": "owner-control",
+      "risk_id": "risk-high-impact-ticket",
+      "test_id": "tests/deployment"
+    },
+    {
+      "evidence_id": "ev-ch13-security",
+      "implementation": "policyops.security",
+      "mandatory": true,
+      "node_id": "control-security",
+      "node_type": "control",
+      "owner_id": "owner-control",
+      "risk_id": "risk-high-impact-ticket",
+      "test_id": "tests/security"
+    },
+    {
+      "evidence_id": "ev-ch12-observability",
+      "implementation": "policyops.telemetry",
+      "mandatory": true,
+      "node_id": "control-observability",
+      "node_type": "control",
+      "owner_id": "owner-control",
+      "risk_id": "risk-high-impact-ticket",
+      "test_id": "tests/telemetry"
+    },
+    {
+      "evidence_id": "ev-ch08-rights",
+      "implementation": "policyops.memory",
+      "mandatory": true,
+      "node_id": "control-rights",
+      "node_type": "control",
+      "owner_id": "owner-privacy",
+      "risk_id": "risk-data-rights",
+      "test_id": "tests/memory"
+    },
+    {
+      "evidence_id": "ev-ch11-approval",
+      "implementation": "policyops.harness",
+      "mandatory": true,
+      "node_id": "control-approval",
+      "node_type": "control",
+      "owner_id": "owner-control",
+      "risk_id": "risk-high-impact-ticket",
+      "test_id": "tests/harness"
+    },
+    {
+      "artifact_hash": "sha256:2d8479c552c44a8a8c9e7c094b78e1e0b7e9fa4f2da60ef061929cffb6aec2be",
+      "artifact_uri": "build/ch14/deployment_scorecard.json",
+      "configuration_scope": "ch14-accepted",
+      "control_id": "control-deployment",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "node_id": "ev-ch14-deploy",
+      "node_type": "evidence",
+      "result": "pass",
+      "review_status": "current",
+      "reviewed_by": "owner-control"
+    },
+    {
+      "artifact_hash": "sha256:3462fde69a2122821c14c162188dd25833245931e7e38d9b19a027699c3b2c10",
+      "artifact_uri": "build/ch13/security_report.json",
+      "configuration_scope": "ch14-accepted",
+      "control_id": "control-security",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "node_id": "ev-ch13-security",
+      "node_type": "evidence",
+      "result": "pass",
+      "review_status": "current",
+      "reviewed_by": "owner-control"
+    },
+    {
+      "artifact_hash": "sha256:a946173899e06919aaabbbb73bb715404c8288387238076fbccd951a30c101cb",
+      "artifact_uri": "build/ch12/observability_scorecard.json",
+      "configuration_scope": "ch14-accepted",
+      "control_id": "control-observability",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "node_id": "ev-ch12-observability",
+      "node_type": "evidence",
+      "result": "pass",
+      "review_status": "current",
+      "reviewed_by": "owner-control"
+    },
+    {
+      "artifact_hash": "sha256:e1a20fc82f8e11cd8df0c6f446c5f311cf882f8106ac0f8026adef577caa6a34",
+      "artifact_uri": "build/ch08/deletion_receipt.json",
+      "configuration_scope": "ch14-accepted",
+      "control_id": "control-rights",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "node_id": "ev-ch08-rights",
+      "node_type": "evidence",
+      "result": "pass",
+      "review_status": "current",
+      "reviewed_by": "owner-control"
+    },
+    {
+      "artifact_hash": "sha256:24e1ab007c986d62b9aa11493208ec29bf80b820bef07eb05f40de73eaab63b4",
+      "artifact_uri": "build/ch11/harness_scorecard.json",
+      "configuration_scope": "ch14-accepted",
+      "control_id": "control-approval",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "node_id": "ev-ch11-approval",
+      "node_type": "evidence",
+      "result": "pass",
+      "review_status": "current",
+      "reviewed_by": "owner-control"
+    },
+    {
+      "change_class": "autonomy",
+      "high_impact_required": true,
+      "node_id": "approval-high-impact",
+      "node_type": "approval_policy",
+      "required_evidence_ids": [
+        "ev-ch11-approval",
+        "ev-ch14-deploy"
+      ],
+      "required_role": "release_approver",
+      "separation_of_duties": true
+    },
+    {
+      "change_class": "deployment",
+      "high_impact_required": false,
+      "node_id": "approval-deployment",
+      "node_type": "approval_policy",
+      "required_evidence_ids": [
+        "ev-ch14-deploy",
+        "ev-ch13-security",
+        "ev-ch12-observability"
+      ],
+      "required_role": "release_approver",
+      "separation_of_duties": true
+    }
+  ]
+}

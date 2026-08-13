@@ -1,0 +1,11 @@
+{
+  "approval_mismatch_denials": 1,
+  "budget_stops": 1,
+  "crash_cases_recovered": 4,
+  "duplicate_tickets": 0,
+  "gates_passed": true,
+  "out_of_scope_changes": 0,
+  "replay_external_calls": 0,
+  "schema_version": "1",
+  "stale_fence_writes_rejected": 1
+}

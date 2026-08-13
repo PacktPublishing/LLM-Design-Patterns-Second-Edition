@@ -1,0 +1,67 @@
+{
+  "sample_spans": [
+    {
+      "name": "model.generate",
+      "attributes": {
+        "trace_id": "trace_fixture_001",
+        "request_id": "req_fixture_001",
+        "adapter": "ReplayModelClient"
+      }
+    },
+    {
+      "name": "answer.validate",
+      "attributes": {
+        "trace_id": "trace_fixture_001"
+      }
+    },
+    {
+      "name": "policyops.answer",
+      "attributes": {
+        "tenant_id": "tenant_alpha",
+        "actor_id": "actor_reader",
+        "trace_id": "trace_fixture_001",
+        "request_id": "req_fixture_001",
+        "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+      }
+    },
+    {
+      "name": "http.request",
+      "attributes": {
+        "http.method": "POST",
+        "http.route": "/v1/answer"
+      }
+    }
+  ],
+  "required_spans": [
+    "answer.validate",
+    "http.request",
+    "model.generate",
+    "policyops.answer"
+  ],
+  "required_spans_present": [
+    "answer.validate",
+    "http.request",
+    "model.generate",
+    "policyops.answer"
+  ],
+  "allowed_attributes": [
+    "actor_id",
+    "adapter",
+    "configuration_id",
+    "error_code",
+    "http.method",
+    "http.route",
+    "http.status_code",
+    "request_id",
+    "status",
+    "tenant_id",
+    "trace_id"
+  ],
+  "forbidden_attributes": [
+    "answer_text",
+    "authorization_token",
+    "prompt",
+    "question"
+  ],
+  "redaction_safe": true
+}

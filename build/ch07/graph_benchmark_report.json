@@ -1,0 +1,80 @@
+{
+  "cases": [
+    {
+      "query_id": "g_local",
+      "query": "remote work days",
+      "graph_route": "local_graph",
+      "graph_success": true,
+      "rag_success": true,
+      "graph_spans": [
+        "span_remote_days"
+      ],
+      "rag_spans": [
+        "span_remote_approval",
+        "span_remote_days",
+        "span_remote_table",
+        "span_scanned_receipts"
+      ],
+      "graph_tokens": 11,
+      "rag_tokens": 38
+    },
+    {
+      "query_id": "g_multi",
+      "query": "remote work approval requires relationship",
+      "graph_route": "multi_hop_graph",
+      "graph_success": true,
+      "rag_success": true,
+      "graph_spans": [
+        "span_remote_approval",
+        "span_remote_days"
+      ],
+      "rag_spans": [
+        "span_remote_approval",
+        "span_remote_days",
+        "span_remote_table"
+      ],
+      "graph_tokens": 19,
+      "rag_tokens": 27
+    },
+    {
+      "query_id": "g_temporal",
+      "query": "remote days conflict",
+      "graph_route": "temporal_graph",
+      "graph_success": true,
+      "rag_success": false,
+      "graph_spans": [
+        "span_remote_days"
+      ],
+      "rag_spans": [
+        "span_remote_approval",
+        "span_remote_days",
+        "span_remote_table",
+        "span_scanned_receipts"
+      ],
+      "graph_tokens": 11,
+      "rag_tokens": 38
+    },
+    {
+      "query_id": "g_hybrid",
+      "query": "telework alias remote",
+      "graph_route": "hybrid_graph_vector",
+      "graph_success": true,
+      "rag_success": true,
+      "graph_spans": [
+        "span_remote_days"
+      ],
+      "rag_spans": [
+        "span_remote_approval",
+        "span_remote_days",
+        "span_remote_table"
+      ],
+      "graph_tokens": 11,
+      "rag_tokens": 27
+    }
+  ],
+  "graph_success_rate": 1.0,
+  "rag_success_rate": 0.75,
+  "task_success_gain": 0.25,
+  "graph_cost_per_success_token_proxy": 13.0,
+  "rag_cost_per_success_token_proxy": 43.33
+}

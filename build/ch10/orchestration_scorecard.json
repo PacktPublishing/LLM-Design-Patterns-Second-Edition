@@ -1,0 +1,11 @@
+{
+  "approval_bypasses": 0,
+  "authority_widening": 0,
+  "browser_bypass_attempts": 1,
+  "capacity_partial_spawns": 0,
+  "deterministic_agreement": true,
+  "finite_termination": true,
+  "gates_passed": true,
+  "invalid_delegations_rejected": 1,
+  "schema_version": "1"
+}

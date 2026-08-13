@@ -1,0 +1,352 @@
+[
+  {
+    "browser_actions": [],
+    "budget": {
+      "consumed_model_calls": 0,
+      "consumed_spend_cents": 0,
+      "consumed_tokens": 0,
+      "consumed_tool_calls": 1,
+      "consumed_workers": 0,
+      "model_call_limit": 1,
+      "reserved_workers": 0,
+      "spend_limit_cents": 10,
+      "token_limit": 1600,
+      "tool_call_limit": 3,
+      "worker_limit": 2
+    },
+    "delegated_task_ids": [],
+    "evidence_refs": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "findings": [
+      {
+        "confidence": 1.0,
+        "evidence_refs": [
+          "policy_remote:v2:span_remote_approval"
+        ],
+        "finding_id": "finding_evidence_remote",
+        "kind": "evidence",
+        "text": "Manager approval is required for remote-work exceptions."
+      }
+    ],
+    "model_calls": 0,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+    "run_id": "run_workflow_d138f3e565",
+    "schema_version": "1.0",
+    "status": "succeeded",
+    "terminal_reason": "completed",
+    "ticket_id": "ticket_534ef5426d44",
+    "trace": [
+      "start",
+      "deterministic_route",
+      "chapter9_toolport_create"
+    ],
+    "variant": "workflow",
+    "version": 3
+  },
+  {
+    "browser_actions": [],
+    "budget": {
+      "consumed_model_calls": 1,
+      "consumed_spend_cents": 0,
+      "consumed_tokens": 0,
+      "consumed_tool_calls": 1,
+      "consumed_workers": 0,
+      "model_call_limit": 1,
+      "reserved_workers": 0,
+      "spend_limit_cents": 10,
+      "token_limit": 1600,
+      "tool_call_limit": 3,
+      "worker_limit": 2
+    },
+    "delegated_task_ids": [],
+    "evidence_refs": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "findings": [
+      {
+        "confidence": 1.0,
+        "evidence_refs": [
+          "policy_remote:v2:span_remote_approval"
+        ],
+        "finding_id": "finding_evidence_remote",
+        "kind": "evidence",
+        "text": "Replay agent selected bounded evidence retrieval and ticket preview."
+      }
+    ],
+    "model_calls": 1,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+    "run_id": "run_single_agent_51f013ffbf",
+    "schema_version": "1.0",
+    "status": "succeeded",
+    "terminal_reason": "completed",
+    "ticket_id": "ticket_94f8b370cd08",
+    "trace": [
+      "start",
+      "single_agent_replay_decision",
+      "chapter9_toolport_create"
+    ],
+    "variant": "single_agent",
+    "version": 3
+  },
+  {
+    "browser_actions": [
+      "browser_action_1",
+      "browser_action_2"
+    ],
+    "budget": {
+      "consumed_model_calls": 0,
+      "consumed_spend_cents": 0,
+      "consumed_tokens": 0,
+      "consumed_tool_calls": 1,
+      "consumed_workers": 0,
+      "model_call_limit": 1,
+      "reserved_workers": 0,
+      "spend_limit_cents": 10,
+      "token_limit": 1600,
+      "tool_call_limit": 3,
+      "worker_limit": 2
+    },
+    "delegated_task_ids": [],
+    "evidence_refs": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "findings": [],
+    "model_calls": 0,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+    "run_id": "run_browser_computer_use_4a7e99c0ca",
+    "schema_version": "1.0",
+    "status": "succeeded",
+    "terminal_reason": "completed",
+    "ticket_id": "ticket_e3f56eb2ebd5",
+    "trace": [
+      "start",
+      "browser_actions_untrusted",
+      "chapter9_toolport_create"
+    ],
+    "variant": "browser_computer_use",
+    "version": 3
+  },
+  {
+    "browser_actions": [],
+    "budget": {
+      "consumed_model_calls": 0,
+      "consumed_spend_cents": 2,
+      "consumed_tokens": 200,
+      "consumed_tool_calls": 2,
+      "consumed_workers": 2,
+      "model_call_limit": 1,
+      "reserved_workers": 0,
+      "spend_limit_cents": 10,
+      "token_limit": 1600,
+      "tool_call_limit": 3,
+      "worker_limit": 2
+    },
+    "delegated_task_ids": [
+      "task_b84881c3cb",
+      "task_8b2a30434e"
+    ],
+    "evidence_refs": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "findings": [
+      {
+        "confidence": 1.0,
+        "evidence_refs": [
+          "policy_remote:v2:span_remote_approval"
+        ],
+        "finding_id": "finding_ticket_ready",
+        "kind": "ticket_ready",
+        "text": "Ticket can be previewed only after exact-effect approval is available."
+      },
+      {
+        "confidence": 1.0,
+        "evidence_refs": [
+          "policy_remote:v2:span_remote_approval"
+        ],
+        "finding_id": "finding_evidence_remote",
+        "kind": "evidence",
+        "text": "Remote-work exception requires manager approval and policy citation."
+      }
+    ],
+    "model_calls": 0,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "schema_version": "1.0",
+    "status": "succeeded",
+    "terminal_reason": "completed",
+    "ticket_id": "ticket_9c6653f071f8",
+    "trace": [
+      "start",
+      "fanout_reserved",
+      "deterministic_fan_in",
+      "chapter9_toolport_create"
+    ],
+    "variant": "orchestrator_worker",
+    "version": 4
+  },
+  {
+    "browser_actions": [],
+    "budget": {
+      "consumed_model_calls": 0,
+      "consumed_spend_cents": 0,
+      "consumed_tokens": 0,
+      "consumed_tool_calls": 0,
+      "consumed_workers": 0,
+      "model_call_limit": 1,
+      "reserved_workers": 0,
+      "spend_limit_cents": 10,
+      "token_limit": 1600,
+      "tool_call_limit": 3,
+      "worker_limit": 1
+    },
+    "delegated_task_ids": [],
+    "evidence_refs": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "findings": [],
+    "model_calls": 0,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "proposed_effect_hash": null,
+    "run_id": "run_orchestrator_worker_8bae07bdbd",
+    "schema_version": "1.0",
+    "status": "awaiting_review",
+    "terminal_reason": "capacity_unavailable",
+    "ticket_id": null,
+    "trace": [
+      "start",
+      "capacity_unavailable"
+    ],
+    "variant": "orchestrator_worker",
+    "version": 2
+  },
+  {
+    "browser_actions": [],
+    "budget": {
+      "consumed_model_calls": 0,
+      "consumed_spend_cents": 0,
+      "consumed_tokens": 0,
+      "consumed_tool_calls": 0,
+      "consumed_workers": 0,
+      "model_call_limit": 1,
+      "reserved_workers": 0,
+      "spend_limit_cents": 10,
+      "token_limit": 1600,
+      "tool_call_limit": 3,
+      "worker_limit": 2
+    },
+    "delegated_task_ids": [],
+    "evidence_refs": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "findings": [],
+    "model_calls": 0,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+    "run_id": "run_browser_computer_use_5f705b3607",
+    "schema_version": "1.0",
+    "status": "awaiting_review",
+    "terminal_reason": "browser_profile_mismatch",
+    "ticket_id": null,
+    "trace": [
+      "start",
+      "browser_profile_mismatch"
+    ],
+    "variant": "browser_computer_use",
+    "version": 2
+  }
+]

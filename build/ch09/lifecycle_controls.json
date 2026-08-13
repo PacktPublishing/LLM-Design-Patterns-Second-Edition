@@ -1,0 +1,65 @@
+{
+  "activated": {
+    "extension_id": "policyops-ticket-pack",
+    "manifest_hash": "sha256:3ab4758da0dd59b0a7119ec33a9114124b735f83e051d698336a1e832b6e6bc2",
+    "permissions": [
+      "ticket:preview",
+      "ticket:create",
+      "audit:append"
+    ],
+    "predecessor": "1.0.0",
+    "status": "active",
+    "version": "1.1.0"
+  },
+  "revoked": {
+    "extension_id": "policyops-ticket-pack",
+    "manifest_hash": "sha256:a7ea23319130471807e9dcea760da009cb24feae4e377d03accffd12e3dc2441",
+    "permissions": [
+      "ticket:preview",
+      "ticket:create",
+      "audit:append"
+    ],
+    "predecessor": null,
+    "status": "revoked",
+    "version": "1.0.0"
+  },
+  "rollback_success": true,
+  "rolled_back": {
+    "extension_id": "policyops-ticket-pack",
+    "manifest_hash": "sha256:a7ea23319130471807e9dcea760da009cb24feae4e377d03accffd12e3dc2441",
+    "permissions": [
+      "ticket:preview",
+      "ticket:create",
+      "audit:append"
+    ],
+    "predecessor": null,
+    "status": "active",
+    "version": "1.0.0"
+  },
+  "versions": [
+    {
+      "extension_id": "policyops-ticket-pack",
+      "manifest_hash": "sha256:a7ea23319130471807e9dcea760da009cb24feae4e377d03accffd12e3dc2441",
+      "permissions": [
+        "ticket:preview",
+        "ticket:create",
+        "audit:append"
+      ],
+      "predecessor": null,
+      "status": "revoked",
+      "version": "1.0.0"
+    },
+    {
+      "extension_id": "policyops-ticket-pack",
+      "manifest_hash": "sha256:3ab4758da0dd59b0a7119ec33a9114124b735f83e051d698336a1e832b6e6bc2",
+      "permissions": [
+        "ticket:preview",
+        "ticket:create",
+        "audit:append"
+      ],
+      "predecessor": "1.0.0",
+      "status": "revoked",
+      "version": "1.1.0"
+    }
+  ]
+}

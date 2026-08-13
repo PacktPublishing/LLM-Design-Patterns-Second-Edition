@@ -1,0 +1,33 @@
+{
+  "request_id": "recall-fixture",
+  "items": [
+    {
+      "record_id": "mem_6155ba2e4c2a672b",
+      "kind": "semantic",
+      "scope": "personal",
+      "text": "Ken prefers concise policy answers with exact citation IDs.",
+      "source_ref": "session:001",
+      "source_hash": "sha256:fc1ba6c2f384b4928dfb7c90b4f6ee8713cb15f7e9142e23c33945a6f44d9217",
+      "sensitivity": "internal",
+      "version": 1,
+      "reason_codes": [
+        "recalled_as_untrusted_memory"
+      ],
+      "trust_label": "untrusted_memory",
+      "can_grant_authority": false
+    }
+  ],
+  "exclusions": [
+    {
+      "record_id": "mem_38b7f7b6be161b89",
+      "reason_code": "not_relevant"
+    },
+    {
+      "record_id": "mem_e0f1c0a7bab3e42c",
+      "reason_code": "sensitivity_excluded"
+    }
+  ],
+  "warnings": [
+    "memory_is_untrusted_not_authority"
+  ]
+}

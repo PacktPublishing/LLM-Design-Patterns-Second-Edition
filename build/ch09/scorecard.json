@@ -1,0 +1,8 @@
+{
+  "lab": "ch09",
+  "profile": "fixture",
+  "note": "fixture latency is not provider performance",
+  "configuration_id": "sha256:8f5c44a90acb17f75d62fda895dfe2cdcc4d1c28885a9ab671a23a99ec3e99f1",
+  "fixture_pack_hash": "sha256:30b426c253f4b794711536eccab63b4c008a27adbbaa01ddaac0a36265ee7249",
+  "gates_passed": true
+}

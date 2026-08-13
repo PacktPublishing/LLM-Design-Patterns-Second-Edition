@@ -1,0 +1,36 @@
+{
+  "lab": "ch13",
+  "profile": "fixture",
+  "redaction": "allowlist",
+  "sample_spans": [
+    {
+      "name": "policyops.verify",
+      "attributes": {
+        "tenant_id": "tenant_alpha",
+        "actor_id": "actor_reader",
+        "trace_id": "trace_verify_fixture",
+        "request_id": "req_verify_fixture",
+        "configuration_id": "sha256:80a8dbc7f516e9799ef1eef40d2baf9bd0944c8a61822f1e5286d51f041f1c0f"
+      }
+    }
+  ],
+  "allowed_attributes": [
+    "actor_id",
+    "adapter",
+    "configuration_id",
+    "error_code",
+    "http.method",
+    "http.route",
+    "http.status_code",
+    "request_id",
+    "status",
+    "tenant_id",
+    "trace_id"
+  ],
+  "forbidden_attributes": [
+    "prompt",
+    "question",
+    "answer_text",
+    "authorization_token"
+  ]
+}

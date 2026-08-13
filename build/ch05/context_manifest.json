@@ -1,0 +1,154 @@
+{
+  "schema_version": "1",
+  "request_id": "ch05-fixture",
+  "terminal_reason": "ready",
+  "policy_hash": "sha256:b454bf4db5c14730710168103a478da9626fd2e32eab72103fc7eba93d5399ea",
+  "tokenizer_hash": "sha256:1f031151f91588d104cde68c5dbb6dcc220df08f426e21c144bcc078df9b2e82",
+  "included": [
+    {
+      "item_id": "policy.system",
+      "source_id": "policy-fixture",
+      "source_kind": "policy",
+      "authority": "system_policy",
+      "trust": "trusted_instruction",
+      "sensitivity": "public",
+      "decision": "included_required",
+      "content_hash": "sha256:c50619508e4259d0952bfbfe88f046a3a839a24e0299fdf72596feff29a6695b",
+      "estimated_tokens": 15,
+      "actual_tokens": 15
+    },
+    {
+      "item_id": "evidence.remote_work",
+      "source_id": "evidence-fixture",
+      "source_kind": "evidence",
+      "authority": "verified_evidence",
+      "trust": "verified_data",
+      "sensitivity": "internal",
+      "decision": "included_required",
+      "content_hash": "sha256:4425b0fb5a4811398a168d44ca6bb10f72156133f49452e82a96fe527df55d6b",
+      "estimated_tokens": 21,
+      "actual_tokens": 21
+    },
+    {
+      "item_id": "project.answer_style",
+      "source_id": "project-fixture",
+      "source_kind": "project",
+      "authority": "project_instruction",
+      "trust": "trusted_instruction",
+      "sensitivity": "public",
+      "decision": "included_relevant",
+      "content_hash": "sha256:01950514be2887bf9309855d564d92f0c4688640be683660cca50fd4db5f9520",
+      "estimated_tokens": 13,
+      "actual_tokens": 13
+    },
+    {
+      "item_id": "task.current_goal",
+      "source_id": "task-fixture",
+      "source_kind": "task",
+      "authority": "task_instruction",
+      "trust": "trusted_instruction",
+      "sensitivity": "internal",
+      "decision": "included_relevant",
+      "content_hash": "sha256:ca65326666a21d337096007b1beb55530d19fcf85ef05c5bc5dcb416459bade0",
+      "estimated_tokens": 17,
+      "actual_tokens": 17
+    },
+    {
+      "item_id": "evidence.customer_support",
+      "source_id": "evidence-fixture",
+      "source_kind": "evidence",
+      "authority": "verified_evidence",
+      "trust": "verified_data",
+      "sensitivity": "internal",
+      "decision": "included_relevant",
+      "content_hash": "sha256:cb36993f43c9214200a0f612665dce2c491160ad1b1d0f50ae641c7e5a05c280",
+      "estimated_tokens": 10,
+      "actual_tokens": 10
+    },
+    {
+      "item_id": "evidence.injected_instruction",
+      "source_id": "evidence-fixture",
+      "source_kind": "evidence",
+      "authority": "verified_evidence",
+      "trust": "untrusted_content",
+      "sensitivity": "internal",
+      "decision": "included_relevant",
+      "content_hash": "sha256:8a1bcc43cf918d7353c03914ec4501ead905babff40b133d86d0fdb156adc82a",
+      "estimated_tokens": 12,
+      "actual_tokens": 12
+    },
+    {
+      "item_id": "state.current_call",
+      "source_id": "memory-fixture",
+      "source_kind": "memory",
+      "authority": "state",
+      "trust": "observed_data",
+      "sensitivity": "internal",
+      "decision": "compacted",
+      "content_hash": "sha256:4bb767fd3f48be816a41dc68e9c9ea8ac07a6da08df738e605c5cce8243703b0",
+      "estimated_tokens": 26,
+      "actual_tokens": 26
+    },
+    {
+      "item_id": "capability.ticket_fixture",
+      "source_id": "capability-fixture",
+      "source_kind": "capability",
+      "authority": "state",
+      "trust": "observed_data",
+      "sensitivity": "internal",
+      "decision": "included_relevant",
+      "content_hash": "sha256:2cbcd0bc37dd5e3421a518d70dfd958bd456aae4276036136334307000ddb8b6",
+      "estimated_tokens": 9,
+      "actual_tokens": 9
+    },
+    {
+      "item_id": "observation.remote_table",
+      "source_id": "observation-fixture",
+      "source_kind": "observation",
+      "authority": "untrusted_content",
+      "trust": "untrusted_content",
+      "sensitivity": "internal",
+      "decision": "included_relevant",
+      "content_hash": "sha256:1b54045ae546503e21c0c5a329515a5e6a90555b7fd3ac8cbc2633a3b81da41c",
+      "estimated_tokens": 48,
+      "actual_tokens": 48
+    }
+  ],
+  "excluded": [],
+  "rejected": [
+    {
+      "item_id": "evidence.stale_policy",
+      "source_id": "evidence-fixture",
+      "source_kind": "evidence",
+      "authority": "verified_evidence",
+      "trust": "verified_data",
+      "sensitivity": "internal",
+      "decision": "rejected_stale",
+      "content_hash": "sha256:6263919a900c7fd609fbea734cfa37791d0a85b0b54e207a059bed0eed88a59d",
+      "estimated_tokens": 10,
+      "actual_tokens": null
+    }
+  ],
+  "compacted": [
+    {
+      "schema_version": "1",
+      "item_id": "state.current_call",
+      "retained_decisions": [
+        "Decision: user asked about remote-work eligibility."
+      ],
+      "retained_artifacts": [
+        "Artifact: ticket-draft-123."
+      ],
+      "original_tokens": 346,
+      "compacted_tokens": 26,
+      "content_hash": "sha256:4bb767fd3f48be816a41dc68e9c9ea8ac07a6da08df738e605c5cce8243703b0"
+    }
+  ],
+  "stable_prefix_hash": "sha256:1fb78182fbdb264e53e66e7d6eaec6d0a4176170e890bb210ebf4276cf962402",
+  "full_context_hash": "sha256:20414ab6a73b93367d7efd7ec8170d9312118a7fe24c2c5caad4dc9924b0eef6",
+  "input_tokens": 544,
+  "monolith_tokens": 744,
+  "planned_token_reduction": 200,
+  "summary_calls": 7,
+  "materializations": 9
+}

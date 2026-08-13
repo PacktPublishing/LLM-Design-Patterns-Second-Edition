@@ -1,0 +1,33 @@
+[
+  {
+    "active_versions": {
+      "policy_beta": "v1",
+      "policy_deleted": null,
+      "policy_poison": "v1",
+      "policy_remote": "v2",
+      "policy_scanned": "v1"
+    },
+    "content_hash": "sha256:dc1a4e9f33112ebcd81dfba79900fb8f5e1cc1984222ffe91ce0e1847ce2f52c",
+    "deleted_sources": [
+      "policy_deleted"
+    ],
+    "manifest_generation": 1,
+    "schema_version": "1"
+  },
+  {
+    "active_versions": {
+      "policy_beta": "v1",
+      "policy_deleted": null,
+      "policy_poison": "v1",
+      "policy_remote": null,
+      "policy_scanned": "v1"
+    },
+    "content_hash": "sha256:1482ba268516124e92d16f8c7bf026fbe1479fb10b0281223bc57b4c3ea2a689",
+    "deleted_sources": [
+      "policy_deleted",
+      "policy_remote"
+    ],
+    "manifest_generation": 2,
+    "schema_version": "1"
+  }
+]

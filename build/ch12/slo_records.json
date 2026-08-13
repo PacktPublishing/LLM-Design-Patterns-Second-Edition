@@ -1,0 +1,58 @@
+[
+  {
+    "budget": "5% error budget",
+    "measurement_query": "sum(successful_outcomes)/count(outcomes)",
+    "name": "outcome_quality",
+    "objective": ">=0.90 graded success",
+    "owner": "AI engineering",
+    "window": "7d"
+  },
+  {
+    "budget": "2% slow requests",
+    "measurement_query": "histogram_quantile(0.95, request_latency)",
+    "name": "p95_latency",
+    "objective": "p95 < 2500 ms",
+    "owner": "Platform",
+    "window": "1h"
+  },
+  {
+    "budget": "1% failed requests",
+    "measurement_query": "sum(request_errors)/count(requests)",
+    "name": "error_rate",
+    "objective": "error rate < 1%",
+    "owner": "Platform",
+    "window": "1h"
+  },
+  {
+    "budget": "5% daily spend variance",
+    "measurement_query": "sum(cost_cents)",
+    "name": "cost_budget",
+    "objective": "daily spend <= 250 cents in fixture-equivalent volume",
+    "owner": "LLMOps",
+    "window": "24h"
+  },
+  {
+    "budget": "10% weekly variance",
+    "measurement_query": "sum(cost_cents)/sum(successful_outcomes)",
+    "name": "cost_per_successful_outcome",
+    "objective": "<= 4 cents per success in fixture profile",
+    "owner": "LLMOps",
+    "window": "24h"
+  },
+  {
+    "budget": "0 missed recovery objective",
+    "measurement_query": "max(recovery_duration_minutes)",
+    "name": "recovery",
+    "objective": "recovery completes within 15 minutes for fixture drills",
+    "owner": "Operations",
+    "window": "24h"
+  },
+  {
+    "budget": "zero silent loss",
+    "measurement_query": "sum(reconciled_actions)/sum(approved_actions)",
+    "name": "high_impact_action_success",
+    "objective": "100% approved actions reconciled",
+    "owner": "Operations",
+    "window": "24h"
+  }
+]

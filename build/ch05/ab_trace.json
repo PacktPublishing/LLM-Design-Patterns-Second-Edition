@@ -1,0 +1,22 @@
+{
+  "baseline": {
+    "mode": "monolith",
+    "input_tokens": 744,
+    "chapter2_gate_results": {
+      "remote_days_retained": true,
+      "approval_rule_retained": true
+    }
+  },
+  "planned": {
+    "mode": "planned_context",
+    "input_tokens": 544,
+    "token_reduction": 200,
+    "terminal_reason": "ready",
+    "chapter2_gate_results": {
+      "remote_days_retained": true,
+      "approval_rule_retained": true
+    },
+    "chapter2_gates_preserved": true,
+    "unsafe_auto_approval_confined": true
+  }
+}

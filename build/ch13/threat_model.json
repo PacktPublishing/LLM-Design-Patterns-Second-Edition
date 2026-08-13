@@ -1,0 +1,103 @@
+[
+  {
+    "abuse_case": "poisoned document requests cross-tenant exfiltration",
+    "actor": "malicious document author",
+    "asset": "tenant policy data and case metadata",
+    "autonomy_tier": "agent proposes action",
+    "control_ids": [
+      "C-PROVENANCE",
+      "C-PDP",
+      "C-EGRESS"
+    ],
+    "entry_point": "retrieved policy document",
+    "residual_risk_owner": "Security engineering",
+    "test_ids": [
+      "atk-doc-exfil",
+      "atk-web-observation",
+      "atk-memory-poison",
+      "atk-cross-tenant"
+    ],
+    "threat_id": "T13-001",
+    "trust_boundary": "context assembly"
+  },
+  {
+    "abuse_case": "preview substitution or replay creates unauthorized effect",
+    "actor": "confused deputy",
+    "asset": "approved ticket action",
+    "autonomy_tier": "human-approved action",
+    "control_ids": [
+      "C-PREVIEW",
+      "C-APPROVAL",
+      "C-IDEMPOTENCY"
+    ],
+    "entry_point": "approval workflow",
+    "residual_risk_owner": "Application owner",
+    "test_ids": [
+      "atk-preview-swap",
+      "atk-replay",
+      "atk-duplicate-effect"
+    ],
+    "threat_id": "T13-002",
+    "trust_boundary": "effect boundary"
+  },
+  {
+    "abuse_case": "tampered extension reads secrets or escapes egress policy",
+    "actor": "malicious tool package",
+    "asset": "runtime credentials and host environment",
+    "autonomy_tier": "tool execution",
+    "control_ids": [
+      "C-INTEGRITY",
+      "C-SANDBOX",
+      "C-SECRET",
+      "C-REVOCATION"
+    ],
+    "entry_point": "extension discovery",
+    "residual_risk_owner": "Platform engineering",
+    "test_ids": [
+      "atk-extension-tamper",
+      "atk-filesystem",
+      "atk-secret",
+      "atk-network",
+      "atk-resource",
+      "atk-privilege-escalation"
+    ],
+    "threat_id": "T13-003",
+    "trust_boundary": "sandbox and supply chain"
+  },
+  {
+    "abuse_case": "token passthrough or wrong audience authorizes backend action",
+    "actor": "misconfigured MCP client/server",
+    "asset": "MCP protected resource",
+    "autonomy_tier": "tool connection",
+    "control_ids": [
+      "C-MCP-AUTH",
+      "C-PDP"
+    ],
+    "entry_point": "HTTP MCP authorization",
+    "residual_risk_owner": "LLMOps engineering",
+    "test_ids": [
+      "atk-mcp-audience",
+      "atk-mcp-issuer"
+    ],
+    "threat_id": "T13-004",
+    "trust_boundary": "protocol authorization"
+  },
+  {
+    "abuse_case": "system produces prohibited content while nearby benign work should continue",
+    "actor": "unsafe end user",
+    "asset": "policy reviewer safety boundary",
+    "autonomy_tier": "assistive response",
+    "control_ids": [
+      "C-PDP",
+      "C-POSTCONDITION"
+    ],
+    "entry_point": "regulated-advice request",
+    "residual_risk_owner": "Application owner",
+    "test_ids": [
+      "atk-prohibited",
+      "benign-neighbor"
+    ],
+    "threat_id": "T13-005",
+    "trust_boundary": "policy and postcondition checks"
+  }
+]

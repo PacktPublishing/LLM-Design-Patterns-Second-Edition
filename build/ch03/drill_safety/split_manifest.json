@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "split_id": "entity-group-hash-v1",
+  "strategy": "entity-group-hash-v1",
+  "seed": 0,
+  "train": [
+    "rec-002",
+    "rec-005",
+    "rec-003",
+    "rec-006",
+    "rec-008"
+  ],
+  "validation": [
+    "rec-004"
+  ],
+  "protected_test": [
+    "rec-007",
+    "rec-001"
+  ],
+  "protected_entity_keys": [
+    "entity-alpha",
+    "entity-eta"
+  ],
+  "subgroup_membership": {
+    "general_policy": [
+      "rec-002",
+      "rec-005",
+      "rec-007"
+    ],
+    "remote_policy": [
+      "rec-001",
+      "rec-003",
+      "rec-006"
+    ],
+    "synthetic_reviewed": [
+      "rec-004",
+      "rec-008"
+    ]
+  },
+  "content_hash": "sha256:5876e19a7e40aa87d1d8200fe3c2abb4bc451323768d7fc2d58892aee93eedd2"
+}

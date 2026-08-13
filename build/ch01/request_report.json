@@ -1,0 +1,300 @@
+{
+  "scenarios": [
+    {
+      "scenario": "answer_success",
+      "status_code": 200,
+      "code": null,
+      "latency_ms": 17,
+      "model_calls": 1,
+      "spans": [
+        {
+          "name": "model.generate",
+          "attributes": {
+            "trace_id": "trace_fixture_001",
+            "request_id": "req_fixture_001",
+            "adapter": "ReplayModelClient"
+          }
+        },
+        {
+          "name": "answer.validate",
+          "attributes": {
+            "trace_id": "trace_fixture_001"
+          }
+        },
+        {
+          "name": "policyops.answer",
+          "attributes": {
+            "tenant_id": "tenant_alpha",
+            "actor_id": "actor_reader",
+            "trace_id": "trace_fixture_001",
+            "request_id": "req_fixture_001",
+            "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+          }
+        },
+        {
+          "name": "http.request",
+          "attributes": {
+            "http.method": "POST",
+            "http.route": "/v1/answer"
+          }
+        }
+      ],
+      "body": {
+        "schema_version": "1.0",
+        "answer": {
+          "schema_version": "1.0",
+          "answer_type": "direct",
+          "text": "Employees may work remotely up to three days per week with manager approval.",
+          "citations": [
+            {
+              "schema_version": "1.0",
+              "source_id": "pol-remote-work-v1",
+              "title": "Remote Work Policy",
+              "locator": "section:remote-days",
+              "excerpt": "Employees may work remotely up to three days per week with manager approval."
+            }
+          ],
+          "abstention_reason": null
+        },
+        "usage": {
+          "schema_version": "1.0",
+          "input_tokens": 24,
+          "output_tokens": 32,
+          "adapter": "replay"
+        },
+        "trace_id": "trace_fixture_001",
+        "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e",
+        "request_id": "req_fixture_001"
+      }
+    },
+    {
+      "scenario": "missing_identity",
+      "status_code": 401,
+      "code": "UNAUTHORIZED",
+      "latency_ms": 7,
+      "model_calls": 0,
+      "spans": [
+        {
+          "name": "http.request",
+          "attributes": {
+            "http.method": "POST",
+            "http.route": "/v1/answer"
+          }
+        }
+      ],
+      "body": {
+        "schema_version": "1.0",
+        "code": "UNAUTHORIZED",
+        "message": "missing tenant or actor identity",
+        "retry_class": "none",
+        "trace_id": null,
+        "request_id": null,
+        "details": null
+      }
+    },
+    {
+      "scenario": "tenant_conflict",
+      "status_code": 403,
+      "code": "FORBIDDEN",
+      "latency_ms": 18,
+      "model_calls": 0,
+      "spans": [
+        {
+          "name": "http.request",
+          "attributes": {
+            "http.method": "POST",
+            "http.route": "/v1/answer"
+          }
+        }
+      ],
+      "body": {
+        "schema_version": "1.0",
+        "code": "FORBIDDEN",
+        "message": "tenant_id conflicts with authenticated context",
+        "retry_class": "none",
+        "trace_id": null,
+        "request_id": null,
+        "details": null
+      }
+    },
+    {
+      "scenario": "invalid_json",
+      "status_code": 502,
+      "code": "MODEL_BAD_OUTPUT",
+      "latency_ms": 7,
+      "model_calls": 1,
+      "spans": [
+        {
+          "name": "model.generate",
+          "attributes": {
+            "trace_id": "trace_fixture_001",
+            "request_id": "req_fixture_001",
+            "adapter": "ReplayModelClient"
+          }
+        },
+        {
+          "name": "answer.validate",
+          "attributes": {
+            "trace_id": "trace_fixture_001"
+          }
+        },
+        {
+          "name": "policyops.answer",
+          "attributes": {
+            "tenant_id": "tenant_alpha",
+            "actor_id": "actor_reader",
+            "trace_id": "trace_fixture_001",
+            "request_id": "req_fixture_001",
+            "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+          }
+        },
+        {
+          "name": "http.request",
+          "attributes": {
+            "http.method": "POST",
+            "http.route": "/v1/answer"
+          }
+        }
+      ],
+      "body": {
+        "schema_version": "1.0",
+        "code": "MODEL_BAD_OUTPUT",
+        "message": "adapter returned malformed JSON",
+        "retry_class": "none",
+        "trace_id": "trace_fixture_001",
+        "request_id": "req_fixture_001",
+        "details": null
+      }
+    },
+    {
+      "scenario": "timeout",
+      "status_code": 503,
+      "code": "DEADLINE_EXCEEDED",
+      "latency_ms": 18,
+      "model_calls": 1,
+      "spans": [
+        {
+          "name": "model.generate",
+          "attributes": {
+            "trace_id": "trace_fixture_001",
+            "request_id": "req_fixture_001",
+            "adapter": "ReplayModelClient"
+          }
+        },
+        {
+          "name": "answer.validate",
+          "attributes": {
+            "trace_id": "trace_fixture_001"
+          }
+        },
+        {
+          "name": "policyops.answer",
+          "attributes": {
+            "tenant_id": "tenant_alpha",
+            "actor_id": "actor_reader",
+            "trace_id": "trace_fixture_001",
+            "request_id": "req_fixture_001",
+            "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+          }
+        },
+        {
+          "name": "http.request",
+          "attributes": {
+            "http.method": "POST",
+            "http.route": "/v1/answer"
+          }
+        }
+      ],
+      "body": {
+        "schema_version": "1.0",
+        "code": "DEADLINE_EXCEEDED",
+        "message": "adapter deadline exceeded",
+        "retry_class": "caller",
+        "trace_id": "trace_fixture_001",
+        "request_id": "req_fixture_001",
+        "details": null
+      }
+    },
+    {
+      "scenario": "upstream_error",
+      "status_code": 503,
+      "code": "MODEL_CAPACITY",
+      "latency_ms": 23,
+      "model_calls": 1,
+      "spans": [
+        {
+          "name": "model.generate",
+          "attributes": {
+            "trace_id": "trace_fixture_001",
+            "request_id": "req_fixture_001",
+            "adapter": "ReplayModelClient"
+          }
+        },
+        {
+          "name": "answer.validate",
+          "attributes": {
+            "trace_id": "trace_fixture_001"
+          }
+        },
+        {
+          "name": "policyops.answer",
+          "attributes": {
+            "tenant_id": "tenant_alpha",
+            "actor_id": "actor_reader",
+            "trace_id": "trace_fixture_001",
+            "request_id": "req_fixture_001",
+            "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+          }
+        },
+        {
+          "name": "http.request",
+          "attributes": {
+            "http.method": "POST",
+            "http.route": "/v1/answer"
+          }
+        }
+      ],
+      "body": {
+        "schema_version": "1.0",
+        "code": "MODEL_CAPACITY",
+        "message": "upstream capacity exhausted",
+        "retry_class": "upstream",
+        "trace_id": "trace_fixture_001",
+        "request_id": "req_fixture_001",
+        "details": null
+      }
+    },
+    {
+      "scenario": "health_live",
+      "status_code": 200,
+      "code": null,
+      "latency_ms": 3,
+      "model_calls": 0,
+      "spans": [],
+      "body": {
+        "status": "live"
+      }
+    },
+    {
+      "scenario": "health_ready",
+      "status_code": 200,
+      "code": null,
+      "latency_ms": 28,
+      "model_calls": 0,
+      "spans": [],
+      "body": {
+        "status": "ready",
+        "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e",
+        "adapter": "replay",
+        "profile": "fixture"
+      }
+    }
+  ],
+  "error_classification": {
+    "401:UNAUTHORIZED": 1,
+    "403:FORBIDDEN": 1,
+    "502:MODEL_BAD_OUTPUT": 1,
+    "503:DEADLINE_EXCEEDED": 1,
+    "503:MODEL_CAPACITY": 1
+  }
+}

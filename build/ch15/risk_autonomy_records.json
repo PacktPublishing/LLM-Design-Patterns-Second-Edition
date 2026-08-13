@@ -1,0 +1,28 @@
+[
+  {
+    "autonomy_tier": "agentic_with_approval",
+    "communication_reach": "internal",
+    "data_sensitivity": "private",
+    "impact": "high",
+    "oversight_mode": "human approval before effect",
+    "owner_id": "owner-risk",
+    "prohibited_use": "unauthorized employment/legal advice",
+    "residual_risk": "approver may misunderstand business context",
+    "risk_id": "risk-high-impact-ticket",
+    "side_effects": true,
+    "use_case": "approved ticket creation"
+  },
+  {
+    "autonomy_tier": "assistive",
+    "communication_reach": "none",
+    "data_sensitivity": "private",
+    "impact": "high",
+    "oversight_mode": "privacy lead review",
+    "owner_id": "owner-privacy",
+    "prohibited_use": "cross-tenant disclosure",
+    "residual_risk": "backup retention may delay physical deletion",
+    "risk_id": "risk-data-rights",
+    "side_effects": false,
+    "use_case": "memory and retrieval over user policy data"
+  }
+]

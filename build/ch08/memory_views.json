@@ -1,0 +1,64 @@
+{
+  "episodic": [
+    {
+      "actor_id": "actor_reader",
+      "confidence": 0.8,
+      "consent_id": "consent-alpha-conf",
+      "created_at": 1735689600,
+      "expires_at": null,
+      "kind": "episodic",
+      "normalized_text": "ken asked about remote-work exceptions for a manager-approved ticket.",
+      "parent_record_ids": [],
+      "purpose": "policy_support",
+      "reason_codes": [
+        "authorized"
+      ],
+      "record_id": "mem_e0f1c0a7bab3e42c",
+      "schema_version": "1",
+      "scope": "personal",
+      "sensitivity": "confidential",
+      "source_hash": "sha256:b9f83112738cd40f25f8489b70c688614aabc2664075c4710865d640aa930cb2",
+      "source_ref": "session:002",
+      "status": "active",
+      "subject_id": "user_ken",
+      "supersedes": null,
+      "tenant_id": "tenant_alpha",
+      "text": "Ken asked about remote-work exceptions for a manager-approved ticket.",
+      "updated_at": 1735689600,
+      "valid_from": 1735689600,
+      "version": 1
+    }
+  ],
+  "procedural": [],
+  "semantic": [
+    {
+      "actor_id": "actor_reader",
+      "confidence": 0.9,
+      "consent_id": null,
+      "created_at": 1735689600,
+      "expires_at": null,
+      "kind": "semantic",
+      "normalized_text": "ken likes travel packing checklists for weekend hikes.",
+      "parent_record_ids": [],
+      "purpose": "policy_support",
+      "reason_codes": [
+        "authorized"
+      ],
+      "record_id": "mem_38b7f7b6be161b89",
+      "schema_version": "1",
+      "scope": "personal",
+      "sensitivity": "internal",
+      "source_hash": "sha256:e75e579fe76c24921f323916e6d77e97254e80fde4dbf25db3e270b67d6e6db6",
+      "source_ref": "session:003",
+      "status": "active",
+      "subject_id": "user_ken",
+      "supersedes": null,
+      "tenant_id": "tenant_alpha",
+      "text": "Ken likes travel packing checklists for weekend hikes.",
+      "updated_at": 1735689600,
+      "valid_from": 1735689600,
+      "version": 1
+    }
+  ],
+  "working": []
+}

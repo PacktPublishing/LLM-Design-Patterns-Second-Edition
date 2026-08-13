@@ -1,0 +1,14 @@
+{
+  "receipt_id": "del_a7d34c2c2f7b",
+  "tenant_id": "tenant_alpha",
+  "subject_id": "user_ken",
+  "record_ids": [
+    "mem_6155ba2e4c2a672b"
+  ],
+  "redacted_hashes": [
+    "sha256:fc1ba6c2f384b4928dfb7c90b4f6ee8713cb15f7e9142e23c33945a6f44d9217"
+  ],
+  "deleted_at": 1735689600,
+  "content_removed": true,
+  "contains_deleted_text": false
+}

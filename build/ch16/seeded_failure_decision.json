@@ -1,0 +1,10 @@
+{
+  "bundle_hash": "sha256:91af4fb9a4cf9b1eda69da00161b3623fba0d3d66d332d2fcab6e324be2570d5",
+  "decision": "NO-GO",
+  "decision_id": "release-ch16",
+  "reasons": [
+    "GAME_DAY_STEP_16_FAILED",
+    "GAME_DAY_STEP_4_FAILED"
+  ],
+  "seeded_failure_proven": true
+}

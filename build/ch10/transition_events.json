@@ -1,0 +1,172 @@
+[
+  {
+    "event_type": "run_created",
+    "occurred_at": 1735689601,
+    "run_id": "run_workflow_d138f3e565",
+    "schema_version": "1.0",
+    "sequence": 1,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "start"
+  },
+  {
+    "event_type": "deterministic_routed",
+    "occurred_at": 1735689602,
+    "run_id": "run_workflow_d138f3e565",
+    "schema_version": "1.0",
+    "sequence": 2,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "deterministic_route"
+  },
+  {
+    "event_type": "toolport_ticket_created",
+    "occurred_at": 1735689603,
+    "run_id": "run_workflow_d138f3e565",
+    "schema_version": "1.0",
+    "sequence": 3,
+    "status": "succeeded",
+    "terminal_reason": "completed",
+    "trace_code": "chapter9_toolport_create"
+  },
+  {
+    "event_type": "run_created",
+    "occurred_at": 1735689601,
+    "run_id": "run_single_agent_51f013ffbf",
+    "schema_version": "1.0",
+    "sequence": 1,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "start"
+  },
+  {
+    "event_type": "single_agent_decision",
+    "occurred_at": 1735689602,
+    "run_id": "run_single_agent_51f013ffbf",
+    "schema_version": "1.0",
+    "sequence": 2,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "single_agent_replay_decision"
+  },
+  {
+    "event_type": "toolport_ticket_created",
+    "occurred_at": 1735689603,
+    "run_id": "run_single_agent_51f013ffbf",
+    "schema_version": "1.0",
+    "sequence": 3,
+    "status": "succeeded",
+    "terminal_reason": "completed",
+    "trace_code": "chapter9_toolport_create"
+  },
+  {
+    "event_type": "run_created",
+    "occurred_at": 1735689601,
+    "run_id": "run_browser_computer_use_4a7e99c0ca",
+    "schema_version": "1.0",
+    "sequence": 1,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "start"
+  },
+  {
+    "event_type": "browser_actions_recorded",
+    "occurred_at": 1735689602,
+    "run_id": "run_browser_computer_use_4a7e99c0ca",
+    "schema_version": "1.0",
+    "sequence": 2,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "browser_actions_untrusted"
+  },
+  {
+    "event_type": "toolport_ticket_created",
+    "occurred_at": 1735689603,
+    "run_id": "run_browser_computer_use_4a7e99c0ca",
+    "schema_version": "1.0",
+    "sequence": 3,
+    "status": "succeeded",
+    "terminal_reason": "completed",
+    "trace_code": "chapter9_toolport_create"
+  },
+  {
+    "event_type": "run_created",
+    "occurred_at": 1735689601,
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "schema_version": "1.0",
+    "sequence": 1,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "start"
+  },
+  {
+    "event_type": "fanout_reserved",
+    "occurred_at": 1735689602,
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "schema_version": "1.0",
+    "sequence": 2,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "fanout_reserved"
+  },
+  {
+    "event_type": "fanin_completed",
+    "occurred_at": 1735689603,
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "schema_version": "1.0",
+    "sequence": 3,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "deterministic_fan_in"
+  },
+  {
+    "event_type": "toolport_ticket_created",
+    "occurred_at": 1735689604,
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "schema_version": "1.0",
+    "sequence": 4,
+    "status": "succeeded",
+    "terminal_reason": "completed",
+    "trace_code": "chapter9_toolport_create"
+  },
+  {
+    "event_type": "run_created",
+    "occurred_at": 1735689601,
+    "run_id": "run_orchestrator_worker_8bae07bdbd",
+    "schema_version": "1.0",
+    "sequence": 1,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "start"
+  },
+  {
+    "event_type": "capacity_rejected",
+    "occurred_at": 1735689602,
+    "run_id": "run_orchestrator_worker_8bae07bdbd",
+    "schema_version": "1.0",
+    "sequence": 2,
+    "status": "awaiting_review",
+    "terminal_reason": "capacity_unavailable",
+    "trace_code": "capacity_unavailable"
+  },
+  {
+    "event_type": "run_created",
+    "occurred_at": 1735689601,
+    "run_id": "run_browser_computer_use_5f705b3607",
+    "schema_version": "1.0",
+    "sequence": 1,
+    "status": "running",
+    "terminal_reason": null,
+    "trace_code": "start"
+  },
+  {
+    "event_type": "browser_review_required",
+    "occurred_at": 1735689602,
+    "run_id": "run_browser_computer_use_5f705b3607",
+    "schema_version": "1.0",
+    "sequence": 2,
+    "status": "awaiting_review",
+    "terminal_reason": "browser_profile_mismatch",
+    "trace_code": "browser_profile_mismatch"
+  }
+]

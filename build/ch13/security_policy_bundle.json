@@ -1,0 +1,14 @@
+{
+  "allowlisted_extensions": [
+    "policyops-ticket-pack"
+  ],
+  "egress": {
+    "host": "ticket.internal",
+    "method": "POST",
+    "port": 443,
+    "resolved_addresses": [
+      "192.0.2.10"
+    ]
+  },
+  "policy_version": "ch13-fixture-v1"
+}

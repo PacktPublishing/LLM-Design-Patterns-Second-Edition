@@ -1,0 +1,68 @@
+[
+  {
+    "accepted": true,
+    "issuer_bound_client_credentials": null,
+    "issuer_validated": null,
+    "pkce_used": true,
+    "profile": "2025-11-25",
+    "protected_resource_discovery": true,
+    "reason_code": "ALLOWED",
+    "resource_audience_valid": true,
+    "token_passthrough_rejected": true
+  },
+  {
+    "accepted": false,
+    "issuer_bound_client_credentials": null,
+    "issuer_validated": null,
+    "pkce_used": true,
+    "profile": "2025-11-25",
+    "protected_resource_discovery": true,
+    "reason_code": "MCP_AUTH_DENIED",
+    "resource_audience_valid": false,
+    "token_passthrough_rejected": true
+  },
+  {
+    "accepted": false,
+    "issuer_bound_client_credentials": null,
+    "issuer_validated": null,
+    "pkce_used": true,
+    "profile": "2025-11-25",
+    "protected_resource_discovery": true,
+    "reason_code": "MCP_AUTH_DENIED",
+    "resource_audience_valid": false,
+    "token_passthrough_rejected": false
+  },
+  {
+    "accepted": true,
+    "issuer_bound_client_credentials": true,
+    "issuer_validated": true,
+    "pkce_used": true,
+    "profile": "2026-07-28-rc",
+    "protected_resource_discovery": true,
+    "reason_code": "ALLOWED",
+    "resource_audience_valid": true,
+    "token_passthrough_rejected": true
+  },
+  {
+    "accepted": false,
+    "issuer_bound_client_credentials": true,
+    "issuer_validated": false,
+    "pkce_used": true,
+    "profile": "2026-07-28-rc",
+    "protected_resource_discovery": true,
+    "reason_code": "MCP_AUTH_DENIED",
+    "resource_audience_valid": true,
+    "token_passthrough_rejected": true
+  },
+  {
+    "accepted": false,
+    "issuer_bound_client_credentials": false,
+    "issuer_validated": true,
+    "pkce_used": true,
+    "profile": "2026-07-28-rc",
+    "protected_resource_discovery": true,
+    "reason_code": "MCP_AUTH_DENIED",
+    "resource_audience_valid": true,
+    "token_passthrough_rejected": true
+  }
+]
