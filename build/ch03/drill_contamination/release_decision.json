@@ -10,10 +10,10 @@
     "adapter_admitted": true,
     "admission_reasons": []
   },
-  "decision_reason": "blocked_before_candidate_comparison",
+  "decision_reason": "contamination_check_failed_blocked_before_scoring",
   "residual_risks": [
     "blocked before candidate comparison"
   ],
   "review_by": "next-sprint",
-  "expires_at": "2026-09-12T20:13:58.751801Z"
+  "expires_at": "2026-09-12T20:48:37.754876Z"
 }

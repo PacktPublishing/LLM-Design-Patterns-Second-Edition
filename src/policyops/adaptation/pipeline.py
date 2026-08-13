@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from policyops.adaptation.admission import artifact_admission_report
+from policyops.adaptation.baseline import baseline_report, measure_ch02_baseline
 from policyops.adaptation.contamination import contamination_report
 from policyops.adaptation.decision import POLICY_VERSION, evaluate_candidates
 from policyops.adaptation.intake import build_dataset_manifest, content_hash, load_records
@@ -37,7 +38,7 @@ def _jaccard_similarity(left: str, right: str) -> float:
     return len(left_tokens & right_tokens) / len(left_tokens | right_tokens)
 
 
-def _candidate_catalog(adapter_hash: str, artifact: ModelArtifact) -> list[AdaptationCandidate]:
+def _candidate_catalog(adapter_hash: str, artifact: ModelArtifact, suite_hash: str) -> list[AdaptationCandidate]:
     return [
         AdaptationCandidate(
             candidate_id="baseline",
@@ -45,6 +46,7 @@ def _candidate_catalog(adapter_hash: str, artifact: ModelArtifact) -> list[Adapt
             model_ref="ch01-replay",
             configuration_hash="sha256:baseline",
             rollback_target="baseline",
+            suite_hash=suite_hash,
         ),
         AdaptationCandidate(
             candidate_id="prompt-v1",
@@ -53,6 +55,7 @@ def _candidate_catalog(adapter_hash: str, artifact: ModelArtifact) -> list[Adapt
             configuration_hash="sha256:prompt",
             rollback_target="baseline",
             base_candidate_id="baseline",
+            suite_hash=suite_hash,
         ),
         AdaptationCandidate(
             candidate_id="retrieval-replay-v1",
@@ -61,6 +64,7 @@ def _candidate_catalog(adapter_hash: str, artifact: ModelArtifact) -> list[Adapt
             configuration_hash="sha256:retrieval",
             rollback_target="baseline",
             base_candidate_id="baseline",
+            suite_hash=suite_hash,
         ),
         AdaptationCandidate(
             candidate_id="adapter-v1",
@@ -70,6 +74,7 @@ def _candidate_catalog(adapter_hash: str, artifact: ModelArtifact) -> list[Adapt
             configuration_hash="sha256:adapter",
             rollback_target="baseline",
             base_candidate_id="baseline",
+            suite_hash=suite_hash,
         ),
     ]
 
@@ -321,6 +326,17 @@ def run_adaptation_pipeline(
     inject_safety_regression: bool = False,
 ) -> dict[str, Any]:
     evidence_dir.mkdir(parents=True, exist_ok=True)
+
+    # Step 1: measure the unchanged Chapter 2 baseline, before any candidate data is even
+    # loaded. `baseline_report.json` is written immediately so it is never derived after the
+    # fact from candidate scoring.
+    baseline_measurement = measure_ch02_baseline(evidence_dir / "ch02_baseline_suite")
+    baseline_report_payload = baseline_report(baseline_measurement)
+    (evidence_dir / "baseline_report.json").write_text(
+        json.dumps(baseline_report_payload, indent=2), encoding="utf-8"
+    )
+    ch02_suite_hash = baseline_measurement["suite_hash"]
+
     records = load_records(records_path)
     dataset = build_dataset_manifest("policyops-adapt-v1", records)
     split = deterministic_split(records)
@@ -331,6 +347,8 @@ def run_adaptation_pipeline(
     if inject_contamination and train_records:
         eval_texts.append(train_records[0].text)
 
+    # Step 3 checkpoint: the contamination/admission gate is resolved BEFORE any candidate is
+    # scored. A blocked run must not run the scoring loop at all.
     contamination = contamination_report(train_records, eval_texts)
     adapter_bytes = adapter_path.read_bytes()
     adapter_payload = json.loads(adapter_bytes.decode("utf-8"))
@@ -344,22 +362,17 @@ def run_adaptation_pipeline(
         size_bytes=len(adapter_bytes),
     )
     admission = artifact_admission_report(artifact, adapter_hash)
-    candidates = _candidate_catalog(adapter_hash, artifact)
+    candidates = _candidate_catalog(adapter_hash, artifact, ch02_suite_hash)
     eval_records = [by_id[record_id] for record_id in split.validation + split.protected_test]
     candidate_case_results: dict[str, list[dict[str, Any]]] = {}
-    for candidate in candidates:
-        metrics, cases = _evaluate_candidate(
-            candidate,
-            eval_records,
-            train_records,
-            adapter_payload,
-            inject_safety_regression=inject_safety_regression and candidate.kind == CandidateKind.ADAPTER,
-        )
-        candidate.metrics = metrics
-        candidate_case_results[candidate.candidate_id] = cases
-    baseline_metrics = dict(next(candidate.metrics for candidate in candidates if candidate.candidate_id == "baseline"))
 
-    if not contamination["clean"] or not admission["admitted"]:
+    blocked = not contamination["clean"] or not admission["admitted"]
+    if blocked:
+        decision_reason = (
+            "contamination_check_failed_blocked_before_scoring"
+            if not contamination["clean"]
+            else "adapter_admission_failed_blocked_before_scoring"
+        )
         decision = ReleaseDecision(
             decision="no_ship",
             selected_candidate_id="baseline",
@@ -371,26 +384,41 @@ def run_adaptation_pipeline(
                 "adapter_admitted": admission["admitted"],
                 "admission_reasons": admission["reasons"],
             },
-            decision_reason="blocked_before_candidate_comparison",
+            decision_reason=decision_reason,
             residual_risks=["blocked before candidate comparison"],
             review_by="next-sprint",
             expires_at=datetime.now(UTC) + timedelta(days=30),
         )
     else:
+        # Step 4: only reachable once the step-3 checkpoint has cleared.
+        for candidate in candidates:
+            metrics, cases = _evaluate_candidate(
+                candidate,
+                eval_records,
+                train_records,
+                adapter_payload,
+                inject_safety_regression=inject_safety_regression and candidate.kind == CandidateKind.ADAPTER,
+            )
+            candidate.metrics = metrics
+            candidate_case_results[candidate.candidate_id] = cases
+        baseline_metrics = dict(
+            next(candidate.metrics for candidate in candidates if candidate.candidate_id == "baseline")
+        )
         decision = evaluate_candidates(baseline_metrics=baseline_metrics, candidates=candidates)
 
     experiment = ExperimentRun(
         experiment_id="exp-ch03-fixture",
         dataset_hash=dataset.content_hash or "",
         split_hash=split.content_hash or "",
-        baseline_suite_hash="sha256:ch02-baseline",
+        baseline_suite_hash=ch02_suite_hash,
         candidate_ids=[candidate.candidate_id for candidate in candidates],
         contamination_clean=contamination["clean"],
+        suite_hash=ch02_suite_hash,
         policy_hash=content_hash(POLICY_VERSION),
         results={
             candidate.candidate_id: {
                 "metrics": candidate.metrics,
-                "cases": candidate_case_results[candidate.candidate_id],
+                "cases": candidate_case_results.get(candidate.candidate_id, []),
             }
             for candidate in candidates
         },
@@ -402,6 +430,7 @@ def run_adaptation_pipeline(
     )
 
     payload = {
+        "baseline_report": baseline_report_payload,
         "dataset": dataset.model_dump(mode="json"),
         "split": split.model_dump(mode="json"),
         "contamination": contamination,

@@ -98,7 +98,7 @@ class AdaptationCandidate(StrictModel):
     artifact_hashes: dict[str, str] = Field(default_factory=dict)
     configuration_hash: str
     rollback_target: str
-    suite_hash: str = "sha256:ch02-suite"
+    suite_hash: str
     grader_hash: str = "sha256:grader-fixture"
     environment_hash: str = "sha256:fixture-env"
     base_candidate_id: str | None = None
@@ -127,7 +127,7 @@ class ExperimentRun(StrictModel):
     baseline_suite_hash: str
     candidate_ids: list[str]
     contamination_clean: bool
-    suite_hash: str = "sha256:ch02-suite"
+    suite_hash: str
     grader_hash: str = "sha256:grader-fixture"
     environment_hash: str = "sha256:fixture-env"
     policy_hash: str = "sha256:adaptation-policy-v1"

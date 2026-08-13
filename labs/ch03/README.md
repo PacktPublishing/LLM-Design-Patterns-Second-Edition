@@ -10,6 +10,19 @@ Manifest-driven adaptation experiment: provenance-aware data, contamination chec
 
 Specs: [PRD](../../docs/implementation-plans/chapters/ch03-adaptation-strategy/prd.md) · [Architecture](../../docs/implementation-plans/chapters/ch03-adaptation-strategy/architecture.md) · [Design](../../docs/implementation-plans/chapters/ch03-adaptation-strategy/design.md)
 
+## Build steps and deliverables
+
+The chapter's Hands-On section builds this lab in five steps, each producing one of the five
+deliverables:
+
+| Step | What it does | Deliverable |
+| --- | --- | --- |
+| 1. Measure the unchanged baseline from Chapter 2 | `measure_ch02_baseline` replays Chapter 2's locked cases offline and records the result before any candidate is touched | `build/ch03/baseline_report.json` |
+| 2. Register candidate data with provenance and rights manifests | `load_records` / `build_dataset_manifest` reject records without rights basis, source, or lineage | `build/ch03/dataset_manifest.json`, `build/ch03/dataset_card.json` |
+| 3. Run contamination checks on the protected eval split (checkpoint: clean before any candidate scoring) | `contamination_report` gates the candidate-scoring loop; a contaminated or inadmissible run scores nothing | `build/ch03/contamination_report.json` |
+| 4. Evaluate the supplied adapter against the baseline and simpler options | `evaluate_candidates` compares baseline, prompt, retrieval-replay, and adapter candidates against mandatory gates | `build/ch03/candidate_matrix.json`, `build/ch03/comparison_report.json` |
+| 5. Produce a decision record with justification and a rollback plan | `evaluate_candidates` picks the smallest eligible candidate (or explicitly retains the baseline) | `build/ch03/release_decision.json` |
+
 ## What this code teaches
 
 - Do not fine-tune before measuring a locked baseline.

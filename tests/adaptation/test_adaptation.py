@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,8 @@ from policyops.adaptation import (
     run_adaptation_pipeline,
     run_adaptation_verification,
 )
+import policyops.adaptation.pipeline as pipeline_module
+from policyops.adaptation.baseline import BaselineMeasurementError, measure_ch02_baseline
 from policyops.adaptation.schemas import ModelArtifact
 
 RECORDS = Path("evals/adaptation/records.jsonl")
@@ -65,6 +68,61 @@ def test_contamination_blocks_release(tmp_path: Path) -> None:
     assert payload["contamination"]["clean"] is False
     assert payload["decision"]["decision"] == "no_ship"
     assert payload["decision"]["selected_candidate_id"] == "baseline"
+    assert payload["decision"]["decision_reason"] == "contamination_check_failed_blocked_before_scoring"
+
+
+def test_contamination_blocks_scoring_before_gate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Change 2: the step-3 checkpoint must short-circuit BEFORE any candidate is scored.
+
+    Proves it two ways: (1) counts calls to the candidate-evaluation function and asserts it
+    was never invoked, and (2) asserts every candidate's metrics/case results are empty.
+    """
+    calls: list[str] = []
+    original = pipeline_module._evaluate_candidate
+
+    def _spy(candidate, *args, **kwargs):
+        calls.append(candidate.candidate_id)
+        return original(candidate, *args, **kwargs)
+
+    monkeypatch.setattr(pipeline_module, "_evaluate_candidate", _spy)
+
+    payload = run_adaptation_pipeline(
+        RECORDS, ADAPTER, tmp_path / "contam-gate", inject_contamination=True
+    )
+
+    assert calls == []
+    assert payload["decision"]["decision"] == "no_ship"
+    assert all(metrics == {} for metrics in payload["candidate_matrix"].values())
+    assert all(report == [] for report in payload["candidate_reports"].values())
+
+
+def test_adapter_admission_failure_blocks_scoring_before_gate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The same checkpoint must also short-circuit on adapter-admission failure, not just
+    contamination, and the decision reason must say which gate blocked the run."""
+    calls: list[str] = []
+    original = pipeline_module._evaluate_candidate
+
+    def _spy(candidate, *args, **kwargs):
+        calls.append(candidate.candidate_id)
+        return original(candidate, *args, **kwargs)
+
+    monkeypatch.setattr(pipeline_module, "_evaluate_candidate", _spy)
+    monkeypatch.setattr(
+        pipeline_module,
+        "artifact_admission_report",
+        lambda artifact, expected_hash: {"admitted": False, "reasons": ["forced_for_test"], "artifact_id": artifact.artifact_id, "expected_hash": expected_hash},
+    )
+
+    payload = run_adaptation_pipeline(RECORDS, ADAPTER, tmp_path / "admission-gate")
+
+    assert calls == []
+    assert payload["contamination"]["clean"] is True
+    assert payload["artifact_admission"]["admitted"] is False
+    assert payload["decision"]["decision"] == "no_ship"
+    assert payload["decision"]["decision_reason"] == "adapter_admission_failed_blocked_before_scoring"
+    assert all(metrics == {} for metrics in payload["candidate_matrix"].values())
 
 
 def test_safety_regression_blocks_adapter(tmp_path: Path) -> None:
@@ -192,6 +250,41 @@ def test_dataset_manifest_captures_lineage_and_synthetic_breakdown() -> None:
     assert manifest.record_count == len(records)
     assert manifest.synthetic_record_ids
     assert manifest.lineage_hash and manifest.lineage_hash.startswith("sha256:")
+
+
+def test_baseline_report_is_written_before_candidate_scoring(tmp_path: Path) -> None:
+    """Change 3: `baseline_report.json` is a first-class deliverable produced by step 1, not
+    derived afterwards from the candidate matrix."""
+    payload = run_adaptation_pipeline(RECORDS, ADAPTER, tmp_path / "baseline")
+    report_path = tmp_path / "baseline" / "baseline_report.json"
+    assert report_path.exists()
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["suite_hash"].startswith("sha256:")
+    assert report["suite_hash"] != "sha256:ch02-baseline"
+    assert report["case_count"] > 0
+    assert report["case_ids"]
+    assert report["holdout_verified"] is True
+    assert "pass_rate" in report["metrics"]
+    assert payload["baseline_report"] == report
+
+
+def test_baseline_suite_hash_is_derived_from_ch02_cases_not_a_literal(tmp_path: Path) -> None:
+    """Change 1: the baseline suite hash must come from Chapter 2's actual locked cases."""
+    measurement = measure_ch02_baseline(tmp_path / "ch02-suite")
+    assert measurement["suite_hash"].startswith("sha256:")
+    assert measurement["suite_hash"] not in {"sha256:ch02-baseline", "sha256:ch02-suite"}
+    assert measurement["case_count"] > 0
+
+    payload = run_adaptation_pipeline(RECORDS, ADAPTER, tmp_path / "run")
+    experiment = payload["experiment"]
+    assert experiment["baseline_suite_hash"] == measurement["suite_hash"]
+    assert experiment["suite_hash"] == measurement["suite_hash"]
+    assert experiment["baseline_suite_hash"] not in {"sha256:ch02-baseline", "sha256:ch02-suite"}
+
+
+def test_baseline_measurement_fails_closed_on_missing_cases(tmp_path: Path) -> None:
+    with pytest.raises(BaselineMeasurementError):
+        measure_ch02_baseline(tmp_path / "ev", cases_root=tmp_path / "does-not-exist")
 
 
 def test_optional_training_requires_declared_gpu_and_hardware() -> None:
