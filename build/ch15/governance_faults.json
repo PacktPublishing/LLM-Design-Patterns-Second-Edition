@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "results": {
+    "determinism": true,
+    "failed": true,
+    "owner": true,
+    "rights": true,
+    "separation": true,
+    "stale": true,
+    "tamper": true
+  },
+  "scenario": "all"
+}

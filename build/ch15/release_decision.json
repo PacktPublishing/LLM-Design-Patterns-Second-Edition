@@ -1,0 +1,12 @@
+{
+  "approver_id": "owner-release",
+  "change_set_hash": "sha256:bc9d868618eb781cbf9041c08d2c7a9e4a8dd8cc4b0054697575524693ebd809",
+  "decided_at": 1735689600,
+  "decision": "GO",
+  "decision_digest": "sha256:2cedcc2c54de275d51c88f121f1aed087668a817280a4b5da1bf040a7b86cc53",
+  "decision_id": "decision-ch15",
+  "evidence_graph_hash": "sha256:5c2a533db57b8a1c34ae52f4ec3f5d7e90a70ffbe6a3d83673f0c44ff0287946",
+  "manifest_hash": "sha256:27ee9158c2f0b707215513ce28d641f44336314c3440c2b7b5d7f904568afb15",
+  "policy_hash": "sha256:f7a26902cd2bdd8f41d7893c4ba455360a04310b2547cfa9b33f2b661ed95212",
+  "reasons": []
+}

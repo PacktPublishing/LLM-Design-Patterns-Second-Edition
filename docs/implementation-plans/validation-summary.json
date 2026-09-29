@@ -1,0 +1,114 @@
+[
+  {
+    "chapter": "ch01",
+    "exit_code": 0,
+    "elapsed_seconds": 4.87,
+    "tail_stdout": "........................                           [100%]\n============================== warnings summary ===============================\n.venv\\Lib\\site-packages\\fastapi\\testclient.py:1\n  C:\\Users\\kenhu\\llm-design-patterns-hands-on\\.venv\\Lib\\site-packages\\fastapi\\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n    from starlette.testclient import TestClient as TestClient  # noqa\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n46 passed, 1 warning in 2.28s\nverify passed evidence=build\\ch01\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch02",
+    "exit_code": 0,
+    "elapsed_seconds": 3.84,
+    "tail_stdout": "env up lab=ch02 profile=fixture\n..................................                                       [100%]\n34 passed in 1.77s\nverify passed evidence=build\\ch02\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch03",
+    "exit_code": 0,
+    "elapsed_seconds": 2.34,
+    "tail_stdout": "env up lab=ch03 profile=fixture\n.................                                                        [100%]\n17 passed in 0.63s\nverify passed evidence=build\\ch03\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch04",
+    "exit_code": 0,
+    "elapsed_seconds": 2.29,
+    "tail_stdout": "env up lab=ch04 profile=fixture\n..........................                                               [100%]\n26 passed in 0.73s\nverify passed evidence=build\\ch04\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch05",
+    "exit_code": 0,
+    "elapsed_seconds": 2.49,
+    "tail_stdout": "env up lab=ch05 profile=fixture\n.......................................                                  [100%]\n39 passed in 0.79s\nverify passed evidence=build\\ch05\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch06",
+    "exit_code": 0,
+    "elapsed_seconds": 2.56,
+    "tail_stdout": "env up lab=ch06 profile=fixture\n......................................................                   [100%]\n54 passed in 0.91s\nverify passed evidence=build\\ch06\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch07",
+    "exit_code": 0,
+    "elapsed_seconds": 3.41,
+    "tail_stdout": "env up lab=ch07 profile=fixture\n..................................................................       [100%]\n66 passed in 1.31s\nverify passed evidence=build\\ch07\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch08",
+    "exit_code": 0,
+    "elapsed_seconds": 3.01,
+    "tail_stdout": "env up lab=ch08 profile=fixture\n........................................................................ [ 94%]\n....                                                                     [100%]\n76 passed in 1.00s\nverify passed evidence=build\\ch08\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch09",
+    "exit_code": 0,
+    "elapsed_seconds": 2.68,
+    "tail_stdout": "env up lab=ch09 profile=fixture\n........................................................................ [ 81%]\n................                                                         [100%]\n88 passed in 0.96s\nverify passed evidence=build\\ch09\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch10",
+    "exit_code": 0,
+    "elapsed_seconds": 2.85,
+    "tail_stdout": "env up lab=ch10 profile=fixture\n........................................................................ [ 73%]\n..........................                                               [100%]\n98 passed in 1.14s\nverify passed evidence=build\\ch10\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch11",
+    "exit_code": 0,
+    "elapsed_seconds": 2.96,
+    "tail_stdout": "env up lab=ch11 profile=fixture\n........................................................................ [ 66%]\n.....................................                                    [100%]\n109 passed in 1.12s\nverify passed evidence=build\\ch11\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch12",
+    "exit_code": 0,
+    "elapsed_seconds": 3.03,
+    "tail_stdout": "env up lab=ch12 profile=fixture\n........................................................................ [ 60%]\n................................................                         [100%]\n120 passed in 1.09s\nverify passed evidence=build\\ch12\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch13",
+    "exit_code": 0,
+    "elapsed_seconds": 3.31,
+    "tail_stdout": "env up lab=ch13 profile=fixture\n........................................................................ [ 54%]\n...........................................................              [100%]\n131 passed in 1.48s\nverify passed evidence=build\\ch13\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch14",
+    "exit_code": 0,
+    "elapsed_seconds": 3.04,
+    "tail_stdout": "env up lab=ch14 profile=fixture\n........................................................................ [ 51%]\n.....................................................................    [100%]\n141 passed in 1.33s\nverify passed evidence=build\\ch14\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch15",
+    "exit_code": 0,
+    "elapsed_seconds": 3.22,
+    "tail_stdout": "env up lab=ch15 profile=fixture\n........................................................................ [ 48%]\n........................................................................ [ 96%]\n.....                                                                    [100%]\n149 passed in 1.52s\nverify passed evidence=build\\ch15\n",
+    "tail_stderr": ""
+  },
+  {
+    "chapter": "ch16",
+    "exit_code": 0,
+    "elapsed_seconds": 3.43,
+    "tail_stdout": "env up lab=ch16 profile=fixture\n........................................................................ [ 46%]\n........................................................................ [ 92%]\n...........                                                              [100%]\n155 passed in 1.39s\nverify passed evidence=build\\ch16\n",
+    "tail_stderr": ""
+  }
+]

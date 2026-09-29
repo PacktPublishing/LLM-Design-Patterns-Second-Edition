@@ -1,0 +1,44 @@
+[
+  {
+    "backup_owner_id": "owner-risk",
+    "current": true,
+    "name": "System Owner",
+    "owner_id": "owner-system",
+    "role": "system_owner"
+  },
+  {
+    "backup_owner_id": "owner-control",
+    "current": true,
+    "name": "Risk Owner",
+    "owner_id": "owner-risk",
+    "role": "risk_owner"
+  },
+  {
+    "backup_owner_id": "owner-system",
+    "current": true,
+    "name": "Control Owner",
+    "owner_id": "owner-control",
+    "role": "control_owner"
+  },
+  {
+    "backup_owner_id": "owner-system",
+    "current": true,
+    "name": "Privacy Lead",
+    "owner_id": "owner-privacy",
+    "role": "privacy_lead"
+  },
+  {
+    "backup_owner_id": "owner-risk",
+    "current": true,
+    "name": "Release Approver",
+    "owner_id": "owner-release",
+    "role": "release_approver"
+  },
+  {
+    "backup_owner_id": null,
+    "current": true,
+    "name": "PolicyOps Agent",
+    "owner_id": "agent-policyops",
+    "role": "agent"
+  }
+]

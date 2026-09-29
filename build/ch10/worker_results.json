@@ -1,0 +1,48 @@
+[
+  {
+    "completed_at": 1735689601,
+    "evidence_refs": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "findings": [
+      {
+        "confidence": 1.0,
+        "evidence_refs": [
+          "policy_remote:v2:span_remote_approval"
+        ],
+        "finding_id": "finding_evidence_remote",
+        "kind": "evidence",
+        "text": "Remote-work exception requires manager approval and policy citation."
+      }
+    ],
+    "result_id": "result_task_b84881c3cb",
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "signature": "sha256:8c2f0c21c48d2382ce0dce780dfbbb25b5b8ef9bfa96b4982c841be5d568cc58",
+    "task_id": "task_b84881c3cb",
+    "usage_tokens": 100,
+    "worker_id": "retrieve_worker"
+  },
+  {
+    "completed_at": 1735689601,
+    "evidence_refs": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "findings": [
+      {
+        "confidence": 1.0,
+        "evidence_refs": [
+          "policy_remote:v2:span_remote_approval"
+        ],
+        "finding_id": "finding_ticket_ready",
+        "kind": "ticket_ready",
+        "text": "Ticket can be previewed only after exact-effect approval is available."
+      }
+    ],
+    "result_id": "result_task_8b2a30434e",
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "signature": "sha256:07fbb285dcb105d869170e4b66668b16c9fde4e1467d014c93355765b72ca326",
+    "task_id": "task_8b2a30434e",
+    "usage_tokens": 100,
+    "worker_id": "validate_worker"
+  }
+]

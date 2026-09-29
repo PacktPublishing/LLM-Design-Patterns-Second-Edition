@@ -1,0 +1,39 @@
+{
+  "schema_version": "1",
+  "route_profiles": {
+    "direct-baseline": {
+      "description": "Single model call, no escalation. Cheapest and fastest route.",
+      "model_sequence": [
+        "small-fast"
+      ],
+      "max_candidates": 1,
+      "max_model_calls": 1,
+      "max_output_tokens": 256,
+      "max_spend_units": 1.0
+    },
+    "enhanced-with-candidates": {
+      "description": "Several candidates sampled at one (stronger) tier, no escalation across tiers.",
+      "model_sequence": [
+        "standard",
+        "standard",
+        "standard"
+      ],
+      "max_candidates": 3,
+      "max_model_calls": 3,
+      "max_output_tokens": 512,
+      "max_spend_units": 5.0
+    },
+    "routed-with-escalation": {
+      "description": "Escalating model sequence with early exit on the first verified candidate.",
+      "model_sequence": [
+        "small-fast",
+        "standard",
+        "reasoned"
+      ],
+      "max_candidates": 3,
+      "max_model_calls": 3,
+      "max_output_tokens": 1024,
+      "max_spend_units": 10.0
+    }
+  }
+}

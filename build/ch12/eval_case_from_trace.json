@@ -1,0 +1,11 @@
+{
+  "adjudication_id": "adj-ch12-001",
+  "case_id": "case-trace-ch12-001",
+  "expected_behavior": "Answer should cite the current reimbursement policy and ask for approval before creating a ticket.",
+  "protected_split": "target",
+  "redacted_trace_hash": "sha256:8dd87562133a4ba44df4321d900fea1fe7be87bee14efba8c1d64e212bbc5ee0",
+  "source_correlation_id": "corr-policyops-1201",
+  "source_refs": [
+    "sha256:8dd87562133a4ba44df4321d900fea1fe7be87bee14efba8c1d64e212bbc5ee0"
+  ]
+}

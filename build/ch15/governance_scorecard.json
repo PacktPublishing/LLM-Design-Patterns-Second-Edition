@@ -1,0 +1,12 @@
+{
+  "agent_self_approval_denied": true,
+  "deterministic_digest": true,
+  "gates_passed": true,
+  "high_risk_paths_resolved": true,
+  "independent_approver_valid": true,
+  "invalid_evidence_cases_blocked": 6,
+  "rights_receipt_complete": true,
+  "schema_version": "1",
+  "secret_leaks": 0,
+  "transparency_notice_consistent": true
+}

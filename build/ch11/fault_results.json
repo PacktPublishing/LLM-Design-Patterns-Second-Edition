@@ -1,0 +1,174 @@
+[
+  {
+    "receipts": [
+      {
+        "capability": "ticket.create",
+        "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+        "external_reference": "ticket_439c686ebc90",
+        "idempotency_key": "session-before_effect:ticket",
+        "observed_postcondition": {
+          "ticket_count_delta": 1
+        },
+        "recorded_at": 1735689600,
+        "status": "confirmed",
+        "tenant_id": "tenant_alpha"
+      }
+    ],
+    "scenario": "before_effect",
+    "state": {
+      "actor_id": "actor_reader",
+      "approval_reference": "fixture-approval",
+      "budget": {
+        "effect_limit": 1,
+        "effects": 0,
+        "iteration_limit": 4,
+        "iterations": 0,
+        "spend_cents": 0,
+        "spend_limit_cents": 10,
+        "tool_call_limit": 4,
+        "tool_calls": 0
+      },
+      "configuration_id": "fixture-ch09",
+      "pending_action_id": null,
+      "request_id": "req-ch09",
+      "schema_version": "1.0",
+      "session_id": "session-before_effect",
+      "state": "verified",
+      "tenant_id": "tenant_alpha",
+      "terminal_reason": null,
+      "ticket_id": "ticket_439c686ebc90",
+      "trace_id": "trace-ch09",
+      "version": 6
+    }
+  },
+  {
+    "receipts": [
+      {
+        "capability": "ticket.create",
+        "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+        "external_reference": "ticket_958d1cfd4330",
+        "idempotency_key": "session-after_effect_before_ack:ticket",
+        "observed_postcondition": {
+          "ticket_count_delta": 1
+        },
+        "recorded_at": 1735689600,
+        "status": "confirmed",
+        "tenant_id": "tenant_alpha"
+      }
+    ],
+    "scenario": "after_effect_before_ack",
+    "state": {
+      "actor_id": "actor_reader",
+      "approval_reference": null,
+      "budget": {
+        "effect_limit": 1,
+        "effects": 0,
+        "iteration_limit": 4,
+        "iterations": 0,
+        "spend_cents": 0,
+        "spend_limit_cents": 10,
+        "tool_call_limit": 4,
+        "tool_calls": 0
+      },
+      "configuration_id": "fixture-ch09",
+      "pending_action_id": null,
+      "request_id": "req-ch09",
+      "schema_version": "1.0",
+      "session_id": "session-after_effect_before_ack",
+      "state": "verified",
+      "tenant_id": "tenant_alpha",
+      "terminal_reason": null,
+      "ticket_id": "ticket_958d1cfd4330",
+      "trace_id": "trace-ch09",
+      "version": 6
+    }
+  },
+  {
+    "receipts": [
+      {
+        "capability": "ticket.create",
+        "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+        "external_reference": "ticket_a9a2c668a1da",
+        "idempotency_key": "session-after_checkpoint:ticket",
+        "observed_postcondition": {
+          "ticket_count_delta": 1
+        },
+        "recorded_at": 1735689600,
+        "status": "confirmed",
+        "tenant_id": "tenant_alpha"
+      }
+    ],
+    "scenario": "after_checkpoint",
+    "state": {
+      "actor_id": "actor_reader",
+      "approval_reference": "fixture-approval",
+      "budget": {
+        "effect_limit": 1,
+        "effects": 0,
+        "iteration_limit": 4,
+        "iterations": 0,
+        "spend_cents": 0,
+        "spend_limit_cents": 10,
+        "tool_call_limit": 4,
+        "tool_calls": 0
+      },
+      "configuration_id": "fixture-ch09",
+      "pending_action_id": "intent-session-after_checkpoint",
+      "request_id": "req-ch09",
+      "schema_version": "1.0",
+      "session_id": "session-after_checkpoint",
+      "state": "verified",
+      "tenant_id": "tenant_alpha",
+      "terminal_reason": null,
+      "ticket_id": "ticket_a9a2c668a1da",
+      "trace_id": "trace-ch09",
+      "version": 6
+    }
+  },
+  {
+    "active_fence": 2,
+    "receipts": [
+      {
+        "capability": "ticket.create",
+        "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+        "external_reference": "ticket_6524ef94d7a2",
+        "idempotency_key": "session-lease_contention:ticket",
+        "observed_postcondition": {
+          "ticket_count_delta": 1
+        },
+        "recorded_at": 1735689600,
+        "status": "confirmed",
+        "tenant_id": "tenant_alpha"
+      }
+    ],
+    "resumed_owner": "worker-c",
+    "scenario": "lease_contention",
+    "stale_fence": 1,
+    "stale_write_rejected": true,
+    "state": {
+      "actor_id": "actor_reader",
+      "approval_reference": "fixture-approval",
+      "budget": {
+        "effect_limit": 1,
+        "effects": 0,
+        "iteration_limit": 4,
+        "iterations": 0,
+        "spend_cents": 0,
+        "spend_limit_cents": 10,
+        "tool_call_limit": 4,
+        "tool_calls": 0
+      },
+      "configuration_id": "fixture-ch09",
+      "pending_action_id": null,
+      "request_id": "req-ch09",
+      "schema_version": "1.0",
+      "session_id": "session-lease_contention",
+      "state": "verified",
+      "tenant_id": "tenant_alpha",
+      "terminal_reason": null,
+      "ticket_id": "ticket_6524ef94d7a2",
+      "trace_id": "trace-ch09",
+      "version": 6
+    }
+  }
+]

@@ -1,0 +1,59 @@
+{
+  "selected_profile": "routed-with-escalation",
+  "pareto_profiles": [
+    "direct-baseline",
+    "routed-with-escalation"
+  ],
+  "quality_floor": 0.8,
+  "profiles": {
+    "direct-baseline": {
+      "profile": "direct-baseline",
+      "row_count": 62,
+      "success_count": 60,
+      "success_rate": 0.9677,
+      "avg_quality": 0.8516,
+      "avg_latency_ms": 9.9,
+      "p50_latency_ms": 1.0,
+      "p95_latency_ms": 45.0,
+      "p99_latency_ms": 45.0,
+      "total_spend_units": 3.9,
+      "cost_per_successful_outcome": 0.065,
+      "clears_quality_floor": false,
+      "dominated": false
+    },
+    "enhanced-with-candidates": {
+      "profile": "enhanced-with-candidates",
+      "row_count": 62,
+      "success_count": 62,
+      "success_rate": 1.0,
+      "avg_quality": 0.8916,
+      "avg_latency_ms": 17.9,
+      "p50_latency_ms": 1.0,
+      "p95_latency_ms": 90.0,
+      "p99_latency_ms": 90.0,
+      "total_spend_units": 10.8,
+      "cost_per_successful_outcome": 0.1742,
+      "clears_quality_floor": true,
+      "dominated": true
+    },
+    "routed-with-escalation": {
+      "profile": "routed-with-escalation",
+      "row_count": 62,
+      "success_count": 62,
+      "success_rate": 1.0,
+      "avg_quality": 0.8787,
+      "avg_latency_ms": 10.65,
+      "p50_latency_ms": 1.0,
+      "p95_latency_ms": 45.0,
+      "p99_latency_ms": 80.1,
+      "total_spend_units": 4.5,
+      "cost_per_successful_outcome": 0.0726,
+      "clears_quality_floor": true,
+      "dominated": false
+    }
+  },
+  "objective_improvements": [
+    "lower_spend_than:enhanced-with-candidates",
+    "lower_p95_latency_than:enhanced-with-candidates"
+  ]
+}

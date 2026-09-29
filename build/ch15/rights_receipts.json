@@ -1,0 +1,254 @@
+[
+  {
+    "complete": true,
+    "receipt_id": "receipt-rights-correct-001",
+    "request_digest": "sha256:3f4a71308baf42075251fc90a7625e53892502f35d213b6f44f170bedf30c71a",
+    "request_id": "rights-correct-001",
+    "signed_hash": "sha256:a30b2aa44d038fd8a6f276f6a1ad5af3f7415c9b93532bb68718c37d9438e89d",
+    "store_inventory_version": "inventory-ch15-v1",
+    "stores": [
+      {
+        "action": "correction",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "primary_db",
+        "verifier_passed": true
+      },
+      {
+        "action": "correction",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "retrieval_index",
+        "verifier_passed": true
+      },
+      {
+        "action": "correction",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "graph_snapshot",
+        "verifier_passed": true
+      },
+      {
+        "action": "correction",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "memory_ledger",
+        "verifier_passed": true
+      },
+      {
+        "action": "correction",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "cache",
+        "verifier_passed": true
+      },
+      {
+        "action": "correction",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "trace_store",
+        "verifier_passed": true
+      },
+      {
+        "action": "correction",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "export_package",
+        "verifier_passed": true
+      },
+      {
+        "action": "correction",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": 1735776000,
+        "retention_basis": "backup expiry policy",
+        "store": "backup_retention",
+        "verifier_passed": true
+      }
+    ],
+    "tenant_id": "tenant-alpha",
+    "workflow_id": "sha256:3f4a71308baf42075251fc90a7625e53892502f35d213b6f44f170bedf30c71a"
+  },
+  {
+    "complete": true,
+    "receipt_id": "receipt-rights-export-001",
+    "request_digest": "sha256:6e623ea472d3a1c3b81c7afbadabce51b0bda513a617926deb963f30b945ae90",
+    "request_id": "rights-export-001",
+    "signed_hash": "sha256:10e01a84e77f043da14001735cc8097bf58554af766d1c871ccd24bbac6426e8",
+    "store_inventory_version": "inventory-ch15-v1",
+    "stores": [
+      {
+        "action": "export",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "primary_db",
+        "verifier_passed": true
+      },
+      {
+        "action": "export",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "retrieval_index",
+        "verifier_passed": true
+      },
+      {
+        "action": "export",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "graph_snapshot",
+        "verifier_passed": true
+      },
+      {
+        "action": "export",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "memory_ledger",
+        "verifier_passed": true
+      },
+      {
+        "action": "export",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "cache",
+        "verifier_passed": true
+      },
+      {
+        "action": "export",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "trace_store",
+        "verifier_passed": true
+      },
+      {
+        "action": "export",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "export_package",
+        "verifier_passed": true
+      },
+      {
+        "action": "export",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": 1735776000,
+        "retention_basis": "backup expiry policy",
+        "store": "backup_retention",
+        "verifier_passed": true
+      }
+    ],
+    "tenant_id": "tenant-alpha",
+    "workflow_id": "sha256:6e623ea472d3a1c3b81c7afbadabce51b0bda513a617926deb963f30b945ae90"
+  },
+  {
+    "complete": true,
+    "receipt_id": "receipt-rights-delete-001",
+    "request_digest": "sha256:902eec2a11ef8f9e922dd56f9862de17f0d4b872315c5ca45747a0571d9594ec",
+    "request_id": "rights-delete-001",
+    "signed_hash": "sha256:e21436c1000add86645c317fe25e9a8067dc2762081c1eab3f6f98a9c5924d7a",
+    "store_inventory_version": "inventory-ch15-v1",
+    "stores": [
+      {
+        "action": "deletion",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "primary_db",
+        "verifier_passed": true
+      },
+      {
+        "action": "deletion",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "retrieval_index",
+        "verifier_passed": true
+      },
+      {
+        "action": "deletion",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "graph_snapshot",
+        "verifier_passed": true
+      },
+      {
+        "action": "deletion",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "memory_ledger",
+        "verifier_passed": true
+      },
+      {
+        "action": "deletion",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "cache",
+        "verifier_passed": true
+      },
+      {
+        "action": "deletion",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "trace_store",
+        "verifier_passed": true
+      },
+      {
+        "action": "deletion",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": null,
+        "retention_basis": null,
+        "store": "export_package",
+        "verifier_passed": true
+      },
+      {
+        "action": "deletion",
+        "completed_at": 1735689900,
+        "exception": null,
+        "follow_up_at": 1735776000,
+        "retention_basis": "backup expiry policy",
+        "store": "backup_retention",
+        "verifier_passed": true
+      }
+    ],
+    "tenant_id": "tenant-alpha",
+    "workflow_id": "sha256:902eec2a11ef8f9e922dd56f9862de17f0d4b872315c5ca45747a0571d9594ec"
+  }
+]

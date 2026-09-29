@@ -1,0 +1,9 @@
+{
+  "bundle_id": "bundle-ch16-fixture",
+  "evidence_hash": "sha256:67747ff64684125277ad91ce0f7ab4a5042e7245be2d1c6945599a9653fc0315",
+  "game_day_hash": "sha256:664e90c81e37f16df90cf147e1700a6433093ec5245393a50fffd16afbd31ba8",
+  "governance_decision_hash": "sha256:2cedcc2c54de275d51c88f121f1aed087668a817280a4b5da1bf040a7b86cc53",
+  "signature": "sha256:f8576eebe0c060df1d5b2917f350c2b61c608910ac87b930296d968a54f1cd8a",
+  "signed_by": "owner-release",
+  "traceability_hash": "sha256:9dfa30fda91a2d34e90062ba4d73b376e2211bf4294c707fb952b023e8c76a46"
+}

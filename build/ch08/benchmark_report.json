@@ -1,0 +1,34 @@
+{
+  "governed_memory_success_rate": 0.6666666666666666,
+  "lift": 0.3333333333333333,
+  "no_memory_success_rate": 0.3333333333333333,
+  "tasks": [
+    {
+      "governed_memory_success": true,
+      "needs_memory": true,
+      "no_memory_success": false,
+      "recalled_ids": [
+        "mem_6155ba2e4c2a672b"
+      ],
+      "task_id": "benchmark-format"
+    },
+    {
+      "governed_memory_success": false,
+      "needs_memory": true,
+      "no_memory_success": false,
+      "recalled_ids": [
+        "mem_6155ba2e4c2a672b"
+      ],
+      "task_id": "benchmark-episode"
+    },
+    {
+      "governed_memory_success": true,
+      "needs_memory": false,
+      "no_memory_success": true,
+      "recalled_ids": [
+        "mem_6155ba2e4c2a672b"
+      ],
+      "task_id": "benchmark-generic"
+    }
+  ]
+}

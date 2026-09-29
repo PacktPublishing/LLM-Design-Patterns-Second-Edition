@@ -1,0 +1,22 @@
+chapter = "ch16"
+title = "Integrate and Release the PolicyOps Agent"
+base_tag = "ed2-v1.0-ch16-start"
+profile = "fixture"
+verify = "uv run policyops verify ch16 --profile fixture --all --junit build/ch16/junit.xml --evidence build/ch16"
+fault = "uv run policyops fault ch16 --scenario all"
+
+[artifacts]
+source = "src/policyops/capstone"
+tests = "tests/capstone"
+evidence = "build/ch16"
+design = "docs/implementation-plans/chapters/ch16-policyops-capstone/design.md"
+
+[gates]
+traceability_closed = true
+game_day_steps_expected = 16
+mandatory_failures = 0
+seeded_failure_returns_no_go = true
+release_go = true
+duplicate_tickets = 0
+unauthorized_effects = 0
+secret_leaks = 0

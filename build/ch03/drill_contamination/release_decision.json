@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "decision": "no_ship",
+  "selected_candidate_id": "baseline",
+  "selected_candidate_kind": "baseline",
+  "approver_role": "release_reviewer",
+  "rollback_target": "baseline",
+  "gate_evidence": {
+    "contamination_clean": false,
+    "adapter_admitted": true,
+    "admission_reasons": []
+  },
+  "decision_reason": "contamination_check_failed_blocked_before_scoring",
+  "residual_risks": [
+    "blocked before candidate comparison"
+  ],
+  "review_by": "next-sprint",
+  "expires_at": "2026-09-12T20:48:37.754876Z"
+}

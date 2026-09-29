@@ -1,0 +1,9 @@
+policy_version: "ch13-fixture-v1"
+allowlisted_extensions:
+  - policyops-ticket-pack
+egress:
+  host: ticket.internal
+  port: 443
+  method: POST
+  resolved_addresses:
+    - 192.0.2.10

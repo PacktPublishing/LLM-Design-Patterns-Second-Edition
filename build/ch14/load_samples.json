@@ -1,0 +1,94 @@
+{
+  "completions": [
+    {
+      "fencing_token": 1,
+      "item_id": "load-0",
+      "latency_ms": 250,
+      "service_ms": 250,
+      "tenant_id": "tenant-alpha",
+      "worker_id": "worker-a"
+    },
+    {
+      "fencing_token": 1,
+      "item_id": "load-2",
+      "latency_ms": 320,
+      "service_ms": 320,
+      "tenant_id": "tenant-alpha",
+      "worker_id": "worker-b"
+    },
+    {
+      "fencing_token": 1,
+      "item_id": "load-1",
+      "latency_ms": 555,
+      "service_ms": 305,
+      "tenant_id": "tenant-beta",
+      "worker_id": "worker-a"
+    },
+    {
+      "fencing_token": 1,
+      "item_id": "load-3",
+      "latency_ms": 695,
+      "service_ms": 375,
+      "tenant_id": "tenant-beta",
+      "worker_id": "worker-b"
+    }
+  ],
+  "offers": [
+    {
+      "enqueued": true,
+      "item_id": "load-0",
+      "reason": "accepted",
+      "status": "accepted",
+      "tenant_id": "tenant-alpha"
+    },
+    {
+      "enqueued": true,
+      "item_id": "load-1",
+      "reason": "accepted",
+      "status": "accepted",
+      "tenant_id": "tenant-beta"
+    },
+    {
+      "enqueued": true,
+      "item_id": "load-2",
+      "reason": "accepted",
+      "status": "accepted",
+      "tenant_id": "tenant-alpha"
+    },
+    {
+      "enqueued": true,
+      "item_id": "load-3",
+      "reason": "accepted",
+      "status": "accepted",
+      "tenant_id": "tenant-beta"
+    },
+    {
+      "enqueued": false,
+      "item_id": "load-4",
+      "reason": "bounded queue full",
+      "status": "rejected_429",
+      "tenant_id": "tenant-alpha"
+    },
+    {
+      "enqueued": false,
+      "item_id": "load-5",
+      "reason": "bounded queue full",
+      "status": "rejected_429",
+      "tenant_id": "tenant-beta"
+    },
+    {
+      "enqueued": false,
+      "item_id": "load-6",
+      "reason": "bounded queue full",
+      "status": "rejected_429",
+      "tenant_id": "tenant-alpha"
+    },
+    {
+      "enqueued": false,
+      "item_id": "load-7",
+      "reason": "bounded queue full",
+      "status": "rejected_429",
+      "tenant_id": "tenant-beta"
+    }
+  ]
+}

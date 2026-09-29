@@ -1,0 +1,42 @@
+{
+  "chapters_expected": 15,
+  "chapters_found": 15,
+  "closed": true,
+  "commands": {
+    "ch01": "uv run policyops verify ch01 --profile fixture",
+    "ch02": "uv run policyops verify ch02 --profile fixture --junit build/ch02/junit.xml --evidence build/ch02",
+    "ch03": "uv run policyops verify ch03 --profile fixture --junit build/ch03/junit.xml --evidence build/ch03",
+    "ch04": "uv run policyops verify ch04 --profile fixture --junit build/ch04/junit.xml --evidence build/ch04",
+    "ch05": "uv run policyops verify ch05 --profile fixture --junit build/ch05/junit.xml --evidence build/ch05",
+    "ch06": "uv run policyops verify ch06 --profile fixture --junit build/ch06/junit.xml --evidence build/ch06",
+    "ch07": "uv run policyops verify ch07 --profile fixture --junit build/ch07/junit.xml --evidence build/ch07",
+    "ch08": "uv run policyops verify ch08 --profile fixture --junit build/ch08/junit.xml --evidence build/ch08",
+    "ch09": "uv run policyops verify ch09 --profile fixture --junit build/ch09/junit.xml --evidence build/ch09",
+    "ch10": "uv run policyops verify ch10 --profile fixture --junit build/ch10/junit.xml --evidence build/ch10",
+    "ch11": "uv run policyops verify ch11 --profile fixture --junit build/ch11/junit.xml --evidence build/ch11",
+    "ch12": "uv run policyops verify ch12 --profile fixture --junit build/ch12/junit.xml --evidence build/ch12",
+    "ch13": "uv run policyops verify ch13 --profile fixture --junit build/ch13/junit.xml --evidence build/ch13",
+    "ch14": "uv run policyops verify ch14 --profile fixture --junit build/ch14/junit.xml --evidence build/ch14",
+    "ch15": "uv run policyops verify ch15 --profile fixture --junit build/ch15/junit.xml --evidence build/ch15"
+  },
+  "decisions_go": true,
+  "missing_chapters": [],
+  "rollback_paths_present": true,
+  "statuses": {
+    "ch01": "accepted_fixture",
+    "ch02": "accepted_fixture",
+    "ch03": "accepted_fixture",
+    "ch04": "accepted_fixture",
+    "ch05": "accepted_fixture",
+    "ch06": "accepted_fixture",
+    "ch07": "accepted_fixture",
+    "ch08": "accepted_fixture",
+    "ch09": "accepted_fixture",
+    "ch10": "accepted_fixture",
+    "ch11": "accepted_fixture",
+    "ch12": "accepted_fixture",
+    "ch13": "accepted_fixture",
+    "ch14": "accepted_fixture",
+    "ch15": "accepted_fixture"
+  }
+}

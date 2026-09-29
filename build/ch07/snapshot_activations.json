@@ -1,0 +1,23 @@
+[
+  {
+    "activation_id": "activate-graph-snapshot-v1",
+    "previous_snapshot_id": null,
+    "activated_snapshot_id": "graph-snapshot-v1",
+    "reason": "initial_load",
+    "rollback_of": null
+  },
+  {
+    "activation_id": "activate-repair-delete-conflict",
+    "previous_snapshot_id": "graph-snapshot-v1",
+    "activated_snapshot_id": "graph-snapshot-v1-repair-delete-conflict",
+    "reason": "repair:delete",
+    "rollback_of": null
+  },
+  {
+    "activation_id": "rollback-verify",
+    "previous_snapshot_id": "graph-snapshot-v1-repair-delete-conflict",
+    "activated_snapshot_id": "graph-snapshot-v1",
+    "reason": "rollback",
+    "rollback_of": "graph-snapshot-v1-repair-delete-conflict"
+  }
+]

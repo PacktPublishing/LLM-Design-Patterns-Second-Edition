@@ -1,0 +1,13 @@
+{
+  "host_credentials_inherited": false,
+  "memory_mb": 256,
+  "network_default_deny": true,
+  "non_root": true,
+  "process_limit": 8,
+  "profile_id": "non-root-default-deny",
+  "read_only_root": true,
+  "tested_syscall_profile": true,
+  "writable_paths": [
+    "/work"
+  ]
+}

@@ -1,0 +1,18 @@
+chapter = "ch10"
+title = "Build a Bounded Orchestrator-Worker Flow"
+base_tag = "ed2-v1.0-ch10-start"
+profile = "fixture"
+verify = "uv run policyops verify ch10 --profile fixture --junit build/ch10/junit.xml --evidence build/ch10"
+fault = "uv run policyops fault ch10 --scenario all"
+
+[artifacts]
+source = "src/policyops/orchestration"
+tests = "tests/orchestration"
+evidence = "build/ch10"
+design = "docs/implementation-plans/chapters/ch10-bounded-orchestrator-worker/design.md"
+
+[gates]
+approval_bypasses = 0
+authority_widening = 0
+capacity_partial_spawns = 0
+finite_termination = true

@@ -1,0 +1,16 @@
+{
+  "cross_tenant_leaks": 0,
+  "duplicate_tickets": 0,
+  "evidence_signed": true,
+  "game_day_steps_expected": 16,
+  "game_day_steps_passed": 16,
+  "gates_passed": true,
+  "mandatory_failures": 0,
+  "release_go": true,
+  "rights_receipt_complete": true,
+  "schema_version": "1",
+  "secret_leaks": 0,
+  "seeded_failure_returns_no_go": true,
+  "traceability_closed": true,
+  "unauthorized_effects": 0
+}

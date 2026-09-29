@@ -1,0 +1,9 @@
+{
+  "decision": "adopt_graph_for_suitable_queries",
+  "task_success_gain": 0.25,
+  "graph_success_rate": 1.0,
+  "rag_success_rate": 0.75,
+  "graph_cost_per_success_token_proxy": 13.0,
+  "rag_cost_per_success_token_proxy": 43.33,
+  "note": "Use graph routes only for graph-suitable query classes; ordinary facts stay on Chapter 6 retrieval."
+}

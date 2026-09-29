@@ -1,0 +1,84 @@
+{
+  "approval_nonces": {
+    "nonce-1": {
+      "actor_id": "actor_reader",
+      "consumed_at": 1735689600,
+      "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+      "nonce": "nonce-1",
+      "tenant_id": "tenant_alpha"
+    }
+  },
+  "audit_events": [
+    {
+      "actor_id": "actor_reader",
+      "decision": "created",
+      "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+      "event_id": "audit_0001",
+      "extension_id": "policyops-ticket-pack",
+      "operation": "create_policy_ticket",
+      "reason_code": null,
+      "redacted": true,
+      "result_hash": "sha256:1b8dad526cb799973526d5ea4f4abb17ae8224940b2a67030d83b416a120e6fc",
+      "tenant_id": "tenant_alpha"
+    }
+  ],
+  "idempotency_results": {
+    "tenant_alpha:create_policy_ticket:idem-1": {
+      "idempotency_key": "idem-1",
+      "operation": "create_policy_ticket",
+      "request_hash": "sha256:6b56413e4d96ebe0b799515f7c06d04f105a7027340fd4732108c9923ca651c9",
+      "result": {
+        "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+        "evidence_status": "not_applicable",
+        "idempotency_key": "idem-1",
+        "reason_code": null,
+        "schema_version": "1.0",
+        "status": "created",
+        "ticket_id": "ticket_e43a6ccf8d74"
+      },
+      "tenant_id": "tenant_alpha",
+      "ticket_id": "ticket_e43a6ccf8d74"
+    }
+  },
+  "mcp_subscriptions": {
+    "tenant_alpha:2025-11-25:schema-help": {
+      "profile": "2025-11-25",
+      "resource_id": "schema/help",
+      "status": "active",
+      "subscription_id": "tenant_alpha:2025-11-25:schema-help",
+      "tenant_id": "tenant_alpha",
+      "transport": "mcp",
+      "updated_at": 1735689600
+    }
+  },
+  "resumable_results": {
+    "mcp:req-ch09:idem-mcp": {
+      "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+      "evidence_status": "recorded",
+      "idempotency_key": "idem-mcp",
+      "reason_code": null,
+      "schema_version": "1.0",
+      "status": "created",
+      "ticket_id": "ticket_b1b5f2442d5c"
+    },
+    "req-ch09:idem-mcp": {
+      "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+      "evidence_status": "recorded",
+      "idempotency_key": "idem-mcp",
+      "reason_code": null,
+      "schema_version": "1.0",
+      "status": "created",
+      "ticket_id": "ticket_b1b5f2442d5c"
+    }
+  },
+  "workflow_state": {
+    "req-ch09:workflow": {
+      "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+      "last_operation": "create_policy_ticket_denied",
+      "tenant_id": "tenant_alpha",
+      "transport": "direct",
+      "updated_at": 1735689600,
+      "workflow_id": "req-ch09:workflow"
+    }
+  }
+}

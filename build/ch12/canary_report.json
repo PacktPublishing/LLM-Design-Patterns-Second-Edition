@@ -1,0 +1,22 @@
+{
+  "accepted_alias_after": "accepted:baseline",
+  "baseline_alias_before": "accepted:baseline",
+  "canary_id": "canary-ch12-001",
+  "candidate_hash": "sha256:c953797a782853a9da8d9c70633c15b234a7d670b22653bf1144675ab0b644b8",
+  "decision": "rollback",
+  "metrics": {
+    "baseline_cost_per_success": 2.7722,
+    "baseline_success_rate": 0.9,
+    "candidate_cost_per_success": 5.0769,
+    "candidate_success_rate": 0.65,
+    "p95_latency_ms": 3046,
+    "safety_incidents": 1,
+    "window": "20 fixture requests"
+  },
+  "rollback_reason": "seeded behavior regression crossed predeclared stop rule",
+  "stop_conditions": [
+    "success_rate_drop>0.05",
+    "safety_incidents>0",
+    "p95_latency_ms>2500"
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+    "evidence_status": "recorded",
+    "idempotency_key": "idem-1",
+    "reason_code": null,
+    "schema_version": "1.0",
+    "status": "created",
+    "ticket_id": "ticket_e43a6ccf8d74"
+  },
+  {
+    "effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
+    "evidence_status": "recorded",
+    "idempotency_key": "idem-mcp",
+    "reason_code": null,
+    "schema_version": "1.0",
+    "status": "created",
+    "ticket_id": "ticket_b1b5f2442d5c"
+  }
+]

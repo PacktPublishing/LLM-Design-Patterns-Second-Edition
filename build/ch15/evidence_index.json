@@ -1,0 +1,107 @@
+[
+  {
+    "artifact_hash": "sha256:2d8479c552c44a8a8c9e7c094b78e1e0b7e9fa4f2da60ef061929cffb6aec2be",
+    "artifact_uri": "build/ch14/deployment_scorecard.json",
+    "configuration_scope": "ch14-accepted",
+    "control_id": "control-deployment",
+    "evidence_id": "ev-ch14-deploy",
+    "result": "pass",
+    "reviewed_by": "owner-control",
+    "schema_version": "1.0",
+    "signature": {
+      "artifact_hash": "sha256:2d8479c552c44a8a8c9e7c094b78e1e0b7e9fa4f2da60ef061929cffb6aec2be",
+      "configuration_scope": "ch14-accepted",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "purpose": "release_evidence",
+      "schema_version": "1.0",
+      "signature": "sha256:b07ed2f9d098872cbd30c20e07687be261f5e4190452a8db9493db1f918839eb"
+    }
+  },
+  {
+    "artifact_hash": "sha256:3462fde69a2122821c14c162188dd25833245931e7e38d9b19a027699c3b2c10",
+    "artifact_uri": "build/ch13/security_report.json",
+    "configuration_scope": "ch14-accepted",
+    "control_id": "control-security",
+    "evidence_id": "ev-ch13-security",
+    "result": "pass",
+    "reviewed_by": "owner-control",
+    "schema_version": "1.0",
+    "signature": {
+      "artifact_hash": "sha256:3462fde69a2122821c14c162188dd25833245931e7e38d9b19a027699c3b2c10",
+      "configuration_scope": "ch14-accepted",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "purpose": "release_evidence",
+      "schema_version": "1.0",
+      "signature": "sha256:103379b04bf5394f922884b4a3f0799108f299c70291331c15b4fa0c38d00604"
+    }
+  },
+  {
+    "artifact_hash": "sha256:a946173899e06919aaabbbb73bb715404c8288387238076fbccd951a30c101cb",
+    "artifact_uri": "build/ch12/observability_scorecard.json",
+    "configuration_scope": "ch14-accepted",
+    "control_id": "control-observability",
+    "evidence_id": "ev-ch12-observability",
+    "result": "pass",
+    "reviewed_by": "owner-control",
+    "schema_version": "1.0",
+    "signature": {
+      "artifact_hash": "sha256:a946173899e06919aaabbbb73bb715404c8288387238076fbccd951a30c101cb",
+      "configuration_scope": "ch14-accepted",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "purpose": "release_evidence",
+      "schema_version": "1.0",
+      "signature": "sha256:b8efe0fb3998e6f556290622d15602adaa6e41bef812f323e8204cba5156cfa3"
+    }
+  },
+  {
+    "artifact_hash": "sha256:e1a20fc82f8e11cd8df0c6f446c5f311cf882f8106ac0f8026adef577caa6a34",
+    "artifact_uri": "build/ch08/deletion_receipt.json",
+    "configuration_scope": "ch14-accepted",
+    "control_id": "control-rights",
+    "evidence_id": "ev-ch08-rights",
+    "result": "pass",
+    "reviewed_by": "owner-control",
+    "schema_version": "1.0",
+    "signature": {
+      "artifact_hash": "sha256:e1a20fc82f8e11cd8df0c6f446c5f311cf882f8106ac0f8026adef577caa6a34",
+      "configuration_scope": "ch14-accepted",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "purpose": "release_evidence",
+      "schema_version": "1.0",
+      "signature": "sha256:e588f5df8ca8b31f58da942ad9e7960d0ab74043151492352f8d0060e57799d2"
+    }
+  },
+  {
+    "artifact_hash": "sha256:24e1ab007c986d62b9aa11493208ec29bf80b820bef07eb05f40de73eaab63b4",
+    "artifact_uri": "build/ch11/harness_scorecard.json",
+    "configuration_scope": "ch14-accepted",
+    "control_id": "control-approval",
+    "evidence_id": "ev-ch11-approval",
+    "result": "pass",
+    "reviewed_by": "owner-control",
+    "schema_version": "1.0",
+    "signature": {
+      "artifact_hash": "sha256:24e1ab007c986d62b9aa11493208ec29bf80b820bef07eb05f40de73eaab63b4",
+      "configuration_scope": "ch14-accepted",
+      "expires_at": 1735776000,
+      "issued_at": 1735689600,
+      "issuer": "owner-control",
+      "issuer_role": "control_owner",
+      "purpose": "release_evidence",
+      "schema_version": "1.0",
+      "signature": "sha256:3b9d855d866f1bb06e13aab0aa9b019f292c9dc88ccfea10d3840553e1fa3735"
+    }
+  }
+]

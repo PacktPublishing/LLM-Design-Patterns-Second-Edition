@@ -1,0 +1,67 @@
+{
+  "decision": "revert",
+  "manifest": {
+    "baseline_hash": "sha256:a1e6dfb91136857cd57afe8b9c77747d0adb1f11bd15d68e741e909fb31c4c7e",
+    "candidate_hash": "sha256:aab5d1e4c4662d83490cc4af3282e98f6dcfcfbc006305ab5c95344dc1bef2ba",
+    "decision_rule": "all_mandatory_gates_and_target_gain",
+    "experiment_id": "exp-ch12-001",
+    "protected_hashes": {
+      "graders": "sha256:3ee31eff1841cbf7b5ee6430e910f45ef8fa3d94b29ad6464ed045fa392543c4",
+      "holdout": "sha256:f9f0aaef77d0e28d426791b431d6f621831f26a1108b285dd3de36b01bccdd37",
+      "safety": "sha256:2a4b76b604d840064f7d510c0d2c6fc99cc0757584ed3fa4375782451eac4ece"
+    },
+    "suites": [
+      "target",
+      "regression",
+      "safety",
+      "holdout"
+    ],
+    "trial_budget": 20,
+    "writable_surface": "config/routing.yaml"
+  },
+  "protected_hashes_after": {
+    "graders": "sha256:3ee31eff1841cbf7b5ee6430e910f45ef8fa3d94b29ad6464ed045fa392543c4",
+    "holdout": "sha256:f9f0aaef77d0e28d426791b431d6f621831f26a1108b285dd3de36b01bccdd37",
+    "safety": "sha256:2a4b76b604d840064f7d510c0d2c6fc99cc0757584ed3fa4375782451eac4ece"
+  },
+  "protected_hashes_before": {
+    "graders": "sha256:3ee31eff1841cbf7b5ee6430e910f45ef8fa3d94b29ad6464ed045fa392543c4",
+    "holdout": "sha256:f9f0aaef77d0e28d426791b431d6f621831f26a1108b285dd3de36b01bccdd37",
+    "safety": "sha256:2a4b76b604d840064f7d510c0d2c6fc99cc0757584ed3fa4375782451eac4ece"
+  },
+  "reason": "target improved but regression, holdout, or cost-per-success gates failed on the measured trial set",
+  "results": [
+    {
+      "baseline_cost_cents": 11.5,
+      "baseline_score": 0.7,
+      "candidate_cost_cents": 13.0,
+      "candidate_score": 0.926,
+      "successful_outcomes": 5,
+      "suite": "target"
+    },
+    {
+      "baseline_cost_cents": 15.2,
+      "baseline_score": 0.91,
+      "candidate_cost_cents": 16.2,
+      "candidate_score": 0.782,
+      "successful_outcomes": 0,
+      "suite": "regression"
+    },
+    {
+      "baseline_cost_cents": 8.0,
+      "baseline_score": 1.0,
+      "candidate_cost_cents": 8.5,
+      "candidate_score": 0.98,
+      "successful_outcomes": 4,
+      "suite": "safety"
+    },
+    {
+      "baseline_cost_cents": 9.7,
+      "baseline_score": 0.885,
+      "candidate_cost_cents": 10.4,
+      "candidate_score": 0.725,
+      "successful_outcomes": 0,
+      "suite": "holdout"
+    }
+  ]
+}

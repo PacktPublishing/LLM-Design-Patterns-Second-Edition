@@ -1,0 +1,139 @@
+{
+  "cross_tenant": {
+    "query_id": "g_cross",
+    "route": "multi_hop_graph",
+    "path": {
+      "schema_version": "1",
+      "snapshot_id": "graph-snapshot-v1",
+      "route": "multi_hop_graph",
+      "entity_ids": [
+        "ent_exception",
+        "ent_manager",
+        "ent_remote_work"
+      ],
+      "relation_ids": [
+        "requires",
+        "allows_days"
+      ],
+      "claim_refs": [
+        {
+          "claim_id": "claim_remote_approval",
+          "subject_entity_id": "ent_exception",
+          "predicate": "requires",
+          "object_entity_id": "ent_manager",
+          "value": null,
+          "source_id": "policy_remote",
+          "source_version": "v2",
+          "span_id": "span_remote_approval",
+          "extraction_version": "extract-fixture-v1",
+          "confidence": 0.97,
+          "tenant_id": "tenant_alpha",
+          "valid_from": "2025-01-01",
+          "valid_to": null,
+          "status": "supported"
+        },
+        {
+          "claim_id": "claim_remote_days_v2",
+          "subject_entity_id": "ent_remote_work",
+          "predicate": "allows_days",
+          "object_entity_id": null,
+          "value": "2",
+          "source_id": "policy_remote",
+          "source_version": "v2",
+          "span_id": "span_remote_days",
+          "extraction_version": "extract-fixture-v1",
+          "confidence": 0.98,
+          "tenant_id": "tenant_alpha",
+          "valid_from": "2025-01-01",
+          "valid_to": null,
+          "status": "supported"
+        }
+      ],
+      "status": "supported",
+      "reason_codes": []
+    },
+    "evidence_pack": {
+      "schema_version": "1",
+      "query_id": "g_cross",
+      "query_class": "multi_hop",
+      "items": [
+        {
+          "citation": {
+            "source_id": "policy_remote",
+            "version_id": "v2",
+            "span_id": "span_remote_approval",
+            "content_hash": "sha256:4ed508bf2e7c135799c88d9819a4266ab6e3dcae75a571e0ae166ff43145226c",
+            "section_path": [
+              "Remote work",
+              "Exceptions"
+            ],
+            "page": null,
+            "region": null,
+            "table_cell": null
+          },
+          "text": "Manager approval is required for remote-work exceptions.",
+          "lexical_score": 1.0,
+          "vector_score": 0.375,
+          "rerank_score": 3.0328
+        },
+        {
+          "citation": {
+            "source_id": "policy_remote",
+            "version_id": "v2",
+            "span_id": "span_remote_days",
+            "content_hash": "sha256:7f68e6119be4cdf8fb541f8db52b51cec88ac410423cc68ff4c38115d13ded1b",
+            "section_path": [
+              "Remote work",
+              "Eligibility"
+            ],
+            "page": null,
+            "region": null,
+            "table_cell": null
+          },
+          "text": "Eligible employees may work remotely up to two days per week.",
+          "lexical_score": 1.0,
+          "vector_score": 0.1538,
+          "rerank_score": 2.0328
+        }
+      ],
+      "sufficiency": "sufficient",
+      "reason_codes": [],
+      "packed_tokens": 19,
+      "transformed_query": null
+    },
+    "warnings": [],
+    "latency_ms": 120
+  },
+  "timeout": {
+    "query_id": "g_multi",
+    "route": "multi_hop_graph",
+    "path": {
+      "schema_version": "1",
+      "snapshot_id": "graph-snapshot-v1",
+      "route": "multi_hop_graph",
+      "entity_ids": [],
+      "relation_ids": [],
+      "claim_refs": [],
+      "status": "partial",
+      "reason_codes": [
+        "graph_timeout"
+      ]
+    },
+    "evidence_pack": {
+      "schema_version": "1",
+      "query_id": "g_multi",
+      "query_class": "multi_hop",
+      "items": [],
+      "sufficiency": "insufficient",
+      "reason_codes": [
+        "graph_timeout"
+      ],
+      "packed_tokens": 0,
+      "transformed_query": null
+    },
+    "warnings": [
+      "graph_timeout"
+    ],
+    "latency_ms": 1000
+  }
+}

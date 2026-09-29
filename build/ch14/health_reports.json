@@ -1,0 +1,22 @@
+{
+  "not_ready": {
+    "dependency_ready": true,
+    "liveness": "live",
+    "public_reason": "dependency_or_resume_guard_failed",
+    "readiness": "not_ready",
+    "safe_to_resume": false,
+    "schema_compatible": true,
+    "service": "policyops-api",
+    "startup": "ready"
+  },
+  "ready": {
+    "dependency_ready": true,
+    "liveness": "live",
+    "public_reason": "ready",
+    "readiness": "ready",
+    "safe_to_resume": true,
+    "schema_compatible": true,
+    "service": "policyops-api",
+    "startup": "ready"
+  }
+}

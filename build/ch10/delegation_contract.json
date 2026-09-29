@@ -1,0 +1,76 @@
+[
+  {
+    "budget_tokens": 400,
+    "evidence_allowlist": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "expires_at": 1735689660,
+    "nonce": "retrieve-1",
+    "objective": "retrieve scoped policy evidence",
+    "output_schema": "WorkerResult.v1",
+    "parent_delegation_id": null,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "signature": "sha256:882f9b748eed161549f52ca6b0e52fea1ced511b7858281c5a0a908aac2c012c",
+    "success_criteria": [
+      "return typed findings",
+      "do not create tickets"
+    ],
+    "task_id": "task_b84881c3cb",
+    "tool_allowlist": [
+      "retrieval:read"
+    ],
+    "worker_id": "retrieve_worker"
+  },
+  {
+    "budget_tokens": 400,
+    "evidence_allowlist": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "expires_at": 1735689660,
+    "nonce": "validate-1",
+    "objective": "validate ticket readiness",
+    "output_schema": "WorkerResult.v1",
+    "parent_delegation_id": null,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "run_id": "run_orchestrator_worker_e028b7129f",
+    "signature": "sha256:9aeeb5158619fd405def18a6dd219f9818bdac53ea28cc98d4b6fc7a0799c5f0",
+    "success_criteria": [
+      "return typed findings",
+      "do not create tickets"
+    ],
+    "task_id": "task_8b2a30434e",
+    "tool_allowlist": [],
+    "worker_id": "validate_worker"
+  }
+]

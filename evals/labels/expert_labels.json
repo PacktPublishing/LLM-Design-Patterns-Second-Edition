@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "labels": [
+    {
+      "task_id": "cap.abstain.insufficient.001",
+      "label": "abstain",
+      "annotator_role": "domain_expert",
+      "label_version": "1",
+      "rationale": "No policy excerpt covers the asked edge case.",
+      "adjudication_state": "accepted"
+    }
+  ]
+}

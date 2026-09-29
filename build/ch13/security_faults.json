@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "results": {
+    "approval": true,
+    "egress": true,
+    "injection": true,
+    "integrity": true,
+    "mcp": true,
+    "revocation": true,
+    "secret": true
+  },
+  "scenario": "all"
+}

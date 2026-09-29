@@ -1,0 +1,14 @@
+[lab]
+id = "ch07"
+title = "Graph Retrieval"
+profile = "fixture"
+requires = ["ch01", "ch02", "ch03", "ch04", "ch05", "ch06"]
+
+[commands]
+verify = "uv run policyops verify ch07 --profile fixture --junit build/ch07/junit.xml --evidence build/ch07"
+fault = "uv run policyops fault ch07 --scenario all"
+
+[artifacts]
+source = ["src/policyops/graph"]
+tests = ["tests/graph"]
+evidence = ["build/ch07/graph_results.jsonl", "build/ch07/graph_scorecard.json", "build/ch07/repair_receipt.json", "build/ch07/graph_vs_rag_adr.json"]

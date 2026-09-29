@@ -1,0 +1,34 @@
+{
+  "schema_version": "1",
+  "dataset_id": "policyops-adapt-v1",
+  "record_ids": [
+    "rec-001",
+    "rec-002",
+    "rec-003",
+    "rec-004",
+    "rec-005",
+    "rec-006",
+    "rec-007",
+    "rec-008"
+  ],
+  "record_count": 8,
+  "source_breakdown": {
+    "fixtures://policy/remote_work_v1": 3,
+    "synthetic://gen-v1": 3,
+    "fixtures://policy/hybrid_v1": 1,
+    "fixtures://policy/contractor_v1": 1
+  },
+  "rights_bases": [
+    "internal-licensed",
+    "synthetic-lab"
+  ],
+  "synthetic_record_ids": [
+    "rec-003",
+    "rec-004",
+    "rec-008"
+  ],
+  "lineage_hash": "sha256:bf430ebe6563a6f46bd6a617152684bd9ec83aee7da9ff17fd371e69d94fc33c",
+  "code_revision": "fixture-repo",
+  "lockfile_hash": "sha256:fixture-lock",
+  "content_hash": "sha256:c3ac879b1c1c9734c6fe738d32f9cd3826c2cdcaca61e7deeac5b76663a4432d"
+}

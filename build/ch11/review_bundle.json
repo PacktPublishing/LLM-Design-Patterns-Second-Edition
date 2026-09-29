@@ -1,0 +1,39 @@
+[
+  {
+    "accepted": true,
+    "changed_paths": [
+      "src/policyops/harness/service.py",
+      "tests/harness/test_resumable_loop.py"
+    ],
+    "checks": {
+      "direct_qa": true,
+      "unit": true
+    },
+    "diff_hash": "sha256:a935d6900940e1b883abc2496d6f9d6f80a175d2f4b7127eba1e8ca6675d60c0",
+    "direct_qa_hash": "sha256:45675f01bd91f5ae60747ef62c34a20b5684a72bc0a2af5a2d5e0b0133bb3bd3",
+    "findings": [],
+    "plan_hash": "sha256:07af55c6734e5938bc3707eb7dbbb9d58f126043e9cd4fc347013cd530f9ba4a",
+    "schema_version": "1.0",
+    "session_id": "engineering-session-a",
+    "stage": "accepted"
+  },
+  {
+    "accepted": false,
+    "changed_paths": [
+      "src/policyops/extensions/service.py"
+    ],
+    "checks": {
+      "direct_qa": false,
+      "unit": false
+    },
+    "diff_hash": "sha256:d8971fab541228bfcb78232433516581e7106dfd3a8854d075d96e4137509dbc",
+    "direct_qa_hash": "sha256:45675f01bd91f5ae60747ef62c34a20b5684a72bc0a2af5a2d5e0b0133bb3bd3",
+    "findings": [
+      "out_of_scope:src/policyops/extensions/service.py"
+    ],
+    "plan_hash": "sha256:07af55c6734e5938bc3707eb7dbbb9d58f126043e9cd4fc347013cd530f9ba4a",
+    "schema_version": "1.0",
+    "session_id": "engineering-session-a",
+    "stage": "rejected"
+  }
+]

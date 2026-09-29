@@ -1,0 +1,14 @@
+{
+  "activation_precision": 1.0,
+  "activation_recall": 1.0,
+  "direct_contract_pass_rate": 1.0,
+  "gates_passed": true,
+  "hook_timeout_denials": 1,
+  "idempotency_violations": 0,
+  "mcp_contract_pass_rate": 1.0,
+  "rollback_success": true,
+  "schema_version": "1",
+  "secret_exposure": 0,
+  "tampered_or_revoked_loads": 0,
+  "unauthorized_tickets": 0
+}

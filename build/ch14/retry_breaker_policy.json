@@ -1,0 +1,67 @@
+{
+  "breakers": [
+    {
+      "dependency": "model",
+      "failures": 3,
+      "half_open_probe_budget_used": true,
+      "open": true
+    },
+    {
+      "dependency": "ticket",
+      "failures": 1,
+      "half_open_probe_budget_used": false,
+      "open": false
+    }
+  ],
+  "retry_policies": [
+    {
+      "backoff_ms": 100,
+      "failure_class": "transient",
+      "max_attempts": 3,
+      "max_elapsed_ms": 2000,
+      "retryable": true
+    },
+    {
+      "backoff_ms": 100,
+      "failure_class": "throttling",
+      "max_attempts": 3,
+      "max_elapsed_ms": 2000,
+      "retryable": true
+    },
+    {
+      "backoff_ms": 100,
+      "failure_class": "timeout",
+      "max_attempts": 3,
+      "max_elapsed_ms": 2000,
+      "retryable": true
+    },
+    {
+      "backoff_ms": 0,
+      "failure_class": "semantic",
+      "max_attempts": 1,
+      "max_elapsed_ms": 0,
+      "retryable": false
+    },
+    {
+      "backoff_ms": 0,
+      "failure_class": "policy",
+      "max_attempts": 1,
+      "max_elapsed_ms": 0,
+      "retryable": false
+    },
+    {
+      "backoff_ms": 0,
+      "failure_class": "authorization",
+      "max_attempts": 1,
+      "max_elapsed_ms": 0,
+      "retryable": false
+    },
+    {
+      "backoff_ms": 0,
+      "failure_class": "permanent",
+      "max_attempts": 1,
+      "max_elapsed_ms": 0,
+      "retryable": false
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+[
+  {
+    "case": "authorized_personal",
+    "decision": {
+      "action": "ADD",
+      "expected_version": null,
+      "proposal_id": "decision-authorized",
+      "reason_codes": [
+        "authorized"
+      ],
+      "status": "active",
+      "target_record_id": null
+    },
+    "matched": true
+  },
+  {
+    "case": "confidential_requires_consent",
+    "decision": {
+      "action": "NOOP",
+      "expected_version": null,
+      "proposal_id": "decision-confidential",
+      "reason_codes": [
+        "consent_required"
+      ],
+      "status": null,
+      "target_record_id": null
+    },
+    "matched": true
+  },
+  {
+    "case": "scope_widening_requires_approval",
+    "decision": {
+      "action": "NOOP",
+      "expected_version": null,
+      "proposal_id": "decision-scope",
+      "reason_codes": [
+        "scope_widening_requires_approval"
+      ],
+      "status": null,
+      "target_record_id": null
+    },
+    "matched": true
+  },
+  {
+    "case": "poison_is_quarantined",
+    "decision": {
+      "action": "ADD",
+      "expected_version": null,
+      "proposal_id": "decision-poison",
+      "reason_codes": [
+        "poison_pattern_quarantined"
+      ],
+      "status": "quarantined",
+      "target_record_id": null
+    },
+    "matched": true
+  },
+  {
+    "case": "low_confidence_noop",
+    "decision": {
+      "action": "NOOP",
+      "expected_version": null,
+      "proposal_id": "decision-low-confidence",
+      "reason_codes": [
+        "low_confidence_noop"
+      ],
+      "status": null,
+      "target_record_id": null
+    },
+    "matched": true
+  }
+]

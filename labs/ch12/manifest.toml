@@ -1,0 +1,22 @@
+chapter = "ch12"
+title = "Turn a Production Trace into a Safe Improvement"
+base_tag = "ed2-v1.0-ch12-start"
+profile = "fixture"
+verify = "uv run policyops verify ch12 --profile fixture --junit build/ch12/junit.xml --evidence build/ch12"
+fault = "uv run policyops fault ch12 --scenario all"
+
+[artifacts]
+source = "src/policyops/telemetry"
+tests = "tests/telemetry"
+evidence = "build/ch12"
+design = "docs/implementation-plans/chapters/ch12-trace-to-safe-improvement/design.md"
+
+[gates]
+correlation_coverage = 1.0
+pii_leaks = 0
+secret_leaks = 0
+cardinality_violations = 0
+overfit_rejected = true
+bad_canary_rolled_back = true
+telemetry_outage_request_failures = 0
+reconstruction_external_calls = 0

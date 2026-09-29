@@ -1,0 +1,20 @@
+{
+  "components": [
+    {
+      "digest": "sha256:3494d50438d974e2c067995155130e32782f3a2f4c2c9ef9b5c3478b72996d03",
+      "name": "policyops",
+      "version": "0.1.0"
+    },
+    {
+      "digest": "sha256:06d4dc8cdbf3665ede2a57add8c500cddb9669b9240bcc9492e9a2fc7efec759",
+      "name": "python",
+      "version": "3.12"
+    },
+    {
+      "digest": "sha256:72ab0a13750a451d9d3c0545406556f2415e0dc7c761ea6ad3452ab385d22e98",
+      "name": "pydantic",
+      "version": "2.x"
+    }
+  ],
+  "schema": "fixture-sbom"
+}

@@ -1,0 +1,59 @@
+{
+  "cross_tenant_items": [
+    "policy_remote",
+    "policy_remote",
+    "policy_remote",
+    "policy_scanned"
+  ],
+  "deleted_pack": {
+    "schema_version": "1",
+    "query_id": "q_remote_days",
+    "query_class": "direct",
+    "items": [
+      {
+        "citation": {
+          "source_id": "policy_scanned",
+          "version_id": "v1",
+          "span_id": "span_scanned_receipts",
+          "content_hash": "sha256:130a969ddbbfc05049c8b6b33aeabb45f83c3dca0f0cce5746d0feddc9cd92ce",
+          "section_path": [
+            "Travel",
+            "Receipts"
+          ],
+          "page": 3,
+          "region": [
+            0.15,
+            0.2,
+            0.7,
+            0.3
+          ],
+          "table_cell": null
+        },
+        "text": "OCR region: travel receipts must be submitted within 30 days.",
+        "lexical_score": 0.1667,
+        "vector_score": null,
+        "rerank_score": 0.0164
+      }
+    ],
+    "sufficiency": "insufficient",
+    "reason_codes": [
+      "EVIDENCE_INSUFFICIENT",
+      "poisoned_passage_excluded"
+    ],
+    "packed_tokens": 11,
+    "transformed_query": null
+  },
+  "timeout_pack": {
+    "schema_version": "1",
+    "query_id": "q_remote_days",
+    "query_class": "direct",
+    "items": [],
+    "sufficiency": "insufficient",
+    "reason_codes": [
+      "vector_timeout",
+      "EVIDENCE_INSUFFICIENT"
+    ],
+    "packed_tokens": 0,
+    "transformed_query": null
+  }
+}

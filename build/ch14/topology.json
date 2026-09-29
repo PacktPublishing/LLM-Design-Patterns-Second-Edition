@@ -1,0 +1,46 @@
+{
+  "default_deny_cross_zone": true,
+  "image_digests": [
+    "sha256:apidigest",
+    "sha256:workerdigest",
+    "sha256:modelgatewaydigest",
+    "sha256:egressproxydigest",
+    "sha256:ticketservicedigest"
+  ],
+  "networks": [
+    "ingress",
+    "control",
+    "data",
+    "tool",
+    "egress",
+    "observability"
+  ],
+  "processes": [
+    "gateway",
+    "api",
+    "postgres",
+    "worker-a",
+    "worker-b",
+    "outbox-dispatcher",
+    "model-gateway",
+    "sandbox",
+    "egress-proxy",
+    "ticket-service",
+    "telemetry-collector",
+    "backup-job"
+  ],
+  "published_ports": [
+    "gateway:443"
+  ],
+  "queue_limits": {
+    "global_concurrency": 2,
+    "max_payload_bytes": 2048,
+    "max_queue_depth": 4,
+    "min_deadline_ms": 500,
+    "per_tenant_concurrency": 1,
+    "tenant_weights": {
+      "tenant-alpha": 2,
+      "tenant-beta": 1
+    }
+  }
+}

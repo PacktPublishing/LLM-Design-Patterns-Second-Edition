@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "monolith_tokens": 744,
+  "planned_tokens": 544,
+  "planned_token_reduction": 200,
+  "stable_prefix_hash": "sha256:1fb78182fbdb264e53e66e7d6eaec6d0a4176170e890bb210ebf4276cf962402",
+  "full_context_hash": "sha256:20414ab6a73b93367d7efd7ec8170d9312118a7fe24c2c5caad4dc9924b0eef6",
+  "chapter2_gates_preserved": true,
+  "baseline_gate_results": {
+    "remote_days_retained": true,
+    "approval_rule_retained": true
+  },
+  "planned_gate_results": {
+    "remote_days_retained": true,
+    "approval_rule_retained": true
+  },
+  "unsafe_auto_approval_confined": true
+}

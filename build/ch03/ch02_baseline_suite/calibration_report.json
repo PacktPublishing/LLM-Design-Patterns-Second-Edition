@@ -1,0 +1,1 @@
+{"expert_label_source":"evals/labels/expert_labels.json","mandatory_gate":false,"note":"Live rubric grading is intentionally outside mandatory PR gates.","rubric_profile":"frozen_replay","schema_version":"1","status":"available"}

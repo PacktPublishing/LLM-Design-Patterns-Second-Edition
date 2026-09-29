@@ -1,0 +1,25 @@
+{
+  "actor_id": "actor_reader",
+  "approval_reference": null,
+  "budget": {
+    "effect_limit": 1,
+    "effects": 0,
+    "iteration_limit": 4,
+    "iterations": 0,
+    "spend_cents": 0,
+    "spend_limit_cents": 10,
+    "tool_call_limit": 4,
+    "tool_calls": 0
+  },
+  "configuration_id": "fixture-ch09",
+  "pending_action_id": null,
+  "request_id": "req-ch09",
+  "schema_version": "1.0",
+  "session_id": "budget-stop",
+  "state": "stopped",
+  "tenant_id": "tenant_alpha",
+  "terminal_reason": "budget_exhaustion",
+  "ticket_id": null,
+  "trace_id": "trace-ch09",
+  "version": 2
+}

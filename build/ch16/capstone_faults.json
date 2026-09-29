@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "results": {
+    "bundle": true,
+    "game_day": true,
+    "seeded_failure": true,
+    "traceability": true
+  },
+  "scenario": "all"
+}

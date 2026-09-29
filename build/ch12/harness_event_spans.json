@@ -1,0 +1,140 @@
+[
+  {
+    "attributes": {
+      "component": "harness",
+      "operation": "session_created",
+      "status": "ok"
+    },
+    "context": {
+      "actor_class": "reader",
+      "artifact_set_id": "fixture-ch09",
+      "correlation_id": "trace-ch09",
+      "request_id": "req-ch09",
+      "risk_tier": "medium",
+      "sampling_decision": "head",
+      "session_id": "session-ch12-from-ch11",
+      "tenant_hash": "tenant_f190acafb33b568a"
+    },
+    "dropped_fields": [],
+    "duration_ms": 0,
+    "name": "policyops.agent",
+    "redacted_fields": [],
+    "schema_version": "1.0",
+    "span_kind": "agent"
+  },
+  {
+    "attributes": {
+      "component": "harness",
+      "operation": "plan_recorded",
+      "status": "ok"
+    },
+    "context": {
+      "actor_class": "reader",
+      "artifact_set_id": "fixture-ch09",
+      "correlation_id": "trace-ch09",
+      "request_id": "req-ch09",
+      "risk_tier": "medium",
+      "sampling_decision": "head",
+      "session_id": "session-ch12-from-ch11",
+      "tenant_hash": "tenant_f190acafb33b568a"
+    },
+    "dropped_fields": [],
+    "duration_ms": 0,
+    "name": "policyops.agent",
+    "redacted_fields": [],
+    "schema_version": "1.0",
+    "span_kind": "agent"
+  },
+  {
+    "attributes": {
+      "component": "harness",
+      "operation": "action_ready",
+      "status": "ok"
+    },
+    "context": {
+      "actor_class": "reader",
+      "artifact_set_id": "fixture-ch09",
+      "correlation_id": "trace-ch09",
+      "request_id": "req-ch09",
+      "risk_tier": "medium",
+      "sampling_decision": "head",
+      "session_id": "session-ch12-from-ch11",
+      "tenant_hash": "tenant_f190acafb33b568a"
+    },
+    "dropped_fields": [],
+    "duration_ms": 0,
+    "name": "policyops.agent",
+    "redacted_fields": [],
+    "schema_version": "1.0",
+    "span_kind": "agent"
+  },
+  {
+    "attributes": {
+      "component": "harness",
+      "operation": "outbox_created",
+      "status": "ok"
+    },
+    "context": {
+      "actor_class": "reader",
+      "artifact_set_id": "fixture-ch09",
+      "correlation_id": "trace-ch09",
+      "request_id": "req-ch09",
+      "risk_tier": "medium",
+      "sampling_decision": "head",
+      "session_id": "session-ch12-from-ch11",
+      "tenant_hash": "tenant_f190acafb33b568a"
+    },
+    "dropped_fields": [],
+    "duration_ms": 0,
+    "name": "policyops.agent",
+    "redacted_fields": [],
+    "schema_version": "1.0",
+    "span_kind": "agent"
+  },
+  {
+    "attributes": {
+      "component": "harness",
+      "operation": "effect_receipt",
+      "status": "ok"
+    },
+    "context": {
+      "actor_class": "reader",
+      "artifact_set_id": "fixture-ch09",
+      "correlation_id": "trace-ch09",
+      "request_id": "req-ch09",
+      "risk_tier": "medium",
+      "sampling_decision": "head",
+      "session_id": "session-ch12-from-ch11",
+      "tenant_hash": "tenant_f190acafb33b568a"
+    },
+    "dropped_fields": [],
+    "duration_ms": 0,
+    "name": "policyops.agent",
+    "redacted_fields": [],
+    "schema_version": "1.0",
+    "span_kind": "agent"
+  },
+  {
+    "attributes": {
+      "component": "harness",
+      "operation": "checkpoint_written",
+      "status": "ok"
+    },
+    "context": {
+      "actor_class": "reader",
+      "artifact_set_id": "fixture-ch09",
+      "correlation_id": "trace-ch09",
+      "request_id": "req-ch09",
+      "risk_tier": "medium",
+      "sampling_decision": "head",
+      "session_id": "session-ch12-from-ch11",
+      "tenant_hash": "tenant_f190acafb33b568a"
+    },
+    "dropped_fields": [],
+    "duration_ms": 0,
+    "name": "policyops.agent",
+    "redacted_fields": [],
+    "schema_version": "1.0",
+    "span_kind": "agent"
+  }
+]

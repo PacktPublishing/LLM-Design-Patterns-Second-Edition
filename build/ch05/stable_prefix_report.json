@@ -1,0 +1,10 @@
+{
+  "stable_prefix_hash": "sha256:1fb78182fbdb264e53e66e7d6eaec6d0a4176170e890bb210ebf4276cf962402",
+  "full_context_hash": "sha256:20414ab6a73b93367d7efd7ec8170d9312118a7fe24c2c5caad4dc9924b0eef6",
+  "summary_calls": 7,
+  "materializations": 9,
+  "stable_prefix_reused": true,
+  "deterministic_full_hash": true,
+  "repeat_stable_prefix_hash": "sha256:1fb78182fbdb264e53e66e7d6eaec6d0a4176170e890bb210ebf4276cf962402",
+  "repeat_full_context_hash": "sha256:20414ab6a73b93367d7efd7ec8170d9312118a7fe24c2c5caad4dc9924b0eef6"
+}

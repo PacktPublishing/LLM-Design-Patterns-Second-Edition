@@ -1,0 +1,11 @@
+[
+  {
+    "source_id": "policy_remote",
+    "previous_version_id": "v2",
+    "active_version_id": null,
+    "action": "delete",
+    "idempotency_key": "delete-remote-v2",
+    "manifest_generation": 2,
+    "freshness_lag_ms": 100
+  }
+]

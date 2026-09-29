@@ -1,0 +1,43 @@
+{
+  "acked": true,
+  "duplicate_tickets": 0,
+  "lease": {
+    "expires_at_ms": 1735689601000,
+    "fencing_token": 1,
+    "item_id": "work-0",
+    "worker_id": "worker-a"
+  },
+  "offers": [
+    {
+      "enqueued": true,
+      "reason": "accepted",
+      "retry_after_ms": null,
+      "status": "accepted"
+    },
+    {
+      "enqueued": true,
+      "reason": "accepted",
+      "retry_after_ms": null,
+      "status": "accepted"
+    },
+    {
+      "enqueued": true,
+      "reason": "accepted",
+      "retry_after_ms": null,
+      "status": "accepted"
+    },
+    {
+      "enqueued": true,
+      "reason": "accepted",
+      "retry_after_ms": null,
+      "status": "accepted"
+    },
+    {
+      "enqueued": false,
+      "reason": "bounded queue full",
+      "retry_after_ms": 250,
+      "status": "rejected_429"
+    }
+  ],
+  "queue_depth": 3
+}

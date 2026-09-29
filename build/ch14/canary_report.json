@@ -1,0 +1,12 @@
+{
+  "accepted_digest_after": "sha256:acceptedbaseline",
+  "baseline_digest": "sha256:acceptedbaseline",
+  "candidate_digest": "sha256:badcandidate",
+  "decision": "rollback",
+  "error_rate": 0.15,
+  "health_passed": false,
+  "policy_passed": true,
+  "release_id": "rel-ch14-001",
+  "saturation": 0.92,
+  "smoke_passed": false
+}

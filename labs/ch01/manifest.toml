@@ -1,0 +1,20 @@
+lab_id = "ch01"
+title = "PolicyOps Foundation"
+profile = "fixture"
+
+[commands]
+verify = "uv run policyops verify ch01 --profile fixture --junit build/ch01/junit.xml --evidence build/ch01"
+fault = "uv run policyops fault ch01 --scenario all"
+up = "uv run policyops env up --lab ch01 --profile fixture"
+down = "uv run policyops env down --lab ch01"
+
+[fixtures]
+pack = "labs/ch01/fixtures"
+tenants = ["tenant_alpha", "tenant_beta"]
+actors = ["actor_reader", "actor_admin"]
+
+[gates]
+contract = true
+api = true
+fault = true
+boundary = true

@@ -1,0 +1,13 @@
+{
+  "concurrency": 8,
+  "error_rate": 0.5,
+  "error_threshold": 0.5,
+  "hardware": "local 12GB RAM profile",
+  "overload_429_count": 4,
+  "p95_latency_ms": 695,
+  "p95_threshold_ms": 750,
+  "queue_depth_limit": 4,
+  "queue_depth_max": 4,
+  "tenant_fairness_ratio": 2.0,
+  "workload": "fixture-policyops-load-v1"
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "license": "synthetic-fixture",
+  "source": "PolicyOps chapter 1 lab fixtures",
+  "tenants": [
+    {"tenant_id": "tenant_alpha", "name": "Alpha Corp"},
+    {"tenant_id": "tenant_beta", "name": "Beta LLC"}
+  ],
+  "actors": [
+    {
+      "actor_id": "actor_reader",
+      "tenant_id": "tenant_alpha",
+      "roles": ["policy-reader"],
+      "scopes": ["policy:read"]
+    },
+    {
+      "actor_id": "actor_admin",
+      "tenant_id": "tenant_alpha",
+      "roles": ["policy-admin"],
+      "scopes": ["policy:read", "policy:admin"]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "mode": "degraded",
+  "provider": "replay-fallback",
+  "provider_quality": 0.88,
+  "quality_floor": 0.86,
+  "reason": "approved fallback meets floor"
+}

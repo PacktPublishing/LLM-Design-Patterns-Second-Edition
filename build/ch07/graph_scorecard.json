@@ -1,0 +1,10 @@
+{
+  "task_success_gain": 0.25,
+  "router_accuracy": 1.0,
+  "lineage_resolution_rate": 1.0,
+  "tenant_violations": 0,
+  "repair_correct": true,
+  "p95_latency_ms": 1000,
+  "decision": "adopt_graph_for_suitable_queries",
+  "gates_passed": true
+}

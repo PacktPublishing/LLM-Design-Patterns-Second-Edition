@@ -1,0 +1,17 @@
+chapter = "ch08"
+title = "Add Governed Long-Term Memory"
+base_tag = "ed2-v1.0-ch08-start"
+profile = "fixture"
+verify = "uv run policyops verify ch08 --profile fixture --junit build/ch08/junit.xml --evidence build/ch08"
+fault = "uv run policyops fault ch08 --scenario all"
+
+[artifacts]
+source = "src/policyops/memory"
+tests = "tests/memory"
+evidence = "build/ch08"
+design = "docs/implementation-plans/chapters/ch08-governed-long-term-memory/design.md"
+
+[gates]
+tenant_violations = 0
+authority_changes_from_memory = 0
+deletion_coverage = 1.0

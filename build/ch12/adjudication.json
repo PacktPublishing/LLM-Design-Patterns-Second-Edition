@@ -1,0 +1,11 @@
+{
+  "adjudication_id": "adj-ch12-001",
+  "correlation_id": "corr-policyops-1201",
+  "evidence_refs": [
+    "sha256:8dd87562133a4ba44df4321d900fea1fe7be87bee14efba8c1d64e212bbc5ee0"
+  ],
+  "expected_behavior": "Answer should cite the current reimbursement policy and ask for approval before creating a ticket.",
+  "expert_role": "policy operations lead",
+  "failure_class": "product_failure",
+  "may_graduate": true
+}

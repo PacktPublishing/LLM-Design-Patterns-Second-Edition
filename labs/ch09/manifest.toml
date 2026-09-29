@@ -1,0 +1,20 @@
+chapter = "ch09"
+title = "Build a Secure PolicyOps Extension Pack"
+base_tag = "ed2-v1.0-ch09-start"
+profile = "fixture"
+verify = "uv run policyops verify ch09 --profile fixture --junit build/ch09/junit.xml --evidence build/ch09"
+fault = "uv run policyops fault ch09 --scenario all"
+
+[artifacts]
+source = "src/policyops/extensions"
+tests = "tests/extensions"
+evidence = "build/ch09"
+design = "docs/implementation-plans/chapters/ch09-secure-extension-pack/design.md"
+
+[gates]
+activation_precision = 0.95
+activation_recall = 0.90
+unauthorized_tickets = 0
+secret_exposure = 0
+idempotency_violations = 0
+tampered_or_revoked_loads = 0

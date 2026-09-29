@@ -1,0 +1,21 @@
+{
+  "dataset_id": "policyops-adapt-v1",
+  "record_count": 8,
+  "rights_bases": [
+    "internal-licensed",
+    "synthetic-lab"
+  ],
+  "synthetic_record_ids": [
+    "rec-003",
+    "rec-004",
+    "rec-008"
+  ],
+  "subgroups": [
+    "general_policy",
+    "remote_policy",
+    "synthetic_reviewed"
+  ],
+  "intended_use": "offline adaptation comparison for PolicyOps routing/policy classification",
+  "prohibited_use": "production policy deployment without separate review",
+  "lineage_hash": "sha256:bf430ebe6563a6f46bd6a617152684bd9ec83aee7da9ff17fd371e69d94fc33c"
+}

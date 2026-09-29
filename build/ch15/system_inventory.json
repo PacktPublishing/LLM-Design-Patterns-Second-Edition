@@ -1,0 +1,54 @@
+{
+  "affected_parties": [
+    "employees whose policy cases are processed"
+  ],
+  "ai_components": [
+    "replay model gateway",
+    "context planner",
+    "agent loop"
+  ],
+  "components": [
+    "api",
+    "retrieval",
+    "graph",
+    "memory",
+    "extensions",
+    "orchestration",
+    "harness",
+    "telemetry",
+    "security",
+    "deployment"
+  ],
+  "inventory_id": "inventory-ch15-v1",
+  "non_goals": [
+    "legal advice",
+    "autonomous release approval"
+  ],
+  "owners": [
+    "owner-system",
+    "owner-risk",
+    "owner-control",
+    "owner-privacy",
+    "owner-release"
+  ],
+  "purpose": "PolicyOps answers policy questions and creates approved support tickets.",
+  "stores": [
+    "primary_db",
+    "retrieval_index",
+    "graph_snapshot",
+    "memory_ledger",
+    "cache",
+    "trace_store",
+    "export_package",
+    "backup_retention"
+  ],
+  "tools": [
+    "ticket.create",
+    "browser fixture",
+    "egress proxy"
+  ],
+  "users": [
+    "employees",
+    "policy operations staff"
+  ]
+}

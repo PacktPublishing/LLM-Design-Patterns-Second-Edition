@@ -1,0 +1,42 @@
+{
+  "rejected": true,
+  "task": {
+    "budget_tokens": 400,
+    "evidence_allowlist": [
+      "policy_remote:v2:span_remote_approval"
+    ],
+    "expires_at": 1735689660,
+    "nonce": "invalid-2",
+    "objective": "retrieve scoped policy evidence",
+    "output_schema": "WorkerResult.v1",
+    "parent_delegation_id": null,
+    "principal": {
+      "actor_id": "actor_reader",
+      "configuration_id": "fixture-ch09",
+      "data_classification": "internal",
+      "request_id": "req-ch09",
+      "roles": [
+        "policy_support"
+      ],
+      "run_context_hash": "sha256:cb09ea0b4e19a2d100ddfefc6d39b32efdd27079cae49491e3f2b3eccbed3a6d",
+      "scopes": [
+        "ticket:create",
+        "ticket:preview"
+      ],
+      "tenant_id": "tenant_alpha",
+      "trace_id": "trace-ch09"
+    },
+    "run_id": "invalid-run",
+    "signature": "sha256:60135385f3f39709fddf86d9f364dafc425ebc84763bc1c9a1a40878450b21d0",
+    "success_criteria": [
+      "return typed findings",
+      "do not create tickets"
+    ],
+    "task_id": "task_bbd3b10ade",
+    "tool_allowlist": [
+      "retrieval:read",
+      "ticket:create"
+    ],
+    "worker_id": "retrieve_worker"
+  }
+}

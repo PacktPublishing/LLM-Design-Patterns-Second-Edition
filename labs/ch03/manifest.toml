@@ -1,0 +1,28 @@
+lab_id = "ch03"
+title = "Adaptation Strategy"
+profile = "fixture"
+upstream = "ch02"
+
+[commands]
+verify = "uv run policyops verify ch03 --profile fixture --junit build/ch03/junit.xml --evidence build/ch03"
+
+[artifacts]
+source = ["src/policyops/adaptation"]
+tests = ["tests/adaptation"]
+evidence = [
+    "build/ch03/baseline_report.json",
+    "build/ch03/dataset_manifest.json",
+    "build/ch03/dataset_card.json",
+    "build/ch03/split_manifest.json",
+    "build/ch03/contamination_report.json",
+    "build/ch03/artifact_admission.json",
+    "build/ch03/model_card.json",
+    "build/ch03/candidate_matrix.json",
+    "build/ch03/candidate_reports.json",
+    "build/ch03/comparison_report.json",
+    "build/ch03/release_decision.json",
+    "build/ch03/adaptation_report.json",
+    "build/ch03/adaptation_scorecard.json",
+    "build/ch03/safety_drill_report.json",
+    "build/ch03/result.json",
+]

@@ -1,0 +1,12 @@
+{
+  "attack_id": "atk-doc-exfil",
+  "capabilities_revoked": [
+    "policyops-ticket-pack",
+    "ticket.create"
+  ],
+  "evidence_preserved": true,
+  "incident_id": "inc-atk-doc-exfil",
+  "regression_case_id": "regression-atk-doc-exfil",
+  "secret_values_redacted": true,
+  "session_quarantined": true
+}

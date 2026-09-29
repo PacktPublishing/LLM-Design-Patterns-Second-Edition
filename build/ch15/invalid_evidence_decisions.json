@@ -1,0 +1,134 @@
+[
+  {
+    "approver_id": "owner-release",
+    "change_set_hash": "sha256:bc9d868618eb781cbf9041c08d2c7a9e4a8dd8cc4b0054697575524693ebd809",
+    "decided_at": 1735689600,
+    "decision": "NO-GO",
+    "decision_digest": "sha256:4988dccac16d9c3e9fab4764bdb6c655f875652b8eb173e56ed5f2240d71d210",
+    "decision_id": "decision-ch15",
+    "evidence_graph_hash": "sha256:f267362abb2718b4ed4fe66839783847135919a25844125263a3c2d57b60d4f3",
+    "manifest_hash": "sha256:27ee9158c2f0b707215513ce28d641f44336314c3440c2b7b5d7f904568afb15",
+    "policy_hash": "sha256:f7a26902cd2bdd8f41d7893c4ba455360a04310b2547cfa9b33f2b661ed95212",
+    "reasons": [
+      {
+        "priority": 10,
+        "reason_code": "OWNER_MISSING",
+        "record_id": "risk-high-impact-ticket",
+        "remediation": "assign current human risk owner"
+      }
+    ]
+  },
+  {
+    "approver_id": "owner-release",
+    "change_set_hash": "sha256:bc9d868618eb781cbf9041c08d2c7a9e4a8dd8cc4b0054697575524693ebd809",
+    "decided_at": 1735689600,
+    "decision": "NO-GO",
+    "decision_digest": "sha256:bc4b3f2ac522449266bb81a33ffdf7186e21468e0b52a966781861074b7a3a36",
+    "decision_id": "decision-ch15",
+    "evidence_graph_hash": "sha256:62234c7edd480cf8f2ac35794aa2ddfa4d55fa1ecdce18aa96641deb686fc2de",
+    "manifest_hash": "sha256:27ee9158c2f0b707215513ce28d641f44336314c3440c2b7b5d7f904568afb15",
+    "policy_hash": "sha256:f7a26902cd2bdd8f41d7893c4ba455360a04310b2547cfa9b33f2b661ed95212",
+    "reasons": [
+      {
+        "priority": 10,
+        "reason_code": "EVIDENCE_STALE",
+        "record_id": "ev-ch14-deploy",
+        "remediation": "replace or re-sign current applicable evidence"
+      }
+    ]
+  },
+  {
+    "approver_id": "owner-release",
+    "change_set_hash": "sha256:bc9d868618eb781cbf9041c08d2c7a9e4a8dd8cc4b0054697575524693ebd809",
+    "decided_at": 1735689600,
+    "decision": "NO-GO",
+    "decision_digest": "sha256:ab59089cd5700d99d6ea5579c94bd1131c9c59a58237b0fc6d46e4ca69958498",
+    "decision_id": "decision-ch15",
+    "evidence_graph_hash": "sha256:b7c501383c30b42dc0c43eb263ea1f9277e4afdb2a5845255866f232ebbd3c08",
+    "manifest_hash": "sha256:27ee9158c2f0b707215513ce28d641f44336314c3440c2b7b5d7f904568afb15",
+    "policy_hash": "sha256:f7a26902cd2bdd8f41d7893c4ba455360a04310b2547cfa9b33f2b661ed95212",
+    "reasons": [
+      {
+        "priority": 10,
+        "reason_code": "EVIDENCE_TAMPERED",
+        "record_id": "ev-ch13-security",
+        "remediation": "replace or re-sign current applicable evidence"
+      }
+    ]
+  },
+  {
+    "approver_id": "owner-release",
+    "change_set_hash": "sha256:bc9d868618eb781cbf9041c08d2c7a9e4a8dd8cc4b0054697575524693ebd809",
+    "decided_at": 1735689600,
+    "decision": "NO-GO",
+    "decision_digest": "sha256:af627814c94cec312f74e224227149ca676aa6ca7b6bbd50a1147a38821da8e4",
+    "decision_id": "decision-ch15",
+    "evidence_graph_hash": "sha256:b039f557a1009dbc2fe83ddb7100140552d00f724f215a1d043f3846badc8781",
+    "manifest_hash": "sha256:27ee9158c2f0b707215513ce28d641f44336314c3440c2b7b5d7f904568afb15",
+    "policy_hash": "sha256:f7a26902cd2bdd8f41d7893c4ba455360a04310b2547cfa9b33f2b661ed95212",
+    "reasons": [
+      {
+        "priority": 10,
+        "reason_code": "TEST_FAILED",
+        "record_id": "ev-ch12-observability",
+        "remediation": "replace or re-sign current applicable evidence"
+      }
+    ]
+  },
+  {
+    "approver_id": "owner-control",
+    "change_set_hash": "sha256:bc9d868618eb781cbf9041c08d2c7a9e4a8dd8cc4b0054697575524693ebd809",
+    "decided_at": 1735689600,
+    "decision": "NO-GO",
+    "decision_digest": "sha256:421883490d82aff0d168f99ec05d623ca64040ba1f2b419322bc87daa066fbfa",
+    "decision_id": "decision-ch15",
+    "evidence_graph_hash": "sha256:5c2a533db57b8a1c34ae52f4ec3f5d7e90a70ffbe6a3d83673f0c44ff0287946",
+    "manifest_hash": "sha256:27ee9158c2f0b707215513ce28d641f44336314c3440c2b7b5d7f904568afb15",
+    "policy_hash": "sha256:f7a26902cd2bdd8f41d7893c4ba455360a04310b2547cfa9b33f2b661ed95212",
+    "reasons": [
+      {
+        "priority": 10,
+        "reason_code": "APPROVAL_MISSING",
+        "record_id": "owner-control",
+        "remediation": "obtain current release approver"
+      },
+      {
+        "priority": 11,
+        "reason_code": "APPROVER_NOT_INDEPENDENT",
+        "record_id": "owner-control",
+        "remediation": "use independent human approver"
+      },
+      {
+        "priority": 12,
+        "reason_code": "APPROVAL_MISSING",
+        "record_id": "approval-high-impact",
+        "remediation": "obtain approver with role release_approver"
+      },
+      {
+        "priority": 13,
+        "reason_code": "APPROVAL_MISSING",
+        "record_id": "approval-deployment",
+        "remediation": "obtain approver with role release_approver"
+      }
+    ]
+  },
+  {
+    "approver_id": "owner-release",
+    "change_set_hash": "sha256:bc9d868618eb781cbf9041c08d2c7a9e4a8dd8cc4b0054697575524693ebd809",
+    "decided_at": 1735689600,
+    "decision": "NO-GO",
+    "decision_digest": "sha256:75b042dafa21f66d2d94e9f4356ae3ef4ae9ab7e5b27eb5045af2a910d61a86d",
+    "decision_id": "decision-ch15",
+    "evidence_graph_hash": "sha256:5c2a533db57b8a1c34ae52f4ec3f5d7e90a70ffbe6a3d83673f0c44ff0287946",
+    "manifest_hash": "sha256:27ee9158c2f0b707215513ce28d641f44336314c3440c2b7b5d7f904568afb15",
+    "policy_hash": "sha256:f7a26902cd2bdd8f41d7893c4ba455360a04310b2547cfa9b33f2b661ed95212",
+    "reasons": [
+      {
+        "priority": 10,
+        "reason_code": "RIGHTS_INCOMPLETE",
+        "record_id": "receipt-rights-delete-missed",
+        "remediation": "complete all derived-store verifiers"
+      }
+    ]
+  }
+]

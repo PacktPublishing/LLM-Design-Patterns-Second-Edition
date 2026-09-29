@@ -1,0 +1,42 @@
+[
+  {
+    "digest": "sha256:apidigest",
+    "non_root": true,
+    "policy_passed": true,
+    "read_only_root": true,
+    "sbom_valid": true,
+    "service": "api"
+  },
+  {
+    "digest": "sha256:workerdigest",
+    "non_root": true,
+    "policy_passed": true,
+    "read_only_root": true,
+    "sbom_valid": true,
+    "service": "worker"
+  },
+  {
+    "digest": "sha256:modelgatewaydigest",
+    "non_root": true,
+    "policy_passed": true,
+    "read_only_root": true,
+    "sbom_valid": true,
+    "service": "model-gateway"
+  },
+  {
+    "digest": "sha256:egressproxydigest",
+    "non_root": true,
+    "policy_passed": true,
+    "read_only_root": true,
+    "sbom_valid": true,
+    "service": "egress-proxy"
+  },
+  {
+    "digest": "sha256:ticketservicedigest",
+    "non_root": true,
+    "policy_passed": true,
+    "read_only_root": true,
+    "sbom_valid": true,
+    "service": "ticket-service"
+  }
+]

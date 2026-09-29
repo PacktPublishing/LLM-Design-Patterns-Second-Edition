@@ -1,0 +1,18 @@
+[
+  {
+    "action": "delete",
+    "idempotency_key": "delete-remote-v2",
+    "job_id": "job_delete_policy_remote_delete-remote-v2",
+    "receipt": {
+      "action": "delete",
+      "active_version_id": null,
+      "freshness_lag_ms": 100,
+      "idempotency_key": "delete-remote-v2",
+      "manifest_generation": 2,
+      "previous_version_id": "v2",
+      "source_id": "policy_remote"
+    },
+    "source_id": "policy_remote",
+    "state": "active"
+  }
+]

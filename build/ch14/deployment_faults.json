@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "results": {
+    "backup": true,
+    "canary": true,
+    "chaos": true,
+    "health": true,
+    "model": true,
+    "queue": true
+  },
+  "scenario": "all"
+}

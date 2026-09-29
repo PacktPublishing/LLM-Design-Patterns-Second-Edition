@@ -1,0 +1,22 @@
+[lab]
+id = "ch04"
+title = "Adaptive Inference Gateway"
+profile = "fixture"
+requires = ["ch01", "ch02", "ch03"]
+
+[commands]
+verify = "uv run policyops verify ch04 --profile fixture --junit build/ch04/junit.xml --evidence build/ch04"
+fault = "uv run policyops fault ch04 --scenario all"
+
+[artifacts]
+source = ["src/policyops/inference"]
+tests = ["tests/inference"]
+evidence = [
+    "build/ch04/inference_report.json",
+    "build/ch04/benchmark_rows.jsonl",
+    "build/ch04/benchmark_summary.json",
+    "build/ch04/matched_pair_comparison.json",
+    "build/ch04/serving_adr.json",
+    "build/ch04/route_policy_manifest.json",
+    "build/ch04/gateway_result.json",
+]

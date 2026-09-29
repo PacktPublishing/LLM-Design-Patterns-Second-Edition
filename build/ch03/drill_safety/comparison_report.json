@@ -1,0 +1,76 @@
+{
+  "selected_candidate_id": "retrieval-replay-v1",
+  "selected_candidate_kind": "retrieval_replay",
+  "candidate_deltas": {
+    "baseline": {
+      "quality_delta": 0.0,
+      "latency_delta_pct": 0.0,
+      "cost_delta": 0.0,
+      "cpso_delta_pct": 0.0,
+      "min_subgroup_pass_rate": 0.0
+    },
+    "prompt-v1": {
+      "quality_delta": 0.0,
+      "latency_delta_pct": 10.0,
+      "cost_delta": 0.00136,
+      "cpso_delta_pct": 22.6667,
+      "min_subgroup_pass_rate": 0.0
+    },
+    "retrieval-replay-v1": {
+      "quality_delta": 0.3333,
+      "latency_delta_pct": 20.0,
+      "cost_delta": 0.00247,
+      "cpso_delta_pct": -5.8842,
+      "min_subgroup_pass_rate": 1.0
+    },
+    "adapter-v1": {
+      "quality_delta": 0.0,
+      "latency_delta_pct": 30.0,
+      "cost_delta": 0.01722,
+      "cpso_delta_pct": 287.0,
+      "min_subgroup_pass_rate": 0.0
+    }
+  },
+  "candidate_gates": {
+    "baseline": {
+      "safety": true,
+      "authorization_regressions": true,
+      "subgroup_min_pass_rate": false,
+      "calibration_error": false,
+      "latency_delta_pct": true,
+      "cost_delta": true,
+      "cpso_delta_pct": true,
+      "quality_non_regress": true
+    },
+    "prompt-v1": {
+      "safety": true,
+      "authorization_regressions": true,
+      "subgroup_min_pass_rate": false,
+      "calibration_error": false,
+      "latency_delta_pct": true,
+      "cost_delta": true,
+      "cpso_delta_pct": false,
+      "quality_non_regress": true
+    },
+    "retrieval-replay-v1": {
+      "safety": true,
+      "authorization_regressions": true,
+      "subgroup_min_pass_rate": true,
+      "calibration_error": true,
+      "latency_delta_pct": true,
+      "cost_delta": true,
+      "cpso_delta_pct": true,
+      "quality_non_regress": true
+    },
+    "adapter-v1": {
+      "safety": false,
+      "authorization_regressions": false,
+      "subgroup_min_pass_rate": false,
+      "calibration_error": false,
+      "latency_delta_pct": false,
+      "cost_delta": false,
+      "cpso_delta_pct": false,
+      "quality_non_regress": true
+    }
+  }
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "backup_id": "backup-corrupt",
+    "checksum": "sha256:corrupt",
+    "corrupt": true,
+    "includes_approvals": true,
+    "includes_outbox": true,
+    "includes_revocations": true,
+    "includes_sessions": true,
+    "migration_level": "mig-ch14-expand-001"
+  },
+  {
+    "backup_id": "backup-valid",
+    "checksum": "sha256:c16e779badf6291d25f52297ba5d9adb13fa70eba07bcd57eea6661c26879a8f",
+    "corrupt": false,
+    "includes_approvals": true,
+    "includes_outbox": true,
+    "includes_revocations": true,
+    "includes_sessions": true,
+    "migration_level": "mig-ch14-expand-001"
+  }
+]

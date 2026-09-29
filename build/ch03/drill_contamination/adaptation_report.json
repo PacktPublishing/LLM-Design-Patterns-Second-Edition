@@ -1,0 +1,266 @@
+{
+  "baseline_report": {
+    "schema_version": "1",
+    "baseline_id": "ch02-baseline",
+    "suite": "all",
+    "suite_hash": "sha256:3991989da1482290eb8a99f163a01c333cdb571a9fe28ca0d56005e35e3ae225",
+    "case_count": 31,
+    "case_ids": [
+      "adv.auth.cross_tenant.002",
+      "adv.auth.cross_tenant.003",
+      "adv.auth.cross_tenant.004",
+      "adv.auth.cross_tenant.005",
+      "adv.citation.fabricate.001",
+      "adv.prompt_probe.ignore_policy.001",
+      "cap.abstain.insufficient.001",
+      "cap.abstain.insufficient.002",
+      "cap.citation.exact.001",
+      "cap.tool_args.create_ticket.001",
+      "cap.tool_args.create_ticket.002",
+      "cap.tool_args.create_ticket.003",
+      "cap.tool_args.create_ticket.004",
+      "cap.tool_args.create_ticket.005",
+      "cap.tool_args.create_ticket.006",
+      "cap.tool_args.create_ticket.007",
+      "reg.answer.remote_days.001",
+      "reg.answer.remote_days.002",
+      "reg.answer.remote_days.003",
+      "reg.answer.remote_days.004",
+      "reg.answer.remote_days.005",
+      "reg.answer.remote_days.006",
+      "reg.answer.remote_days.007",
+      "reg.answer.remote_days.008",
+      "reg.answer.stipend.001",
+      "reg.auth.cross_tenant.001",
+      "reg.auth.cross_tenant.002",
+      "reg.auth.missing_identity.001",
+      "reg.auth.missing_identity.002",
+      "reg.auth.missing_identity.003",
+      "reg.auth.missing_identity.004"
+    ],
+    "holdout_verified": true,
+    "metrics": {
+      "pass_rate": 1.0,
+      "first_try_pass_rate": 1.0,
+      "total_cases": 31,
+      "total_trials": 33,
+      "passed_trials": 33,
+      "cost_per_successful_outcome": 0.003336,
+      "cost_status": "available",
+      "gates_passed": true
+    },
+    "measured_at": "2026-08-13T20:48:37.739676Z"
+  },
+  "dataset": {
+    "schema_version": "1",
+    "dataset_id": "policyops-adapt-v1",
+    "record_ids": [
+      "rec-001",
+      "rec-002",
+      "rec-003",
+      "rec-004",
+      "rec-005",
+      "rec-006",
+      "rec-007",
+      "rec-008"
+    ],
+    "record_count": 8,
+    "source_breakdown": {
+      "fixtures://policy/remote_work_v1": 3,
+      "synthetic://gen-v1": 3,
+      "fixtures://policy/hybrid_v1": 1,
+      "fixtures://policy/contractor_v1": 1
+    },
+    "rights_bases": [
+      "internal-licensed",
+      "synthetic-lab"
+    ],
+    "synthetic_record_ids": [
+      "rec-003",
+      "rec-004",
+      "rec-008"
+    ],
+    "lineage_hash": "sha256:bf430ebe6563a6f46bd6a617152684bd9ec83aee7da9ff17fd371e69d94fc33c",
+    "code_revision": "fixture-repo",
+    "lockfile_hash": "sha256:fixture-lock",
+    "content_hash": "sha256:c3ac879b1c1c9734c6fe738d32f9cd3826c2cdcaca61e7deeac5b76663a4432d"
+  },
+  "split": {
+    "schema_version": "1",
+    "split_id": "entity-group-hash-v1",
+    "strategy": "entity-group-hash-v1",
+    "seed": 0,
+    "train": [
+      "rec-002",
+      "rec-005",
+      "rec-003",
+      "rec-006",
+      "rec-008"
+    ],
+    "validation": [
+      "rec-004"
+    ],
+    "protected_test": [
+      "rec-007",
+      "rec-001"
+    ],
+    "protected_entity_keys": [
+      "entity-alpha",
+      "entity-eta"
+    ],
+    "subgroup_membership": {
+      "general_policy": [
+        "rec-002",
+        "rec-005",
+        "rec-007"
+      ],
+      "remote_policy": [
+        "rec-001",
+        "rec-003",
+        "rec-006"
+      ],
+      "synthetic_reviewed": [
+        "rec-004",
+        "rec-008"
+      ]
+    },
+    "content_hash": "sha256:5876e19a7e40aa87d1d8200fe3c2abb4bc451323768d7fc2d58892aee93eedd2"
+  },
+  "contamination": {
+    "clean": false,
+    "exact_hits": [
+      {
+        "eval_index": "2",
+        "train_record_id": "rec-002"
+      }
+    ],
+    "normalized_hits": [
+      {
+        "eval_index": "2",
+        "train_record_id": "rec-002"
+      }
+    ],
+    "near_duplicate_hits": []
+  },
+  "artifact": {
+    "schema_version": "1",
+    "artifact_id": "adapter-fixture-v1",
+    "path": "evals\\adaptation\\adapter_fixture.json",
+    "content_hash": "sha256:3a1012b19e6da05eda09fd298e3e32e335a16f83dd6167904a968e20d5fd2caf",
+    "license": "Apache-2.0",
+    "base_model": "policyops-replay-v1",
+    "format": "fixture-adapter",
+    "size_bytes": 118,
+    "approved_source": "fixture",
+    "declared_architecture": "adapter",
+    "load_policy": "json-safe-load"
+  },
+  "artifact_admission": {
+    "admitted": true,
+    "reasons": [],
+    "artifact_id": "adapter-fixture-v1",
+    "expected_hash": "sha256:3a1012b19e6da05eda09fd298e3e32e335a16f83dd6167904a968e20d5fd2caf"
+  },
+  "candidate_matrix": {
+    "baseline": {},
+    "prompt-v1": {},
+    "retrieval-replay-v1": {},
+    "adapter-v1": {}
+  },
+  "candidate_reports": {},
+  "experiment": {
+    "schema_version": "1",
+    "experiment_id": "exp-ch03-fixture",
+    "dataset_hash": "sha256:c3ac879b1c1c9734c6fe738d32f9cd3826c2cdcaca61e7deeac5b76663a4432d",
+    "split_hash": "sha256:5876e19a7e40aa87d1d8200fe3c2abb4bc451323768d7fc2d58892aee93eedd2",
+    "baseline_suite_hash": "sha256:3991989da1482290eb8a99f163a01c333cdb571a9fe28ca0d56005e35e3ae225",
+    "candidate_ids": [
+      "baseline",
+      "prompt-v1",
+      "retrieval-replay-v1",
+      "adapter-v1"
+    ],
+    "contamination_clean": false,
+    "suite_hash": "sha256:3991989da1482290eb8a99f163a01c333cdb571a9fe28ca0d56005e35e3ae225",
+    "grader_hash": "sha256:grader-fixture",
+    "environment_hash": "sha256:fixture-env",
+    "policy_hash": "sha256:7d48b0ef7f27134a445d02faec480a255383ef29f199435ee513876fcc7812c7",
+    "results": {
+      "baseline": {
+        "metrics": {},
+        "cases": []
+      },
+      "prompt-v1": {
+        "metrics": {},
+        "cases": []
+      },
+      "retrieval-replay-v1": {
+        "metrics": {},
+        "cases": []
+      },
+      "adapter-v1": {
+        "metrics": {},
+        "cases": []
+      }
+    },
+    "gates": {
+      "contamination_clean": false,
+      "adapter_admitted": true,
+      "decision_ship": false
+    }
+  },
+  "decision": {
+    "schema_version": "1",
+    "decision": "no_ship",
+    "selected_candidate_id": "baseline",
+    "selected_candidate_kind": "baseline",
+    "approver_role": "release_reviewer",
+    "rollback_target": "baseline",
+    "gate_evidence": {
+      "contamination_clean": false,
+      "adapter_admitted": true,
+      "admission_reasons": []
+    },
+    "decision_reason": "contamination_check_failed_blocked_before_scoring",
+    "residual_risks": [
+      "blocked before candidate comparison"
+    ],
+    "review_by": "next-sprint",
+    "expires_at": "2026-09-12T20:48:37.754876Z"
+  },
+  "dataset_card": {
+    "dataset_id": "policyops-adapt-v1",
+    "record_count": 8,
+    "rights_bases": [
+      "internal-licensed",
+      "synthetic-lab"
+    ],
+    "synthetic_record_ids": [
+      "rec-003",
+      "rec-004",
+      "rec-008"
+    ],
+    "subgroups": [
+      "general_policy",
+      "remote_policy",
+      "synthetic_reviewed"
+    ],
+    "intended_use": "offline adaptation comparison for PolicyOps routing/policy classification",
+    "prohibited_use": "production policy deployment without separate review",
+    "lineage_hash": "sha256:bf430ebe6563a6f46bd6a617152684bd9ec83aee7da9ff17fd371e69d94fc33c"
+  },
+  "model_card": {
+    "artifact_id": "adapter-fixture-v1",
+    "base_model": "policyops-replay-v1",
+    "license": "Apache-2.0",
+    "format": "fixture-adapter",
+    "candidates": [
+      "baseline",
+      "prompt-v1",
+      "retrieval-replay-v1",
+      "adapter-v1"
+    ],
+    "intended_use": "compare baseline, prompt, retrieval replay, and lightweight adapter",
+    "rollback_target": "baseline"
+  }
+}

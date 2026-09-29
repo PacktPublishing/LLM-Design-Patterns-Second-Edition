@@ -1,0 +1,547 @@
+chapters:
+  ch01:
+    status: accepted_fixture
+    checkpoint: work/ch01
+    contracts:
+      - RunContext
+      - ModelRequest
+      - Answer
+      - Citation
+      - Usage
+      - ModelClient
+    configuration_fingerprint_source: policyops.config.Settings.fingerprint
+    tests:
+      - tests/contract
+      - tests/api
+      - tests/fault
+      - tests/boundary
+    verify_command: uv run policyops verify ch01 --profile fixture
+    rollback: revert to ed2-v1.0-ch01-start and drop labs/ch01 evidence
+    decision: GO
+    notes: Fixture profile verified offline; replay is not real-model quality evidence.
+  ch02:
+    status: accepted_fixture
+    checkpoint: work/ch02
+    contracts:
+      - TaskCase
+      - TrialContext
+      - TrialRecord
+      - GraderResult
+      - Outcome
+      - SuiteManifest
+      - SuiteSummary
+    evidence:
+      - manifest.lock.json
+      - trials.jsonl
+      - grades.jsonl
+      - summary.json
+      - failure_taxonomy.json
+      - calibration_report.json
+      - evidence_index.json
+      - holdout_hashes.json
+    tests:
+      - tests/eval
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch02 --profile fixture --junit build/ch02/junit.xml --evidence build/ch02
+    rollback: remove src/policyops/eval, evals/cases, evals/holdouts, evals/labels, labs/ch02, and restore capstone traceability to ch01 only
+    decision: GO
+    notes: Deterministic fixture profile only; live rubric/model grading remains optional and non-blocking.
+  ch03:
+    status: accepted_fixture
+    checkpoint: work/ch03
+    contracts:
+      - DataRecord
+      - DatasetManifest
+      - SplitManifest
+      - AdaptationCandidate
+      - ModelArtifact
+      - ExperimentRun
+      - ReleaseDecision
+    evidence:
+      - adaptation_report.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/adaptation
+      - tests/eval
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch03 --profile fixture --junit build/ch03/junit.xml --evidence build/ch03
+    rollback: remove src/policyops/adaptation, evals/adaptation, labs/ch03, tests/adaptation, and restore capstone traceability to ch01-ch02 only
+    decision: GO
+    notes: Core path is CPU-only fixture comparison; optional retraining remains outside mandatory gates.
+  ch04:
+    status: accepted_fixture
+    checkpoint: work/ch04
+    contracts:
+      - InferenceRequest
+      - InferenceBudget
+      - ModelProfile
+      - CacheKey
+      - CandidateResult
+      - GatewayResult
+      - BenchmarkReport
+    evidence:
+      - benchmark_rows.jsonl
+      - inference_report.json
+      - serving_adr.json
+      - gateway_result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch04 --profile fixture --junit build/ch04/junit.xml --evidence build/ch04
+    rollback: remove src/policyops/inference, labs/ch04, tests/inference, and restore capstone traceability to ch01-ch03 only
+    decision: GO
+    notes: Fixture profile demonstrates routing, budget, verifier, cache, and benchmark behavior; latency and spend are not hosted-provider benchmarks.
+  ch05:
+    status: accepted_fixture
+    checkpoint: work/ch05
+    contracts:
+      - ContextRequest
+      - ContextItem
+      - SourceSummary
+      - ContextPlan
+      - ContextManifest
+      - CompactionResult
+      - RenderedContext
+    evidence:
+      - context_manifest.json
+      - rendered_context.txt
+      - token_report.json
+      - fault_drills.json
+      - context_result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch05 --profile fixture --junit build/ch05/junit.xml --evidence build/ch05
+    rollback: remove src/policyops/context, labs/ch05, tests/context, and restore capstone traceability to ch01-ch04 only
+    decision: GO
+    notes: Fixture profile demonstrates authority-ranked context planning, lazy materialization, compaction, stable-prefix fingerprints, redacted manifests, and token reduction without external retrieval or memory services.
+  ch06:
+    status: accepted_fixture
+    checkpoint: work/ch06
+    contracts:
+      - Principal
+      - SourceVersion
+      - Span
+      - CitationRef
+      - EvidenceItem
+      - EvidencePack
+      - LifecycleReceipt
+      - RetrievalScorecard
+    evidence:
+      - evidence_packs.jsonl
+      - scorecard.json
+      - freshness_receipts.json
+      - retrieval_faults.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch06 --profile fixture --junit build/ch06/junit.xml --evidence build/ch06
+    rollback: remove src/policyops/retrieval, labs/ch06, tests/retrieval, and restore capstone traceability to ch01-ch05 only
+    decision: GO
+    notes: Fixture profile demonstrates authorization-first hybrid retrieval, citation resolution, table/OCR lineage, deletion and replacement receipts, poison exclusion, timeout abstention, and Chapter 5 context-source compatibility.
+  ch07:
+    status: accepted_fixture
+    checkpoint: work/ch07
+    contracts:
+      - Entity
+      - ClaimRef
+      - GraphPath
+      - GraphQuery
+      - SnapshotManifest
+      - RepairReceipt
+      - GraphQueryResult
+      - GraphScorecard
+    evidence:
+      - graph_results.jsonl
+      - graph_scorecard.json
+      - repair_receipt.json
+      - graph_faults.json
+      - graph_vs_rag_adr.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch07 --profile fixture --junit build/ch07/junit.xml --evidence build/ch07
+    rollback: remove src/policyops/graph, labs/ch07, tests/graph, and restore capstone traceability to ch01-ch06 only
+    decision: GO
+    notes: Fixture profile demonstrates route classification, source-linked graph paths, temporal contradictions, tenant isolation, evidence projection, timeout partials, snapshot repair, and graph-versus-RAG ADR evidence.
+  ch08:
+    status: accepted_fixture
+    checkpoint: work/ch08
+    contracts:
+      - MemoryProposal
+      - MutationDecision
+      - MemoryRecord
+      - MemoryEvent
+      - RecallRequest
+      - RecallResult
+      - DeletionReceipt
+      - MemoryScorecard
+      - MemoryContextSource
+    evidence:
+      - memory_events.jsonl
+      - memory_views.json
+      - recall_report.json
+      - deletion_receipt.json
+      - memory_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch08 --profile fixture --junit build/ch08/junit.xml --evidence build/ch08
+    rollback: remove src/policyops/memory, labs/ch08, tests/memory, and restore capstone traceability to ch01-ch07 only
+    decision: GO
+    notes: Fixture profile demonstrates governed mutation, consent, scope isolation, quarantine, correction/versioning, consolidation, deletion receipts, context-source compatibility, and the invariant that memory cannot grant authority.
+  ch09:
+    status: accepted_fixture
+    checkpoint: work/ch09
+    contracts:
+      - TicketInput
+      - TicketEffect
+      - EffectPreview
+      - ApprovalClaims
+      - TicketResult
+      - PluginManifest
+      - ExtensionVersion
+      - CapabilityContextSource
+      - ExtensionScorecard
+    evidence:
+      - tool_contract.json
+      - activation_scorecard.json
+      - package_verification.json
+      - compatibility_report.json
+      - extension_scorecard.json
+      - audit_events.jsonl
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch09 --profile fixture --junit build/ch09/junit.xml --evidence build/ch09
+    rollback: remove src/policyops/extensions, labs/ch09, tests/extensions, and restore capstone traceability to ch01-ch08 only
+    decision: GO
+    notes: Fixture profile demonstrates typed tool previews, exact-effect approval, direct/MCP convergence, skill activation, plugin verification, lifecycle hooks, revocation, compatibility gating, and safe capability context without authority leakage.
+  ch10:
+    status: accepted_fixture
+    checkpoint: work/ch10
+    contracts:
+      - TaskState
+      - PrincipalRef
+      - BudgetLedger
+      - DelegatedTask
+      - WorkerResult
+      - BrowserObservation
+      - BrowserActionTrace
+      - TopologyComparison
+      - OrchestrationScorecard
+    evidence:
+      - state_graph_runs.json
+      - delegation_contract.json
+      - worker_results.json
+      - topology_comparison.json
+      - a2a_no_use_adr.json
+      - orchestration_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch10 --profile fixture --junit build/ch10/junit.xml --evidence build/ch10
+    rollback: remove src/policyops/orchestration, labs/ch10, tests/orchestration, and restore capstone traceability to ch01-ch09 only
+    decision: GO
+    notes: Fixture profile demonstrates a canonical transient state graph, deterministic/single-agent/browser/orchestrator-worker variants, signed narrow delegation, deterministic merge, no-partial fan-out admission, human interrupt states, Chapter 9 final-action boundary, topology comparison, and A2A no-use ADR evidence.
+  ch11:
+    status: accepted_fixture
+    checkpoint: work/ch11
+    contracts:
+      - SessionEvent
+      - SessionState
+      - SessionCheckpoint
+      - Lease
+      - ActionIntent
+      - OutboxMessage
+      - EffectReceipt
+      - ReviewBundle
+      - HarnessScorecard
+    evidence:
+      - review_bundle.json
+      - fault_results.json
+      - replay_result.json
+      - runbook.json
+      - harness_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch11 --profile fixture --junit build/ch11/junit.xml --evidence build/ch11
+    rollback: remove src/policyops/harness, labs/ch11, tests/harness, and restore capstone traceability to ch01-ch10 only
+    decision: GO
+    notes: Fixture profile demonstrates scoped engineering review, append-only events, checkpoints, lease fencing, action intents, transactional outbox semantics, idempotent delivery, crash-window recovery, no-effect replay, budget stops, and recovery runbook evidence.
+  ch12:
+    status: accepted_fixture
+    checkpoint: work/ch12
+    contracts:
+      - ArtifactRecord
+      - ArtifactSet
+      - TraceContext
+      - RawEvent
+      - RedactedSpan
+      - SloRecord
+      - TraceAdjudication
+      - EvaluationCase
+      - ExperimentManifest
+      - ExperimentLedger
+      - CanaryReport
+      - ReconstructionReport
+      - ObservabilityScorecard
+    evidence:
+      - artifact_registry.json
+      - trace_export.jsonl
+      - privacy_report.json
+      - slo_records.json
+      - adjudication.json
+      - eval_case_from_trace.json
+      - experiment_ledger.json
+      - accepted_candidate_ledger.json
+      - canary_report.json
+      - reconstruction_report.json
+      - telemetry_outage.json
+      - harness_event_spans.json
+      - harness_retirement_adr.json
+      - observability_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/telemetry
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch12 --profile fixture --junit build/ch12/junit.xml --evidence build/ch12
+    rollback: remove src/policyops/telemetry, labs/ch12, tests/telemetry, and restore capstone traceability to ch01-ch11 only
+    decision: GO
+    notes: Fixture profile demonstrates semantic telemetry, pre-export minimization, artifact lineage, expert adjudication, trace-to-eval graduation, protected experiments, cost per successful outcome, behavior-canary rollback, outage tolerance, no-effect reconstruction, and harness-retirement evidence.
+  ch13:
+    status: accepted_fixture
+    checkpoint: work/ch13
+    contracts:
+      - ThreatModelEntry
+      - ContentEnvelope
+      - Principal
+      - AuthorizationQuery
+      - AuthorizationDecision
+      - CanonicalPreview
+      - ApprovalRecord
+      - CapabilityGrant
+      - SandboxProfile
+      - OutboundRequest
+      - EgressDecision
+      - SecretLease
+      - IntegrityRecord
+      - McpAuthResult
+      - AttackCase
+      - AttackResult
+      - IncidentRecord
+      - SecurityReport
+    evidence:
+      - threat_model.json
+      - attack_corpus.json
+      - authorization_policy.json
+      - sandbox_profile.json
+      - sbom.json
+      - integrity_allowlist.json
+      - security_report.json
+      - mcp_authorization.json
+      - incident_playbook.json
+      - residual_risks.json
+      - security_events.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/security
+      - tests/telemetry
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch13 --profile fixture --junit build/ch13/junit.xml --evidence build/ch13
+    rollback: remove src/policyops/security, labs/ch13, tests/security, and restore capstone traceability to ch01-ch12 only
+    decision: GO
+    notes: Fixture profile demonstrates threat modeling, provenance labels, identity-first authorization, exact-preview approval, sandbox and egress denial, secret minimization, integrity and revocation checks, MCP stable/RC authorization fixtures, incident containment, residual-risk evidence, and benign-neighbor false-positive control.
+  ch14:
+    status: accepted_fixture
+    checkpoint: work/ch14
+    contracts:
+      - ExecutionEnvelope
+      - AdmissionLimits
+      - WorkItem
+      - OfferResult
+      - WorkLease
+      - RetryPolicy
+      - CircuitBreakerState
+      - ModelRouteDecision
+      - HealthReport
+      - MigrationPlan
+      - ImageRecord
+      - CanaryReport
+      - BackupCatalog
+      - RestoreReport
+      - LoadReport
+      - ChaosResult
+      - RunbookStep
+      - DeploymentScorecard
+    evidence:
+      - topology.json
+      - admission_queue.json
+      - retry_breaker_policy.json
+      - model_route.json
+      - health_reports.json
+      - migration_reports.json
+      - image_records.json
+      - canary_report.json
+      - backup_catalogs.json
+      - restore_reports.json
+      - load_report.json
+      - chaos_results.json
+      - operator_runbooks.json
+      - deployment_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/deployment
+      - tests/security
+      - tests/telemetry
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch14 --profile fixture --junit build/ch14/junit.xml --evidence build/ch14
+    rollback: remove src/policyops/deployment, labs/ch14, tests/deployment, and restore capstone traceability to ch01-ch13 only
+    decision: GO
+    notes: Fixture profile demonstrates bounded admission, durable queue claims, idempotent redelivery, retry and breaker policy, quality-floor model fallback, health/readiness separation, migration gates, digest-pinned image rollback, backup/restore integrity, load and chaos evidence, and operator runbooks.
+  ch15:
+    status: accepted_fixture
+    checkpoint: work/ch15
+    contracts:
+      - SystemInventory
+      - RiskRecord
+      - OwnerRecord
+      - ApprovalPolicy
+      - EvidenceRef
+      - ControlRecord
+      - ChangeSet
+      - RightsRequest
+      - RightsReceipt
+      - TransparencyNotice
+      - ReleaseDecision
+      - GovernanceScorecard
+    evidence:
+      - system_inventory.json
+      - risk_autonomy_records.json
+      - ownership_records.json
+      - approval_matrix.json
+      - control_evidence_graph.json
+      - evidence_index.json
+      - rights_receipts.json
+      - transparency_notice.json
+      - invalid_evidence_decisions.json
+      - release_decision.json
+      - governance_scorecard.json
+      - result.json
+      - fingerprints.json
+      - junit.xml
+    tests:
+      - tests/governance
+      - tests/deployment
+      - tests/security
+      - tests/telemetry
+      - tests/harness
+      - tests/orchestration
+      - tests/extensions
+      - tests/memory
+      - tests/graph
+      - tests/retrieval
+      - tests/context
+      - tests/inference
+      - tests/contract
+      - tests/boundary
+    verify_command: uv run policyops verify ch15 --profile fixture --junit build/ch15/junit.xml --evidence build/ch15
+    rollback: remove src/policyops/governance, labs/ch15, tests/governance, and restore capstone traceability to ch01-ch14 only
+    decision: GO
+    notes: Fixture profile demonstrates executable governance, owner and role checks, signed evidence validation, control graph release gating, deterministic invalid-evidence NO-GO decisions, rights receipts across primary and derived stores, transparency notice generation, separation-of-duties enforcement, and final GO decision digest.

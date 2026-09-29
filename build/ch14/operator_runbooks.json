@@ -1,0 +1,90 @@
+[
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect worker_kill metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-01",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect sandbox_kill metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-02",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect duplicate_effect metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-03",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect model_brownout metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-04",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect ticket_service_loss metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-05",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect database_latency metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-06",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect network_loss metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-07",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect queue_overload metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-08",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect disk_pressure metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-09",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect overlapping_binary metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-10",
+    "validation": "Run integrity, outbox, and readiness checks"
+  },
+  {
+    "contain": "Stop unsafe admissions or isolate dependency",
+    "diagnose": "Inspect restore_reconciliation metrics and trace evidence",
+    "escalate": "Page platform owner if objective is missed",
+    "recover": "Apply bounded retry, rollback, or restore procedure",
+    "runbook_id": "RB-14-11",
+    "validation": "Run integrity, outbox, and readiness checks"
+  }
+]

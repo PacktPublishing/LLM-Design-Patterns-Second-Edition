@@ -1,0 +1,88 @@
+{
+  "abstention_accuracy": 1.0,
+  "cross_tenant_elapsed_ms": 1,
+  "deleted_elapsed_ms": 1,
+  "p95_latency_ms": 1,
+  "queries": [
+    {
+      "elapsed_ms": 1,
+      "estimated_cost_token_proxy": 38,
+      "expected_spans": [
+        "span_remote_days"
+      ],
+      "found_spans": [
+        "span_remote_approval",
+        "span_remote_days",
+        "span_remote_table",
+        "span_scanned_receipts"
+      ],
+      "meets_expected_spans": true,
+      "packed_tokens": 38,
+      "query": "How many remote days are allowed?",
+      "query_id": "q_remote_days",
+      "sufficiency": "sufficient"
+    },
+    {
+      "elapsed_ms": 1,
+      "estimated_cost_token_proxy": 27,
+      "expected_spans": [
+        "span_remote_approval"
+      ],
+      "found_spans": [
+        "span_remote_approval",
+        "span_remote_days",
+        "span_remote_table"
+      ],
+      "meets_expected_spans": true,
+      "packed_tokens": 27,
+      "query": "remote work approval exceptions",
+      "query_id": "q_remote_approval",
+      "sufficiency": "sufficient"
+    },
+    {
+      "elapsed_ms": 1,
+      "estimated_cost_token_proxy": 38,
+      "expected_spans": [
+        "span_remote_table"
+      ],
+      "found_spans": [
+        "span_remote_approval",
+        "span_remote_days",
+        "span_remote_table",
+        "span_scanned_receipts"
+      ],
+      "meets_expected_spans": true,
+      "packed_tokens": 38,
+      "query": "remote table maximum days",
+      "query_id": "q_table",
+      "sufficiency": "sufficient"
+    },
+    {
+      "elapsed_ms": 1,
+      "estimated_cost_token_proxy": 11,
+      "expected_spans": [
+        "span_scanned_receipts"
+      ],
+      "found_spans": [
+        "span_scanned_receipts"
+      ],
+      "meets_expected_spans": true,
+      "packed_tokens": 11,
+      "query": "scanned OCR travel receipts",
+      "query_id": "q_scanned",
+      "sufficiency": "sufficient"
+    },
+    {
+      "elapsed_ms": 1,
+      "estimated_cost_token_proxy": 0,
+      "expected_spans": [],
+      "found_spans": [],
+      "meets_expected_spans": true,
+      "packed_tokens": 0,
+      "query": "What is the weather today?",
+      "query_id": "q_unanswerable",
+      "sufficiency": "insufficient"
+    }
+  ],
+  "timeout_elapsed_ms": 1
+}
