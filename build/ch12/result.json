@@ -2,8 +2,8 @@
   "lab": "ch12",
   "profile": "fixture",
   "exit_code": 0,
-  "junit": "build/ch12/junit.xml",
-  "trace_redaction": "build/ch12/trace_redaction.json",
-  "fingerprints": "build/ch12/fingerprints.json",
+  "junit": "C:/Users/kenhu/llm-design-patterns-hands-on/build/ch12/junit.xml",
+  "trace_redaction": "C:/Users/kenhu/llm-design-patterns-hands-on/build/ch12/trace_redaction.json",
+  "fingerprints": "C:/Users/kenhu/llm-design-patterns-hands-on/build/ch12/fingerprints.json",
   "passed": true
 }

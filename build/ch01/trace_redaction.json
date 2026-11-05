@@ -21,7 +21,7 @@
         "actor_id": "actor_reader",
         "trace_id": "trace_fixture_001",
         "request_id": "req_fixture_001",
-        "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+        "configuration_id": "sha256:8117d40f7fd8df097312f4bfcfbe6826c64abbb8df89fb9291cc5967c0afedf6"
       }
     },
     {

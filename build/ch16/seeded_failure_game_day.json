@@ -44,7 +44,7 @@
   {
     "actual_result": "Preview sha256:ce04ee6a673 executed once as ticket ticket_4dadddb88c08 under idempotency key capstone-game-day-001. Seeded mandatory failure injected for release gate proof.",
     "cleanup_status": "complete",
-    "evidence_ref": "sha256:8c9d95705af411013ac2de8a08e5e7bf6380f6685d36c271fb1dea56278a539e",
+    "evidence_ref": "sha256:cad384a86f02f2dcf5c72b96e44c8eb25514a5f3e58e9d999ed3c4dd722577d7",
     "expected_result": "Create one approved ticket",
     "injection_or_action": "game-day-step-4",
     "mandatory": true,

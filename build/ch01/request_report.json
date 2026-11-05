@@ -4,7 +4,7 @@
       "scenario": "answer_success",
       "status_code": 200,
       "code": null,
-      "latency_ms": 17,
+      "latency_ms": 41,
       "model_calls": 1,
       "spans": [
         {
@@ -28,7 +28,7 @@
             "actor_id": "actor_reader",
             "trace_id": "trace_fixture_001",
             "request_id": "req_fixture_001",
-            "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+            "configuration_id": "sha256:8117d40f7fd8df097312f4bfcfbe6826c64abbb8df89fb9291cc5967c0afedf6"
           }
         },
         {
@@ -63,7 +63,7 @@
           "adapter": "replay"
         },
         "trace_id": "trace_fixture_001",
-        "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e",
+        "configuration_id": "sha256:8117d40f7fd8df097312f4bfcfbe6826c64abbb8df89fb9291cc5967c0afedf6",
         "request_id": "req_fixture_001"
       }
     },
@@ -71,7 +71,7 @@
       "scenario": "missing_identity",
       "status_code": 401,
       "code": "UNAUTHORIZED",
-      "latency_ms": 7,
+      "latency_ms": 5,
       "model_calls": 0,
       "spans": [
         {
@@ -96,7 +96,7 @@
       "scenario": "tenant_conflict",
       "status_code": 403,
       "code": "FORBIDDEN",
-      "latency_ms": 18,
+      "latency_ms": 5,
       "model_calls": 0,
       "spans": [
         {
@@ -121,7 +121,7 @@
       "scenario": "invalid_json",
       "status_code": 502,
       "code": "MODEL_BAD_OUTPUT",
-      "latency_ms": 7,
+      "latency_ms": 5,
       "model_calls": 1,
       "spans": [
         {
@@ -145,7 +145,7 @@
             "actor_id": "actor_reader",
             "trace_id": "trace_fixture_001",
             "request_id": "req_fixture_001",
-            "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+            "configuration_id": "sha256:8117d40f7fd8df097312f4bfcfbe6826c64abbb8df89fb9291cc5967c0afedf6"
           }
         },
         {
@@ -170,7 +170,7 @@
       "scenario": "timeout",
       "status_code": 503,
       "code": "DEADLINE_EXCEEDED",
-      "latency_ms": 18,
+      "latency_ms": 26,
       "model_calls": 1,
       "spans": [
         {
@@ -194,7 +194,7 @@
             "actor_id": "actor_reader",
             "trace_id": "trace_fixture_001",
             "request_id": "req_fixture_001",
-            "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+            "configuration_id": "sha256:8117d40f7fd8df097312f4bfcfbe6826c64abbb8df89fb9291cc5967c0afedf6"
           }
         },
         {
@@ -219,7 +219,7 @@
       "scenario": "upstream_error",
       "status_code": 503,
       "code": "MODEL_CAPACITY",
-      "latency_ms": 23,
+      "latency_ms": 6,
       "model_calls": 1,
       "spans": [
         {
@@ -243,7 +243,7 @@
             "actor_id": "actor_reader",
             "trace_id": "trace_fixture_001",
             "request_id": "req_fixture_001",
-            "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e"
+            "configuration_id": "sha256:8117d40f7fd8df097312f4bfcfbe6826c64abbb8df89fb9291cc5967c0afedf6"
           }
         },
         {
@@ -268,7 +268,7 @@
       "scenario": "health_live",
       "status_code": 200,
       "code": null,
-      "latency_ms": 3,
+      "latency_ms": 2,
       "model_calls": 0,
       "spans": [],
       "body": {
@@ -279,12 +279,12 @@
       "scenario": "health_ready",
       "status_code": 200,
       "code": null,
-      "latency_ms": 28,
+      "latency_ms": 2,
       "model_calls": 0,
       "spans": [],
       "body": {
         "status": "ready",
-        "configuration_id": "sha256:18b4e412cbfb1108d2a60fd4b6e9b32b7183a074bbc26ca67cc9412b9589e64e",
+        "configuration_id": "sha256:8117d40f7fd8df097312f4bfcfbe6826c64abbb8df89fb9291cc5967c0afedf6",
         "adapter": "replay",
         "profile": "fixture"
       }

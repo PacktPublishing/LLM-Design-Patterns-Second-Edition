@@ -25,13 +25,13 @@
       "tenant_id": "tenant_alpha",
       "trace_id": "trace-ch09"
     },
-    "run_id": "run_orchestrator_worker_e028b7129f",
-    "signature": "sha256:882f9b748eed161549f52ca6b0e52fea1ced511b7858281c5a0a908aac2c012c",
+    "run_id": "run_orchestrator_worker_05c9ebc452",
+    "signature": "sha256:ef163b725ba646ff2ba8ddede08ec18392af29b0213e68096a17ad4de683b3c1",
     "success_criteria": [
       "return typed findings",
       "do not create tickets"
     ],
-    "task_id": "task_b84881c3cb",
+    "task_id": "task_bf679c2fc9",
     "tool_allowlist": [
       "retrieval:read"
     ],
@@ -63,13 +63,13 @@
       "tenant_id": "tenant_alpha",
       "trace_id": "trace-ch09"
     },
-    "run_id": "run_orchestrator_worker_e028b7129f",
-    "signature": "sha256:9aeeb5158619fd405def18a6dd219f9818bdac53ea28cc98d4b6fc7a0799c5f0",
+    "run_id": "run_orchestrator_worker_05c9ebc452",
+    "signature": "sha256:c8aefc788f253917346d8feaab3b4ce20a75ef17353f8a73c23d92d98c6286b3",
     "success_criteria": [
       "return typed findings",
       "do not create tickets"
     ],
-    "task_id": "task_8b2a30434e",
+    "task_id": "task_8ec3aaa556",
     "tool_allowlist": [],
     "worker_id": "validate_worker"
   }

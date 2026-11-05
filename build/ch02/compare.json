@@ -1,0 +1,7 @@
+{
+  "baseline": "ch01",
+  "candidate": "work/ch02",
+  "baseline_summary": "C:\\Users\\kenhu\\llm-design-patterns-hands-on\\build\\ch02\\summary.json",
+  "candidate_summary": "C:\\Users\\kenhu\\llm-design-patterns-hands-on\\build\\ch02\\regression\\summary.json",
+  "note": "Fixture CPSO is labeled; not a hosted-model comparison."
+}

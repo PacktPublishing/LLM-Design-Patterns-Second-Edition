@@ -15,10 +15,10 @@
         "text": "Remote-work exception requires manager approval and policy citation."
       }
     ],
-    "result_id": "result_task_b84881c3cb",
-    "run_id": "run_orchestrator_worker_e028b7129f",
-    "signature": "sha256:8c2f0c21c48d2382ce0dce780dfbbb25b5b8ef9bfa96b4982c841be5d568cc58",
-    "task_id": "task_b84881c3cb",
+    "result_id": "result_task_bf679c2fc9",
+    "run_id": "run_orchestrator_worker_05c9ebc452",
+    "signature": "sha256:d976fbd874bf7f301f2cbf32f6c395c0943559f12b617016746bbcb47670b866",
+    "task_id": "task_bf679c2fc9",
     "usage_tokens": 100,
     "worker_id": "retrieve_worker"
   },
@@ -38,10 +38,10 @@
         "text": "Ticket can be previewed only after exact-effect approval is available."
       }
     ],
-    "result_id": "result_task_8b2a30434e",
-    "run_id": "run_orchestrator_worker_e028b7129f",
-    "signature": "sha256:07fbb285dcb105d869170e4b66668b16c9fde4e1467d014c93355765b72ca326",
-    "task_id": "task_8b2a30434e",
+    "result_id": "result_task_8ec3aaa556",
+    "run_id": "run_orchestrator_worker_05c9ebc452",
+    "signature": "sha256:2042b655fce91ff890b9c7e3e7070d01b47438a1224b3aa5614cd4396291300e",
+    "task_id": "task_8ec3aaa556",
     "usage_tokens": 100,
     "worker_id": "validate_worker"
   }

@@ -10,7 +10,7 @@
         "actor_id": "actor_reader",
         "trace_id": "trace_verify_fixture",
         "request_id": "req_verify_fixture",
-        "configuration_id": "sha256:80a8dbc7f516e9799ef1eef40d2baf9bd0944c8a61822f1e5286d51f041f1c0f"
+        "configuration_id": "sha256:899012622c7a83854f078503c6f6743e9613a56db2efc05d13142162a87d3213"
       }
     }
   ],

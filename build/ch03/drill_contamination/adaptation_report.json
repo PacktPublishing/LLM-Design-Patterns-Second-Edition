@@ -49,7 +49,7 @@
       "cost_status": "available",
       "gates_passed": true
     },
-    "measured_at": "2026-08-13T20:48:37.739676Z"
+    "measured_at": "2026-11-05T16:55:01.860647Z"
   },
   "dataset": {
     "schema_version": "1",
@@ -226,7 +226,7 @@
       "blocked before candidate comparison"
     ],
     "review_by": "next-sprint",
-    "expires_at": "2026-09-12T20:48:37.754876Z"
+    "expires_at": "2026-12-05T16:55:01.866558Z"
   },
   "dataset_card": {
     "dataset_id": "policyops-adapt-v1",

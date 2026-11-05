@@ -2,7 +2,7 @@
   "lab": "ch04",
   "profile": "fixture",
   "note": "fixture latency is not provider performance",
-  "configuration_id": "sha256:452e064d3824497a6ca0696baaf073930f39d18d20654d4c9e14d6044c76edd4",
+  "configuration_id": "sha256:d5e9f18670c3d89404ca749952de23c95a1c21c77c73f27186ac03bf4a5e99ce",
   "fixture_pack_hash": "sha256:30b426c253f4b794711536eccab63b4c008a27adbbaa01ddaac0a36265ee7249",
   "gates_passed": true
 }

@@ -44,7 +44,7 @@
   {
     "actual_result": "Preview sha256:ce04ee6a673 executed once as ticket ticket_4dadddb88c08 under idempotency key capstone-game-day-001.",
     "cleanup_status": "complete",
-    "evidence_ref": "sha256:4077f3e7e13c194ec5232132093dbf108a7ca835d301f39bedff495aaaa87eb3",
+    "evidence_ref": "sha256:ba50c76f87c1ee20994d336c41c9fd0af580d10bcb9248810804e143f0ab7d0d",
     "expected_result": "Create one approved ticket",
     "injection_or_action": "game-day-step-4",
     "mandatory": true,

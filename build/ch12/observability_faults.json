@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "results": {
+    "canary": true,
+    "outage": true,
+    "overfit": true,
+    "privacy": true,
+    "reconstruction": true
+  },
+  "scenario": "all"
+}

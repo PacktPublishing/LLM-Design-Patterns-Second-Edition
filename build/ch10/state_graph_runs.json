@@ -47,11 +47,11 @@
       "trace_id": "trace-ch09"
     },
     "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
-    "run_id": "run_workflow_d138f3e565",
+    "run_id": "run_workflow_1a7436f334",
     "schema_version": "1.0",
     "status": "succeeded",
     "terminal_reason": "completed",
-    "ticket_id": "ticket_534ef5426d44",
+    "ticket_id": "ticket_3251b045c787",
     "trace": [
       "start",
       "deterministic_route",
@@ -108,11 +108,11 @@
       "trace_id": "trace-ch09"
     },
     "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
-    "run_id": "run_single_agent_51f013ffbf",
+    "run_id": "run_single_agent_8b7c710ef0",
     "schema_version": "1.0",
     "status": "succeeded",
     "terminal_reason": "completed",
-    "ticket_id": "ticket_94f8b370cd08",
+    "ticket_id": "ticket_c8cec0cc99f4",
     "trace": [
       "start",
       "single_agent_replay_decision",
@@ -162,11 +162,11 @@
       "trace_id": "trace-ch09"
     },
     "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
-    "run_id": "run_browser_computer_use_4a7e99c0ca",
+    "run_id": "run_browser_computer_use_b15828124d",
     "schema_version": "1.0",
     "status": "succeeded",
     "terminal_reason": "completed",
-    "ticket_id": "ticket_e3f56eb2ebd5",
+    "ticket_id": "ticket_c4455b5b6130",
     "trace": [
       "start",
       "browser_actions_untrusted",
@@ -191,8 +191,8 @@
       "worker_limit": 2
     },
     "delegated_task_ids": [
-      "task_b84881c3cb",
-      "task_8b2a30434e"
+      "task_bf679c2fc9",
+      "task_8ec3aaa556"
     ],
     "evidence_refs": [
       "policy_remote:v2:span_remote_approval"
@@ -235,11 +235,11 @@
       "trace_id": "trace-ch09"
     },
     "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
-    "run_id": "run_orchestrator_worker_e028b7129f",
+    "run_id": "run_orchestrator_worker_05c9ebc452",
     "schema_version": "1.0",
     "status": "succeeded",
     "terminal_reason": "completed",
-    "ticket_id": "ticket_9c6653f071f8",
+    "ticket_id": "ticket_ab4b75b65745",
     "trace": [
       "start",
       "fanout_reserved",
@@ -287,7 +287,7 @@
       "trace_id": "trace-ch09"
     },
     "proposed_effect_hash": null,
-    "run_id": "run_orchestrator_worker_8bae07bdbd",
+    "run_id": "run_orchestrator_worker_bfc7f72491",
     "schema_version": "1.0",
     "status": "awaiting_review",
     "terminal_reason": "capacity_unavailable",
@@ -337,7 +337,7 @@
       "trace_id": "trace-ch09"
     },
     "proposed_effect_hash": "sha256:ce04ee6a67308d126bd101edbdc451f48db29506133cc52dfa3742a7828aa8bd",
-    "run_id": "run_browser_computer_use_5f705b3607",
+    "run_id": "run_browser_computer_use_1d09ceaede",
     "schema_version": "1.0",
     "status": "awaiting_review",
     "terminal_reason": "browser_profile_mismatch",
