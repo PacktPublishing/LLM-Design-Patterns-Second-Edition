@@ -151,11 +151,16 @@ class WorkerResult(StrictModel):
     task_id: str
     run_id: str
     worker_id: str
+    delegation_id: str | None = None
+    state_version: int | None = None
+    expires_at: int | None = None
     findings: list[Finding]
     evidence_refs: list[str]
     usage_tokens: int
     completed_at: int
     signature: str
+    confidence: float | None = None
+    recommended_next_state: Literal["ask_user", "block", "proceed_to_draft", "abstain"] | None = None
 
 
 class BrowserObservation(StrictModel):

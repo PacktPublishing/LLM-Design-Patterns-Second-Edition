@@ -86,6 +86,11 @@ class HookDecision(StrictModel):
     reason_code: str
     duration_ms: int
 
+    @classmethod
+    def timeout(cls, duration_ms: int, reason_code: str = "HOOK_TIMEOUT") -> HookDecision:
+        """Fail-closed timeout decision when a hook exceeds its deadline."""
+        return cls(allow=False, reason_code=reason_code, duration_ms=duration_ms)
+
 
 class TicketResult(StrictModel):
     schema_version: Literal["1.0"] = "1.0"

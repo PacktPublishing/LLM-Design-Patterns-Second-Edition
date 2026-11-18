@@ -19,6 +19,7 @@ class GraphRoute(str, Enum):
     MULTI_HOP_GRAPH = "multi_hop_graph"
     TEMPORAL_GRAPH = "temporal_graph"
     GLOBAL_GRAPH = "global_graph"
+    DRIFT_GRAPH = "drift_graph"
     HYBRID_GRAPH_VECTOR = "hybrid_graph_vector"
 
 
@@ -56,6 +57,8 @@ class ClaimRef(StrictModel):
     tenant_id: str
     valid_from: date | None = None
     valid_to: date | None = None
+    tx_from: date | None = None
+    tx_to: date | None = None
     status: ClaimStatus = ClaimStatus.SUPPORTED
 
 

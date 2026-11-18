@@ -78,6 +78,9 @@ class Span(StrictModel):
     page: int | None = None
     region: tuple[float, float, float, float] | None = None
     table_cell: str | None = None
+    ocr_confidence: float | None = None
+    parser_warnings: list[str] = Field(default_factory=list)
+    parent_section_id: str | None = None
     poisoned: bool = False
 
 
@@ -90,6 +93,9 @@ class CitationRef(StrictModel):
     page: int | None = None
     region: tuple[float, float, float, float] | None = None
     table_cell: str | None = None
+    ocr_confidence: float | None = None
+    parser_warnings: list[str] = Field(default_factory=list)
+    parent_section_id: str | None = None
 
 
 class Candidate(StrictModel):

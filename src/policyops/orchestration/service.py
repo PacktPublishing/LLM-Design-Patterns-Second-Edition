@@ -169,7 +169,9 @@ class Worker:
             "usage_tokens": 100,
             "completed_at": NOW + 1,
         }
-        return WorkerResult(**unsigned, signature=_sign_payload(unsigned))
+        result = WorkerResult(**unsigned, signature="")
+        payload = result.model_dump(exclude={"signature"}, mode="json")
+        return result.model_copy(update={"signature": _sign_payload(payload)})
 
 
 class ResultMerger:

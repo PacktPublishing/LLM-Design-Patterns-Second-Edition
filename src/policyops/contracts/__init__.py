@@ -138,6 +138,12 @@ class ProblemDetail(StrictModel):
     retry_class: RetryClass
     trace_id: str | None = None
     request_id: str | None = None
+    next_action: Literal[
+        "regenerate_preview",
+        "reconcile_by_idempotency_key",
+        "bounded_retry",
+        "halt_and_escalate",
+    ] | None = None
     details: dict[str, Any] | None = None
 
 
@@ -151,6 +157,12 @@ class DomainError(Exception):
         http_status: int = 400,
         trace_id: str | None = None,
         request_id: str | None = None,
+        next_action: Literal[
+            "regenerate_preview",
+            "reconcile_by_idempotency_key",
+            "bounded_retry",
+            "halt_and_escalate",
+        ] | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code
@@ -159,6 +171,7 @@ class DomainError(Exception):
         self.http_status = http_status
         self.trace_id = trace_id
         self.request_id = request_id
+        self.next_action = next_action
 
     def to_problem(self) -> ProblemDetail:
         return ProblemDetail(
@@ -167,4 +180,5 @@ class DomainError(Exception):
             retry_class=self.retry_class,
             trace_id=self.trace_id,
             request_id=self.request_id,
+            next_action=self.next_action,
         )
